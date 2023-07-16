@@ -1,0 +1,276 @@
+capture log close
+clear all
+set more off
+log close _all			// closes all log files
+pause on				// turns pauses on (a pause does not interrupt local memory)
+*pause off
+set maxvar 15000
+timer on 1 				// counts the duration of file computation
+
+
+***packages needed for file to run***
+*	ssc install isvar
+
+		
+		
+****************************************************************************************************
+*Title: Harmonization file of HRS-type datasets harmonized by Gateway2Aging (www.g2aging.org)
+*Summary: constructs main data from SHARE (HRS) by selecting relevant variables and reshaping to a panel (ID-wave)
+*Date: 16-07-2023
+*Author: Castor Comploj
+*Date Created: 13-07-2023
+*Note: If you suggest a change, or the file is not suitable for your HRS-type survey, please commit changes on Github directly or email me at castorcomploj@protonmail.com
+****************************************************************************************************
+***Special Notes***
+**note: After running this file, most variable names end with r or s. r refers to respondent and s refers to spouse. h refers to household.** 
+
+
+
+
+
+
+
+
+
+
+
+****************************************************************************************************
+*PART 1*: Adapt this section to the specific HRS-type harmonized dataset from the g2aging
+****************************************************************************************************
+***define folder locations***
+loc cv 		"X:\My Documents\XdrvData\SHARE\" // main folder location
+loc h_data 	"`cv'SHAREdata\harmon\" 		  // harmonized data folder location
+loc out 	"`cv'SHAREoutput\"				  // output folder location
+***start log*** 
+log using 	"`h_data'log_harmon.txt", text replace name(log_harmon) // ends w/ -log close log_harmon-
+
+
+***Bringing in Core Data***
+**Harmonized data**
+use "`h_data'H_SHARE_f.dta"
+
+*pause // browse the data using -browse- ; to continue after a pause, type "q" and enter
+
+**other data**
+*[append other datasets (e.g. from individual waves of HRS-type study) using the available identifiers]
+
+**generate specific identifiers**
+gen countryID = substr(mergeid, 1,2) 
+gen id  = hhid + pn 				// note id is not unique
+egen panelid = group(countryID id)	
+
+***define identifiers*** 	// find these using -browse- 
+loc cntry  		"countryID"
+loc cnty 	 	""			// insert county 	ID if available
+loc communityID "" 		 	// insert community ID if available 
+loc householdID "hhid" 	 	// insert household ID
+loc pn 			"pn"		// insert person identifier
+loc ID 			"mergeid"	// insert personal ID (household ID + personal ID)
+loc ID 			"panelid"	// use panelid if ID does not uniquely identify individual (e.g. same ID in two count(r)ies)
+loc 	idlist 	"`cntry' `cnty' `communityID' `householdID' `pn' `ID'" 
+***define other wave-specific values*** 
+loc wavelast 	"8"			// change this to the # of the last available wave (e.g. 8 if 8 waves, 4 if 4 waves)
+
+
+
+
+
+****************************************************************************************************
+*Part 2*: Overview of dataset
+****************************************************************************************************
+/***count the number of unique IDs***
+count
+preserve
+contract panelid 
+count
+restore
+*/
+
+/* destring ID variables when numeric (if needed) (note: does not work with non-numeric identifiers)
+foreach id of local idlist {
+destring `id', replace		// create number format of identifiers, from string 
+loc idlist2 "`idlist' `id'"
+}
+order 	`idlist2', alphabetic
+*/
+
+*pause 
+
+
+****************************************************************************************************
+*Part 3*: Choose variables and reshape from 'wide' to 'long'
+****************************************************************************************************
+***move r, h, hh indicators at the end of varname (for reshape operation)***
+*describe r* h* hh*, simple
+rename 	(r(#)*) (*[2]r#[1])		// respondent
+rename 	(h(#)*) (*[2]h#[1])		// household
+rename 	(hh(#)*) (*[2]hh#[1]) 	// household
+rename 	(s(#)*) (*[2]s#[1])	 	// spouse
+*describe r* h* hh* s*  , simple	  
+
+*pause
+
+***select variables of interest (by section in harmon manual)***
+**note: select first time-varying variables. Below, you can select time-invariant variables.
+**note: add -r-, -s-, or -h- at the end of each selected variable**
+**note: make sure all variables are inserted correctly (e.g. higovr->higov will keep an empty column higov)**
+***time-variant variables***
+loc 	xtra	"inw hhresph cplh iwyr iwmr iwstatr iwstats"	// general response info in demographics section
+loc 	vra 	"mstatr nhmlivr ruralh ageyr     `xtra'"		// demographics, identifiers, weights
+loc 	disease ""
+loc 	vrb 	"shltr iadlar `disease'"						// health
+loc 	vrc 	"higovr"										// healthcare utilization and insurance
+loc 	vrd  	""												// cognition
+loc 	vre		""												// financial and housing wealth
+loc		vrf 	""												// income and consumption
+loc 	vrg 	""												// family structure
+loc	 	vrh 	"workr"											// employment history
+loc	 	vri 	"retempr"										// retirement (and expectations)
+loc 	vrj 	"pubpenr"										// pension
+loc 	vrk 	""												// physical measures
+loc 	vrl 	""												// assistance and caregiving 
+loc 	vrm 	""												// stress 
+loc 	vro 	""												// (end of life planning)
+loc 	vrp 	""												// (childhood) 
+loc 	vrq		"satlifezr"										// psychosocial 
+loc 	vrlist	`vra' `vrb' `vrc' `vrd' `vre' `vrf' `vrg' `vrh' `vri' `vrj' `vrl' `vrm' `vro' `vrp' `vrq'
+***time-invariant variables***
+loc 	xa 		"radyear radmonth ragender raeducl"		
+loc 	xb 		""
+loc 	xc 		""
+loc 	xlist	`xa' `xb' `xc' `xd' `xe' `xf' `xg' `xh' `xi' `xj' `xk' `xl' `xm' `xo' `xp' `xq'
+
+***only keep chosen variables above in dataset to speed up reshape operation***
+foreach vr of local vrlist {
+forvalues i=1/`wavelast'{ 
+di 		"`vr'`i'"
+loc		keeplist "`keeplist' `vr'`i'" // append each variable with wave indicator to local keeplist
+}
+}
+di 		"`keeplist'"
+**note: keep only locals that are existing variables (e.g. missing mstat3 causes errors) (see [a1] for details)**
+isvar 	`keeplist'  				// keeps only local macros that are actually exist, stored as "r(varlist)"
+display "`r(varlist)'"
+loc 	timevaryingx "`r(varlist)'"
+	gl  	timevaryingx "`r(varlist)'"
+	display "$timevaryingx"
+loc 	keeplist2 "" 				// survey-specific special variables (e.g. eligibility to a pension program)
+keep 	`idlist' `timevaryingx' `keeplist2' `xlist'
+
+display "`vrlist'"			
+
+	***keep variable labels to copy into long reshaped dataset***
+	di 	  "`timevaryingx'"
+	loc varasstringlist ""
+	loc vlabellist ""
+	foreach v of local timevaryingx {
+	local `v'label: variable label `v'
+	local `v'label = substr("``v'label'", strpos("``v'label'", " ") + 1, .) // substing of part after first space
+	display "``v'label'"
+			local varasstringlist `" `varasstringlist'   "``v'label'" "'
+	label variable `v' "``v'label'" 	
+	}
+	*di `"`varasstringlist'"'
+	des
+	foreach name of local vrlist {
+		forval i=1/`wavelast' {		// wavelast, needs to be adjusted for last wave of varname available
+		local `name'label "``name'`i'label'" 
+		di "``name'label'"
+	}
+		loc namelabellist "`namelabellist' ``name'label'"	
+	}
+	di "`namelabellist'"
+	**however, sometimes variables do not exist. This means I do not have a variable label for varnamer3** 
+
+	
+
+***reshape operation***
+**reshape 'wide' to 'long' format**
+reshape long `vrlist', i(`ID') j(wave) 
+
+**apply variable labels from wide format before**
+foreach name of local vrlist{
+	label variable `name' "``name'label'"
+}
+
+
+**relabel survey wave values**
+forvalues i=1/`wavelast'{
+loc wavelabellist `wavelabellist' `i' "Wave `i'"  
+}
+di 			`"`wavelabellist'"'
+la de 		wavel `wavelabellist'
+la val 		wave wavel 
+l  			`ID' wave `varlist' in 1		
+tab wave
+
+***end timer, xtset and save data***
+timer 		off  1
+timer 		list 1
+xtset 		`ID' wave
+save		"`h_data'H_panel.dta", replace // check if appeared in correct folder!
+
+pause
+
+****************************************************************************************************
+*Part 4*: Codebook: (run this to generate an overview of the harmonized variables)
+****************************************************************************************************
+/*
+qui log using "`h_data'codebook", text replace name(log)
+codebook, compact
+codebook
+qui log close log
+
+qui log using "`h_data'codebook_tab", text replace name(log)
+xtdes
+des 
+sum
+display "`vrlist'"
+foreach v of local vrlist { /*needs vrlist from first block which was used for reshape*/
+tab `v' wave,m
+}
+qui log close log
+
+pause	
+*/
+	
+
+****************************************************************************************************
+*Part 5*: Generate study-specific variables while in 'long' format 
+****************************************************************************************************
+***generate new variables***
+//////////////////// I: A: demographics, identifiers, weights
+recode 	ragender 	(1 = 1 "1.male") (2 = 0 "0.female"), gen(male)
+la var 	ragender 	"male"
+
+tab 	raeducl, gen(educ_) 						// create dummies from categorical variable
+
+loc 	droplist "ragender" 						// drop variables not needed
+drop 	`droplist'
+
+
+
+
+
+
+
+
+
+
+****************************************************************************************************
+log close log_harmon
+++
+file end
+****************************************************************************************************
+
+
+
+
+
+
+
+****************************************************************************************************
+*Appendix*
+****************************************************************************************************
+*[a1]  https://www.statalist.org/forums/forum/general-stata-discussion/general/1365048-keep-command-variable-not-found
+
