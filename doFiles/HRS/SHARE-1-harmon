@@ -135,7 +135,7 @@ loc 	vrp 	""												// (childhood)
 loc 	vrq		"satlifezr"										// psychosocial 
 loc 	vrlist	`vra' `vrb' `vrc' `vrd' `vre' `vrf' `vrg' `vrh' `vri' `vrj' `vrl' `vrm' `vro' `vrp' `vrq'
 ***time-invariant variables***
-loc 	xa 		"radyear radmonth ragender raeducl"		
+loc 	xa 		"rabyear rabmonth radyear radmonth ragender raeducl"		
 loc 	xb 		""
 loc 	xc 		""
 loc 	xlist	`xa' `xb' `xc' `xd' `xe' `xf' `xg' `xh' `xi' `xj' `xk' `xl' `xm' `xo' `xp' `xq'
