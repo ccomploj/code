@@ -3,7 +3,7 @@ clear all
 set more off
 log close _all			// closes all log files
 pause on				// turns pauses on (a pause does not interrupt local memory)
-*pause off
+pause off
 set maxvar 15000
 timer on 1 				// counts the duration of file computation
 
@@ -13,14 +13,16 @@ timer on 1 				// counts the duration of file computation
 
 ****************************************************************************************************
 *Title: Harmonization file of HRS-type datasets harmonized by Gateway2Aging (www.g2aging.org)
-*Summary: constructs main data from the HRS data g2aging version by selecting relevant variables and reshaping to a panel (ID-wave)
+*Summary: constructs main data from HRS data (g2aging version) by reshaping selected vars to a panel 
 *Date: 16-07-2023
 *Author: Castor Comploj
 *Date Created: 13-07-2023
-*Note: If you suggest a change, or the file is not suitable for your HRS-type survey, please commit changes on Github directly or email me at castorcomploj@protonmail.com
+*Note: If you suggest a change, or the file is not suitable for your HRS-type survey, please commit 
+*      changes on Github directly or email me at castorcomploj@protonmail.com
 ****************************************************************************************************
 ***Special Notes***
-**note: After running the file, most variable names end with r, s, h or hh. r refers to respondent and s refers to spouse. h (hh) refers to household.** 
+**note: After running the file, most variable names end with r, s, h or hh. r refers to respondent 
+*		and s refers to spouse. h (hh) refers to household. 
 
 
 
@@ -29,17 +31,13 @@ timer on 1 				// counts the duration of file computation
 *PART 1*: Adapt this section to the specific HRS-type harmonized dataset from the g2aging
 ****************************************************************************************************
 ***define folder locations***
-loc cv 		"X:\My Documents\XdrvData\SHARE\" // main folder location
-loc h_data 	"`cv'SHAREdata\harmon\" 		  // harmonized data folder location
-loc out 	"`cv'SHAREoutput\"				  // output folder location
-***start log*** 
-
+loc cv 		"X:\My Documents\XdrvData\SHARE\" 	// main folder location
+loc h_data 	"`cv'SHAREdata\harmon\"				// harmonized data folder location
+loc out 	"`cv'SHAREoutput\"					// output folder location
 
 ***Bringing in Core Data***
 **Harmonized data**
-use "`h_data'H_SHARE_f.dta"
-
-*pause // browse the data using -browse- ; to continue after a pause, type "q" and enter
+use "`h_data'H_SHARE_f.dta"					  // choose dataset
 
 **other data**
 *[append other datasets (e.g. from individual waves of HRS-type study) using the available identifiers]
@@ -56,20 +54,22 @@ loc communityID "" 		 	// insert community ID if available
 loc householdID "hhid" 	 	// insert household ID
 loc pn 			"pn"		// insert person identifier
 loc ID 			"mergeid"	// insert personal ID (household ID + personal ID)
-loc ID 			"panelid"	// use panelid if ID does not uniquely identify individual (same ID in two count(r)ies)
+loc ID 			"panelid"	// use panelid if ID does not uniquely identify indiv. (same ID in two count(r)ies)
 loc idlist 		"`cntry' `cnty' `communityID' `householdID' `pn' `ID'" 
 ***define other survey-specific values*** 
 loc wavelast 	"8"			// change this to the # of the last available wave (e.g. 8 if 8 waves, 4 if 4 waves)
 
 
 
-
+*pause // to continue after a pause, type "q" and enter; browse the data using -browse-
 
 ****************************************************************************************************
 *Part 2*: Overview of dataset
 ****************************************************************************************************
 order `idlist', alphabetic
+**start log**
 log using 	"`h_data'log_harmon.txt", text replace name(log_harmon) // ends w/ -log close log_harmon-
+
 /***count the number of unique IDs***
 count
 preserve
@@ -78,7 +78,7 @@ count
 restore
 */
 
-/* destring ID variables when numeric (if needed) (note: does not work with non-numeric identifiers)
+/***destring ID variables when numeric (if needed) (note: does not work with non-numeric identifiers)***
 foreach id of local idlist {
 destring `id', replace		// create number format of identifiers, from string 
 loc idlist2 "`idlist' `id'"
@@ -86,7 +86,7 @@ loc idlist2 "`idlist' `id'"
 order `idlist2', alphabetic
 */
 
-*pause 
+pause 
 
 
 ****************************************************************************************************
@@ -105,11 +105,11 @@ rename 	(s(#)*) (*[2]s#[1])	 	// spouse
 ***select variables of interest (by section in harmon manual)***
 **note: select first (a) time-varying variables. Below at (b) you can select time-invariant variables.
 **note: add -r-, -s-, or -h- at the end of each selected variable**
-**note: make sure all variables are inserted correctly (e.g. higovr->higov will reshape in an empty column higov)**
+**note: make sure all variables are inserted correctly (e.g. higovr->higov becomes empty column higov)**
 ***(a) time-variant variables***
-loc 	xtra	"hhresphh cplh iwyr iwmr iwstatr iwstats"	// general response info in demographics section
+loc 	xtra	"hhresphh cplh iwyr iwmr iwstatr iwstats"		// general response info in vra
 loc 	vra 	"mstatr nhmlivr ruralh ageyr     `xtra'"		// demographics, identifiers, weights
-*	loc 	disease ""
+loc 	disease ""
 loc 	vrb 	"shltr iadlar `disease'"						// health
 loc 	vrc 	"higovr"										// healthcare utilization and insurance
 loc 	vrd  	""												// cognition
@@ -130,7 +130,7 @@ loc 	vrlist	`vra' `vrb' `vrc' `vrd' `vre' `vrf' `vrg' `vrh' `vri' `vrj' `vrl' `v
 loc 	xa 		"inw? rabyear rabmonth radyear radmonth ragender raeducl"		
 loc 	xb 		""
 loc 	xc 		""
-loc 	xlist	`xa' `xb' `xc' `xd' `xe' `xf' `xg' `xh' `xi' `xj' `xk' `xl' `xm' `xo' `xp' `xq'
+loc 	xlist	`xa' `xb' `xc' 
 
 ***only keep chosen variables above in dataset to speed up reshape operation***
 foreach vr of local vrlist {
@@ -146,40 +146,38 @@ display "`r(varlist)'"
 loc 	vrlistset "`r(varlist)'"
 	gl	vrlistset "`r(varlist)'"
 display "`vrlistset'"
-loc 	keeplist2 "" 	// add survey-specific special variables (e.g. eligibility to a pension program)
+loc 	keeplist2 "" 	// other survey-specific variables (e.g. eligibility to pension program)
 keep 	`idlist' `vrlistset' `xlist' `keeplist2'
 
 ***store variable labels from -wide- format (I) to copy into -long- reshaped dataset later (II)***	
-**(I) store labels**
+***(I) store labels***
 display "`vrlistset'"
-	loc varasstringlist ""
 loc vlabellist ""
 foreach v of local vrlistset { 	/*use only the variables that actually exist*/
 local `v'label: variable label `v'	/*store the labels of these variables into "varnamer(/s/h)#"*/
 local `v'label = substr("``v'label'", strpos("``v'label'", " ") + 1, .) /*use only substring of label*/
 display "``v'label'"
-	local varasstringlist `" `varasstringlist'   "``v'label'" "'
 label variable `v' "``v'label'" 	/*relabel the variable with the new substring (without wave number)*/
 }
-	di `"`varasstringlist'"'
-	des
-
+des
 **assign a label of a variable across waves to a single local**
-**note: in a loop, the labels of varnamer1 varnamer2, ., varnamerT are used to define a single local macro. This local macro will then be used to assign it as a label to the new variable varnamer(/s/h)
-**note: this loop could be written differently. Currently the label of the last varname available (e.g. varnamer8) is used. I you suggest a more efficient coding, let me know.
+**note: in a loop, the labels of varnamer1 varnamer2, ., varnamerT are here used to define a single local 
+*		macro. This local macro will then be used to assign it as a label to the new variable varnamer(/s/h)
+**note: this loop could be written differently. Currently the label of the last varname available (e.g. 
+*		varnamer8) is used. I you would like to suggest a more efficient coding, let me know.
+**note: the result of this block is a variable label assigned to the local "varname"label 
 foreach name of local vrlist { 
-forval i=1/`wavelast' {		// wavelast, needs to be adjusted for last wave of varname available
+forval i=1/`wavelast' {		
 capture confirm variable `name'`i', exact /*checks if variable exists*/
-if !_rc{
-local `name'label "``name'`i'label'" /*only use label of variable if that variable (wave) exists*/
+if !_rc{ /*only use label of variable if that variable (wave) exists and has therefore not an empty label*/
+local `name'label "``name'`i'label'" /*assign this variable label to the local "varname"label*/
 di "``name'label'"
 }
 }
 loc namelabellist "`namelabellist' ``name'label'"	
 }
-di "`namelabellist'"
+di "`namelabellist'" /*list of unique var labels (which are at (II) assigned to the new variable varname*/
 
-	
 
 ***reshape operation***
 **reshape 'wide' to 'long' format**
@@ -236,39 +234,42 @@ pause
 *Part 5*: Generate study-specific variables while in 'long' format 
 ****************************************************************************************************
 ***recode/relabel variables from dataset***
-//////////////////// I: A: demographics, identifiers, weights
+// I: A: demographics, identifiers, weights
 recode 	ragender 	(1 = 1 "1.male") (2 = 0 "0.female"), gen(male)
 la var 	ragender 	"male"
 
-tab 	raeducl, gen(educ_) 						// create dummies from categorical variable
+tab 	raeducl, gen(educ_) 				// create dummies from categorical variable
+// B: health 
+// C: healthcare use and insurance
+// D: cognition
+// E: financial and housing Wealth
+// F: income and consumption
+// G: family structure
+// H: employment history
+// I: retirement (and expectations)
+// J: pension 
+// K: physical measures
+// L: assistance and caregiving
+// M: stress
+// O: (end of life planning)
+// P: (childhood)
+// Q: Psychosocial
+// Y: Other relevant variables (e.g. from other datasets)
 
 
-loc 	droplist "ragender" 						// drop variables not needed
+***drop variables not needed***
+loc 	droplist "ragender" 				// drop variables that are not needed
 drop 	`droplist'
 
 
-///////////////////// B: health 
-///////////////////// C: healthcare use and insurance
-///////////////////// D: cognition
-///////////////////// E: financial and housing Wealth
-///////////////////// F: income and consumption
-///////////////////// G: family structure
-///////////////////// H: employment history
-///////////////////// I: retirement (and expectations)
-///////////////////// J: pension 
-///////////////////// K: physical measures
-///////////////////// L: assistance and caregiving
-///////////////////// M: stress
-///////////////////// O: (end of life planning)
-///////////////////// P: (childhood)
-///////////////////// Q: Psychosocial
-///////////////////// Y: Other relevant variables (e.g. from other datasets)
-
-***generate new variables***
+***generate and label new variables***
 gen		ageatdeath = radyear-rabyear
+la var	ageatdeath "age at death in calendar years"
 
-**label new variables**
-la var	ageatdeath "age at death in years"
+
+
+sort 	`ID' wave 
+save	"`h_data'H_panel2.dta", replace // check if appeared in correct folder!
 
 
 ****************************************************************************************************
@@ -276,11 +277,7 @@ log close log_harmon
 ++ FILE ENDS HERE
 ****************************************************************************************************
 
-
-
 ****************************************************************************************************
 *Appendix*
 ****************************************************************************************************
 *[a1]  https://www.statalist.org/forums/forum/general-stata-discussion/general/1365048-keep-command-variable-not-found
-
-
