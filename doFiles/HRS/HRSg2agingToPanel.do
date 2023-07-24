@@ -144,7 +144,6 @@ di 		"`keeplist'"
 isvar 	`keeplist'  	// keeps only local macros that actually exist, stored as "r(varlist)"
 display "`r(varlist)'"
 loc 	vrlistset "`r(varlist)'"
-display "`vrlistset'"
 loc 	keeplist2 "" 	// other survey-specific variables (e.g. eligibility to pension program)
 keep 	`idlist' `vrlistset' `xlist' `keeplist2'
 
