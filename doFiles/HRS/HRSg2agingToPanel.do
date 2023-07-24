@@ -144,7 +144,6 @@ di 		"`keeplist'"
 isvar 	`keeplist'  	// keeps only local macros that actually exist, stored as "r(varlist)"
 display "`r(varlist)'"
 loc 	vrlistset "`r(varlist)'"
-	gl	vrlistset "`r(varlist)'"
 display "`vrlistset'"
 loc 	keeplist2 "" 	// other survey-specific variables (e.g. eligibility to pension program)
 keep 	`idlist' `vrlistset' `xlist' `keeplist2'
@@ -267,7 +266,7 @@ gen		ageatdeath = radyear-rabyear
 la var	ageatdeath "age at death in calendar years"
 
 
-
+macro list 
 sort 	`ID' wave 
 save	"`h_data'H_panel2.dta", replace // check if appeared in correct folder!
 
