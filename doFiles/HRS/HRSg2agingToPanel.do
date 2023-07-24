@@ -235,7 +235,7 @@ pause
 ***recode/relabel variables from dataset***
 // I: A: demographics, identifiers, weights
 recode 	ragender 	(1 = 1 "1.male") (2 = 0 "0.female"), gen(male)
-la var 	ragender 	"male"
+la var 	male		"male"
 
 tab 	raeducl, gen(educ_) 				// create dummies from categorical variable
 // B: health 
