@@ -23,7 +23,7 @@ timer on 1 				// counts the duration of file computation
 ***Special Notes***
 **note: After running the file, most variable names end with r, s, h or hh. r refers to respondent 
 *		and s refers to spouse. h (hh) refers to household. 
-
+**note: there are two types of variables in the g2aging data: time-varying and time-invariant. 
 
 
 
@@ -106,6 +106,7 @@ rename 	(s(#)*) (*[2]s#[1])	 	// spouse
 **note: select first (a) time-varying variables. Below at (b) you can select time-invariant variables.
 **note: add -r-, -s-, or -h- at the end of each selected variable**
 **note: make sure all variables are inserted correctly (e.g. higovr->higov becomes empty column higov)**
+**note: make sure no variable appears twice**
 ***(a) time-variant variables***
 loc 	xtra	"hhresphh cplh iwyr iwmr iwstatr iwstats"		// general response info in vra
 loc 	vra 	"mstatr nhmlivr ruralh ageyr     `xtra'"		// demographics, identifiers, weights
