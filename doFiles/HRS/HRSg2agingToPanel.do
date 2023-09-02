@@ -163,7 +163,7 @@ des
 **note: in a loop, the labels of varnamer1 varnamer2, ., varnamerT are here used to define a single local 
 *		macro. This local macro will then be used to assign it as a label to the new variable varnamer(/s/h)
 **note: this loop could be written differently. Currently the label of the last varname available (e.g. 
-*		varnamer8) is used. I you would like to suggest a more efficient coding, let me know.
+*		varnamer8) is used. If you would like to suggest a more efficient coding, let me know.
 **note: the result of this block is a variable label assigned to the local "varname"label 
 foreach name of local vrlist { 
 forval i=1/`wavelast' {		
