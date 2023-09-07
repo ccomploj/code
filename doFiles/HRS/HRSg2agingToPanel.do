@@ -22,7 +22,7 @@ timer on 1 				// counts the duration of file computation
 ****************************************************************************************************
 ***Special Notes***
 **note: After running the file, most variable names end with r, s, h or hh. r refers to respondent 
-*		and s refers to spouse. h (hh) refers to household. 
+**		and s refers to spouse. h (hh) refers to household. 
 **note: there are two types of variables in the g2aging data: time-varying and time-invariant. 
 
 
