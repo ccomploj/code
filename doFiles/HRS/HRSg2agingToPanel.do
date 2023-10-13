@@ -234,6 +234,7 @@ pause
 ****************************************************************************************************
 ***recode/relabel variables from dataset***
 // I: A: demographics, identifiers, weights
+rename  ageyr age 
 recode 	ragender 	(1 = 1 "1.male") (2 = 0 "0.female"), gen(male)
 la var 	male		"male"
 
@@ -262,8 +263,8 @@ drop 	`droplist'
 
 
 ***generate and label new variables***
-gen		ageatdeath = radyear-rabyear
-la var	ageatdeath "age at death in calendar years"
+gen		agein2011 = 2011-ageyr
+la var		agein2011 "age in 2011"
 
 
 macro list 
