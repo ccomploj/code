@@ -196,6 +196,7 @@ la de 		wavel `wavelabellist'
 la val 		wave wavel 
 l  			`ID' wave `varlist' in 1		
 tab wave
+la var 		wave "Survey Wave"
 
 ***end timer, xtset and save data***
 timer 		off  1
