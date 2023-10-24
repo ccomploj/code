@@ -270,7 +270,6 @@ la var		agein2011 "age in 2011"
 
 macro list 
 sort 	`ID' wave 
-xtset 	`ID' wave
 save	"`h_data'H_panel2.dta", replace // check if appeared in correct folder!
 
 
