@@ -21,14 +21,15 @@ timer on 1 				// counts the duration of file computation
 *      changes on Github directly or email me at castorcomploj@protonmail.com
 ****************************************************************************************************
 ***Special Notes***
-**note: After running the file, most variable names end with r, s, h or hh. r refers to respondent 
-**		and s refers to spouse. h (hh) refers to household. 
-**note: there are two types of variables in the g2aging data: time-varying and time-invariant. 
+*note: After running the file, most variable names end with r, s, h or hh. r refers to respondent 
+*		and s refers to spouse. h (hh) refers to household. 
+*note: there are two types of variables in the g2aging data: time-varying and time-invariant. 
 
 
 
 ****************************************************************************************************
 *PART 1*: Adapt this section to the specific HRS-type harmonized dataset from the g2aging
+*note: you do not have to change any other section except "Part 1", and the variables in "Part 3"
 ****************************************************************************************************
 ***define folder locations***
 loc cv 		"X:\My Documents\XdrvData\SHARE\" 	// main folder location
