@@ -40,6 +40,10 @@ loc out 	"`cv'SHAREoutput\"					// output folder location
 **Harmonized data**
 use "`h_data'H_SHARE_f.dta"					  // choose dataset
 
+**End of Life Survey** /*(not required to use for file to run)*/ 
+loc x_eol "raxmonth raxyear radage" /*merge eol vars*/
+merge 1:1 mergeid using "`h_data'H_SHARE_EOL_c.dta", keepusing(`x_eol')
+
 **other data**
 *[append other datasets (e.g. from individual waves of HRS-type study) using the available identifiers]
 
@@ -129,7 +133,7 @@ loc 	vrp 	""												// (childhood)
 loc 	vrq		"satlifezr"										// psychosocial 
 loc 	vrlist	`vra' `vrb' `vrc' `vrd' `vre' `vrf' `vrg' `vrh' `vri' `vrj' `vrl' `vrm' `vro' `vrp' `vrq'
 ***(b) time-invariant variables***
-loc 	xa 		"inw? rabyear rabmonth radyear radmonth ragender raeducl"		
+loc 	xa 		"inw? rabyear rabmonth radyear radmonth ragender raeducl `x_eol'"		
 loc 	xb 		""
 loc 	xc 		""
 loc 	xlist	`xa' `xb' `xc' 
