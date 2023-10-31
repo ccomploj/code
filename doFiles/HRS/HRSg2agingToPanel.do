@@ -237,14 +237,19 @@ pause
 
 ****************************************************************************************************
 *Part 5*: Generate study-specific variables while in 'long' format 
+*note: recode/relabel variables from dataset*
 ****************************************************************************************************
-***recode/relabel variables from dataset***
 // I: A: demographics, identifiers, weights
 rename  ageyr age 
 recode 	ragender 	(1 = 1 "1.male") (2 = 0 "0.female"), gen(male)
 la var 	male		"male"
 
 tab 	raeducl, gen(educ_) 				// create dummies from categorical variable
+
+
+loc 	droplist "ragender" 				// drop variables that are not needed
+drop 	`droplist'
+
 // B: health 
 // C: healthcare use and insurance
 // D: cognition
@@ -263,11 +268,6 @@ tab 	raeducl, gen(educ_) 				// create dummies from categorical variable
 // Y: Other relevant variables (e.g. from other datasets)
 
 
-***drop variables not needed***
-loc 	droplist "ragender" 				// drop variables that are not needed
-drop 	`droplist'
-
-
 ***generate and label new variables***
 gen		agein2011 = 2011-ageyr
 la var		agein2011 "age in 2011"
@@ -280,7 +280,7 @@ save	"`h_data'H_panel2.dta", replace // check if appeared in correct folder!
 
 ****************************************************************************************************
 log close log_harmon
-++ FILE ENDS HERE
+++END OF FILE++
 ****************************************************************************************************
 
 ****************************************************************************************************
