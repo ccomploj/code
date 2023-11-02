@@ -1,0 +1,116 @@
+
+\documentclass{article}
+\usepackage{titlesec}
+
+\titleformat{\section}
+{\normalfont\large\bfseries}{\thesection}{1em}{}
+
+\title{Harmonizing HRS-Type Datasets for Cross-Country Comparability}
+\author{Castor Comploj}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section{Abstract}
+HRS-type datasets are essential for aging, health, and retirement research.
+"HRSg2agingToPanel.do" simplifies working with HRS-type datasets, streamlining cross-country comparative research and preserving variable labels. The file is designed to facilitate the analysis of Health and Retirement Study (HRS) and related sister surveys harmonized by the Gateway2Aging (g2aging) project (SHARE, CHARLS, ELSA, etc.). The file streamlines data preparation, reshaping wide-format data into a long-format panel, reducing the dataset to a compact dataset, keeping only the chosen variables. This facilitates cross-country economic research on elderly populations. 
+
+\section{Key Features}
+\begin{itemize}
+    \item \textbf{Data Reshaping:} Converts HRS-type datasets from wide to long format, simplifying analysis for cross-country comparisons.
+    \item \textbf{Variable Label Transfer:} Preserves metadata by transferring variable labels to the long-format panel.
+    \item \textbf{Variable Selection:} Allows users to choose specific variables for their analysis, focusing on relevant data.
+    \item \textbf{Software:} Stata SE 17 is used. Both Windows and Mac can be used. 
+\end{itemize}
+
+\section{How to Use}
+Researchers can adapt "HRSg2agingToPanel.do" by customizing "Part 1" of the code, including folder locations and identifiers, while retaining core functionality.
+
+Also to be adapted are the desired variables in "Part 3" of the code. Refer to the harmonized codebooks on the g2aging website for the variable names.
+
+
+
+\section{License}
+The file is released under MIT License Copyright (c) 2023 \textit{ccomploj} on Github Permission is hereby granted, free of charge, to any person obtaining a copy of this program ("The Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense. \textit{Please cite this paper when using The Software in your research.}
+
+
+
+\section{Usage Acknowledgements}
+Researchers are encouraged to acknowledge the use of "HRSg2agingToPanel.do" in their publications, citing its contribution to data preparation and harmonization.
+
+% \section{Disclaimer}
+% The file is provided as-is, with no warranties. Users are responsible for verifying compatibility with their datasets and conducting accurate analyses.
+
+\section{Keywords}
+HRS, Data Harmonization, Stata, Cross-Country Comparability.
+\end{document}
+```
+
+This condensed and non-repetitive version provides a clear overview of the Stata do file, its functionality, and usage guidelines. You can further customize it as needed.
+
+
+
+% \documentclass{article}
+% \usepackage{titlesec}
+
+% \titleformat{\section}
+% {\normalfont\large\bfseries}{\thesection}{1em}{}
+
+% \title{Harmonizing HRS-Type Datasets for Cross-Country Comparability}
+% \author{Castor Comploj}
+% \date{}
+
+% \begin{document}
+% \maketitle
+
+% \section{Abstract}
+
+% The Stata do file, "HRSg2agingToPanel.do," presented in this paper, serves as a powerful tool for researchers working with Health and Retirement Study (HRS) and related sister surveys harmonized by the Gateway2Aging (g2aging) project. The file is designed to reshape wide-format data into a long-format panel, making it easier to perform cross-country comparative analyses. Here, we provide a comprehensive description of the file's functionality.
+
+% \section{Key Features}
+
+% \begin{itemize}
+%     \item \textbf{Data Reshaping:} The primary function of the file is to reshape HRS-type datasets from a wide format into a long-format panel. This transformation simplifies data analysis and facilitates cross-country comparisons.
+
+%     \item \textbf{Variable Label Transfer:} The file copies variable labels from the wide-format variables to the corresponding variables in the long-format panel. This ensures that important metadata is retained during the transformation.
+
+%     \item \textbf{Variable Selection:} Researchers can choose specific variables of interest for their analysis. This flexibility allows users to focus on the data that are most relevant to their research questions.
+% \end{itemize}
+
+% \section{How to Use}
+
+% Researchers can adapt the "HRSg2agingToPanel.do" file to their specific HRS-type harmonized dataset by customizing "Part 1" of the code, which includes folder locations, bringing in core data, and generating specific identifiers. The file's structure allows for easy customization while keeping the core functionality intact.
+
+% \section{General Description}
+
+% HRS-type datasets are widely used in social science research for investigating aging populations, health, and retirement behaviors. However, the data often come in a wide format, which can be challenging for cross-country comparisons and longitudinal analyses. To address this issue, Castor Comploj created the "HRSg2agingToPanel.do" Stata do file.
+
+% \section{Conclusion}
+
+% The "HRSg2agingToPanel.do" Stata do file simplifies the process of working with HRS-type datasets harmonized by the g2aging project. It streamlines data preparation for cross-country comparative research and ensures that variable labels are preserved throughout the transformation. Researchers are encouraged to explore and utilize this valuable resource to enhance their analyses of aging, health, and retirement data.
+
+
+% \section{License}
+
+% The "HRSg2agingToPanel.do" file is released under an unspecified license. Researchers are encouraged to contribute to its development by providing feedback or suggesting improvements directly on the project's GitHub repository.
+
+% \section{Usage Acknowledgements}
+
+% Researchers are kindly requested to acknowledge the use of the "HRSg2agingToPanel.do" file in their publications or research outputs. A suggested acknowledgment is as follows:
+
+% "We would like to acknowledge the use of the 'HRSg2agingToPanel.do' Stata do file developed by Castor Comploj, which greatly facilitated the data preparation and harmonization process for our research."
+
+
+
+
+% \section{Disclaimer}
+
+% The "HRSg2agingToPanel.do" file is provided as-is, and the author makes no warranties regarding its accuracy or suitability for any specific purpose. Users are responsible for verifying the file's compatibility with their datasets and ensuring that their analyses are conducted correctly.
+
+
+% \section{Keywords}
+
+% HRS, Health and Retirement Study, Data Harmonization, Stata, Data Reshaping, Cross-Country Comparability
+
+% \end{document}
