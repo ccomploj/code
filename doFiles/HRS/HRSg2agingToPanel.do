@@ -32,9 +32,9 @@ timer on 1 				// counts the duration of file computation
 *note: you do not have to change any other section except "Part 1", and the variables in "Part 3"
 ****************************************************************************************************
 ***define folder locations***
-loc cv 		"X:\My Documents\XdrvData\SHARE\" 	// main folder location
-loc h_data 	"`cv'SHAREdata\harmon\"				// harmonized data folder location
-loc out 	"`cv'SHAREoutput\"					// output folder location
+loc cv 		"X:/My Documents/XdrvData/SHARE/" 	// main folder location
+loc h_data 	"`cv'SHAREdata/harmon/"				// harmonized data folder location
+loc out 	"`cv'SHAREoutput/"					// output folder location
 
 ***Bringing in Core Data***
 **Harmonized data**
