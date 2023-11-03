@@ -1,7 +1,7 @@
 capture log close
-clear all
 set more off
-log close _all				// closes all log files
+clear all
+log close _all			// closes all log files
 pause on				// turns pauses on (a pause does not interrupt local memory)
 *pause off				// deactivates -pause- (press q to continue after a pause)
 set maxvar 15000
