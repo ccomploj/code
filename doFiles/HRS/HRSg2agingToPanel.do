@@ -34,8 +34,9 @@ timer on 1 				// counts the duration of file computation
 ***define folder locations***
 loc cv 		"X:/My Documents/XdrvData/SHARE/" 	// main folder location
 loc h_data 	"`cv'SHAREdata/harmon/"				// harmonized data folder location
-loc out 	"`cv'SHAREoutput/"					// output folder location
-
+*loc out 	"`cv'SHAREoutput/"					// output folder location (adjust saving location 
+												// if different path desired)
+												
 ***Bringing in Core Data***
 **Harmonized data**
 use "`h_data'H_SHARE_f.dta"					  // choose dataset
@@ -268,9 +269,7 @@ drop 	`droplist'
 // Y: Other relevant variables (e.g. from other datasets)
 
 
-***generate and label new variables***
-gen		agein2011 = 2011-ageyr
-la var		agein2011 "age in 2011"
+
 
 
 macro list 
