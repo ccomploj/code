@@ -9,7 +9,7 @@ timer on 1 				// counts the duration of file computation
 
 
 ***packages needed for file to run***
-*	ssc install isvar
+*	ssc install isvar 
 
 ****************************************************************************************************
 *Title: Harmonization file of HRS-type datasets harmonized by Gateway2Aging (www.g2aging.org)
