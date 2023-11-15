@@ -1,6 +1,6 @@
 
 ** problem: dtable does not work with multiple column variables until Stata 18 ** 
-** solution: this file **
+** solution: this file ** 
 
 set seed 18
 sysuse auto, clear
