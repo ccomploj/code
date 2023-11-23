@@ -25,29 +25,3 @@ set 	trace off
 capture log close
 log 	close _all // closes all open log files regardless of names
 
-
-/*// Packages needed:
-ssc install outreg2
-search st0085_2  // esttab
-
-** for interpolation/imputation **
-ssc install mipolate
-
-** for (iv)reghdfe**
-*ssc install reghdfe
-*ssc install ivreghdfe
-* ssc install ftools
-* ssc install reghdfe 
-* ssc install ivreg2
-/* if ivreg does not work:
-ssc install itsa, replace
-ssc install avar, replace
-ssc install ranktest 
-*/
-
-/*
-ssc install csdid, replace
-ssc install drdid, replace	
-ssc install coefplot
-*/
-
