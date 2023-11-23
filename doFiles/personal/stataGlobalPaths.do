@@ -11,7 +11,7 @@ if "`c(username)'" == "User" {
 gl myFolder C:/Users/User/Documents/RUG/---CHARLS
 }
 if "`c(username)'" == "P307344" {
-gl myFolder X:/My Documents/CHARLS/XdrvData
+gl myFolder X:/My Documents/XdrvData/CHARLS
 *	gl	myGoogle "X:\My Documents\XdrvData\CHARLS"
 	gl outpath  "//Client/G$/Shared drives/sharedStefan/---CHARLS/1-NRPS/outFiles" // get G on UWP on my PC
 }
