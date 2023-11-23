@@ -12,7 +12,7 @@ gl myFolder C:/Users/User/Documents/RUG/---CHARLS
 }
 if "`c(username)'" == "P307344" {
 gl myFolder X:/My Documents/XdrvData/CHARLS
-*	gl	myGoogle "X:\My Documents\XdrvData\CHARLS"
+	gl myGoogle "$myFolder"
 	gl outpath  "//Client/G$/Shared drives/sharedStefan/---CHARLS/1-NRPS/outFiles" // get G on UWP on my PC
 }
 gl 		outpath  "$myGoogle/1-NRPS/outFiles"
