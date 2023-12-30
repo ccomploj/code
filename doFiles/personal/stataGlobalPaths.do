@@ -9,6 +9,7 @@ gl myFolder "C:/Users/P306685/Dropbox/Projekte_Castor_und_Stefan/---CHARLS"
 }
 if "`c(username)'" == "User" {
 gl myFolder C:/Users/User/Documents/RUG/---CHARLS
+gl outgithub "C:/Users/User/Documents/GitHub/1-projectNRPS-github/files"
 }
 if "`c(username)'" == "P307344" {
 gl myFolder X:/My Documents/XdrvData/CHARLS
