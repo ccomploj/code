@@ -17,12 +17,10 @@ timer on 1 				// counts the duration of file computation
 *Date: 16-07-2023
 *Author: Castor Comploj
 *Date Created: 13-07-2023
-*Note: If you suggest a change, or the file is not suitable for your HRS-type survey, please commit 
-*      changes on Github directly or email me at castorcomploj@protonmail.com
+*Note: If you suggest a change, or the file is not suitable for your HRS-type survey, create a pull request for changes on Github directly or email me at castorcomploj@protonmail.com
 ****************************************************************************************************
 ***Special Notes***
-*note: After running the file, most variable names end with r, s, h or hh. r refers to respondent 
-*		and s refers to spouse. h (hh) refers to household. 
+*note: After running the file, most variable names end with r, s, h or hh. r refers to respondent and s refers to spouse. h (hh) refers to household. 
 *note: there are two types of variables in the g2aging data: time-varying and time-invariant. 
 
 
@@ -42,8 +40,8 @@ loc h_data 	"`cv'SHAREdata/harmon/"				// harmonized data folder location
 use "`h_data'H_SHARE_f.dta"					  // choose dataset
 
 **End of Life Survey** /*(not required to use for file to run)*/ 
-loc x_eol "raxmonth raxyear radage" /*merge eol vars*/
-merge 1:1 mergeid using "`h_data'H_SHARE_EOL_c.dta", keepusing(`x_eol')
+*loc x_eol "raxmonth raxyear radage" /*merge eol vars*/
+*merge 1:1 mergeid using "`h_data'H_SHARE_EOL_c.dta", keepusing(`x_eol')
 
 **other data**
 *[append other datasets (e.g. from individual waves of HRS-type study) using the available identifiers]
@@ -73,6 +71,7 @@ loc wavelast 	"8"			// change this to the # of the last available wave (e.g. 8 i
 *Part 2*: Overview of dataset
 ****************************************************************************************************
 order `idlist', alphabetic
+
 **start log**
 log using 	"`h_data'log_harmon.txt", text replace name(log_harmon) // ends w/ -log close log_harmon-
 
@@ -201,8 +200,45 @@ di 			`"`wavelabellist'"'
 la de 		wavel `wavelabellist'
 la val 		wave wavel 
 l  			`ID' wave `varlist' in 1		
-tab wave
 la var 		wave "Survey Wave"
+tab wave
+
+
+**format interview time as single variable**
+sum 	iwyr iwmr
+gen 	iwym = ym(iwyr, iwmr)
+format 	iwym %tm
+sum 	iwym
+*tab 	iwym iwyr  
+la var	iwym "r interview date (ym)"
+	
+/**format death time as single variable (rax (EOL))**
+sum 	raxyear raxmonth
+gen 	raxym = ym(raxyear, raxmonth)
+format 	raxym %tm
+sum 	raxym
+*tab 	raxym raxyear  
+la var	raxym "r death date (ym)"	
+*/
+
+**format death time as single variable (rad)**
+sum 	radyear radmonth
+gen 	radym = ym(radyear, radmonth)
+format 	radym %tm
+sum 	radym
+*tab 	radym radyear  
+la var	radym "r death date (ym)"	
+	
+**format birth time as single variable**
+sum 	rabyear rabmonth
+gen 	rabym = ym(rabyear, rabmonth)
+format 	rabym %tm
+sum 	rabym
+*tab 	rabym rabyear  
+la var	rabym "r death date (ym)"	
+
+
+
 
 ***end timer, xtset and save data***
 timer 		off  1
