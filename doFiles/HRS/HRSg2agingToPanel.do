@@ -205,10 +205,10 @@ tab wave
 
 
 **format interview time as single variable**
-sum 	iwyr iwmr
+*sum 	iwyr iwmr
 gen 	iwym = ym(iwyr, iwmr)
 format 	iwym %tm
-sum 	iwym
+*sum 	iwym
 *tab 	iwym iwyr  
 la var	iwym "r interview date (ym)"
 	
@@ -222,18 +222,18 @@ la var	raxym "r death date (ym)"
 */
 
 **format death time as single variable (rad)**
-sum 	radyear radmonth
+*sum 	radyear radmonth
 gen 	radym = ym(radyear, radmonth)
 format 	radym %tm
-sum 	radym
+*sum 	radym
 *tab 	radym radyear  
 la var	radym "r death date (ym)"	
 	
 **format birth time as single variable**
-sum 	rabyear rabmonth
+*sum 	rabyear rabmonth
 gen 	rabym = ym(rabyear, rabmonth)
 format 	rabym %tm
-sum 	rabym
+*sum 	rabym
 *tab 	rabym rabyear  
 la var	rabym "r death date (ym)"	
 
