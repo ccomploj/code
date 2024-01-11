@@ -156,9 +156,11 @@ la var 	d_firstage 	"age of first onset (observed)"
 									observations who had one or more missing diseases.*/
 	
 **age of first onset (g2aging version - self-reported age at first diagnosis)**
-loc 	locallist "`alldiseasecodes'" 
-di 		"`locallist'"
-foreach v of local locallist {
+	*loc 	locallist "`alldiseasecodes'" 
+	*di 	"`locallist'"
+	*foreach v of local locallist {
+di 	"`alldiseasecodes'"
+foreach v of local alldiseasecodes {		
 loc 	radiaglist "`radiaglist' radiag`v'" 
 }
 di 		"`radiaglist'" /*same list as `d_agediag' in harmon file*/
