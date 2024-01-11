@@ -65,7 +65,7 @@ loc wavelast 	"8"			// change this to the # of the last available wave (e.g. 8 i
 
 
 
-*pause // to continue after a pause, type "q" and enter; browse the data using -browse-
+pause // to continue after a pause, type "q" and enter; browse the data using -browse-
 
 ****************************************************************************************************
 *Part 2*: Overview of dataset
@@ -91,7 +91,7 @@ loc idlist2 "`idlist' `id'"
 order `idlist2', alphabetic
 */
 
-pause 
+pause // to continue after a pause, type "q" and enter; browse the data using -browse-
 
 
 ****************************************************************************************************
