@@ -6,15 +6,15 @@
 ** r has disease: either "ever told by doctor" or "currently taking med for"**
 local eitheror "hibp diab heart lung psych osteo" 
 foreach var of local eitheror { 
-	**# Bookmark #1 recoding medication use to be strictly increasing
-	bys ID: replace rx`var'r = max(rx`var'r[_n-1], rx`var'r) if inwt==1 // !mi(rx`var'r): does not work well bc sb can respond to ever had 0 and indicator falls to 0 again if rx missing.
+	**# Bookmark #C recording variable as strictly increasing: 
+	bys ID: replace rx`var'r = max(rx`var'r[_n-1], rx`var'r) if inwt==1 // medication use !mi(rx`var'r): does not work well bc variable will be 0 if "ever had" is 0 and "medication" is missing
+	*bys ID: replace `var'er = max(`var'er[_n-1], `var'er) if inwt==1  // ever had: Change also in "onlyeverhad"
 gen 	d_`var' = 	`var'er==1 | rx`var'r==1           if `var'er<. | rx`var'r<. 
 la var 	d_`var'	 	"ever had | taking meds for `var'"
 loc eitherorlist	"`eitherorlist' d_`var'" /*creates a local macro that appends new var at each iteration*/
 }		
 *l ID wave d_osteo* osteo* rxosteo* if ID==958
 
-			
 	/**check to have used correct if-condition above: "if `var'er<. | rx`var'r<.": **
 	**here we want to the variable to take value 1 if any of the two (ever had or taking meds) is 1 ///
 	* , that is, ignoring the fact that there is a missing value in one of them (one could optionally ///
@@ -31,22 +31,6 @@ loc eitherorlist	"`eitherorlist' d_`var'" /*creates a local macro that appends n
 																   *other missings are "larger" than (.) */
 	drop d_hibp2-d_hibp4 /*from this part, it is clear that d_hibp4 (=loop) is the correct of the variable*/
 	*/
-	
-	
-// **# Bookmark #1 strictly increasing var	
-// 		foreach var of local eitheror { 
-// 		gen d_`var'_temp = d_`var'
-// 		**bys ID (`var'er rx`var'r): replace d_`var'_temp = max(d_`var'[_n-1], d_`var') 
-// 		*bys ID: replace d_`var' = max(d_`var'[_n-1], d_`var') if !mi(d_`var') // only replace if ...
-// 			// if inwt==1
-// 		*drop d_`var'_temp
-// 		}
-//
-// 		gen test = d_hibp!=d_hibp_temp
-// 		bys ID: egen testmax=max(test)
-// 		sort ID wave 
-// 		*bro ID wave d_hibp* if testmax==1
-// 		*drop test testmax
 
 	
 
@@ -54,6 +38,8 @@ loc eitherorlist	"`eitherorlist' d_`var'" /*creates a local macro that appends n
 **only ever had (these diseases have no medication)**
 loc onlyeverhad 	"cancr strok arthr"		  // kidney
 foreach var of local onlyeverhad {
+**# Bookmark #C2
+	*bys ID: replace `var'er = max(`var'er[_n-1], `var'er) if inwt==1  // ever had: Change also in "onlyeverhad"
 gen 	d_`var' = 	`var'er==1 	if `var'er<.	/*only one condition*/
 la var 	d_`var' 	"(only) ever had `var'"
 loc onlyeverhadlist "`onlyeverhadlist' d_`var'" 
@@ -103,6 +89,15 @@ tab 	d_count d_count_geq2
 li 		ID d_any d_miss d_count d_count_geq2 in 1/5
 table 	(var) wave, statistic(mean d_any d_miss d_count d_count_geq2) stat(max d_any d_miss d_count d_count_geq2)
 
+
+**index of disease**
+su 		d_count, meanonly
+local 	d_countmax = r(max) // number of chosen diseases, max of variable
+**# Bookmark #1 This count is the max within an individual, which is NOT the total disease list considered. In most datasets, however, at least one ID has d_countmax
+gen 	d_count_index = d_count / `d_countmax'
+sum 	d_count_index, de 
+la var 	d_count_index 		"disease index (=count/total diseases)"
+
 **diff_d_count: if one has c diseases, does he keep the disease or does it disappear again?**	
 bys ID: gen 	diff_d_count 	  = d_count - L.d_count
 bys ID: gen 	diff_d_count_miss = d_count - L.d_count
@@ -124,13 +119,6 @@ sum 	diff_d_count*
 	bys ID: replace	diff_d_`code'_miss  = d_`code' - L3.d_`code' if L2.d_`code'>=. & mi(diff_d_`code'_miss)
 	tab diff_d_`code',m
 	}
-
-**index of disease**
-su 		d_count, meanonly
-local 	d_countmax = r(max) // number of chosen diseases, max of variable
-gen 	d_count_index = d_count / `d_countmax'
-sum 	d_count_index, de 
-la var 	d_count_index 		"disease index (=count/total diseases)"
 	
 **age at first onset (any chronic disease observed)**
 gen 	myvar 		= age if d_any==1 /*age, if any disease is present*/
@@ -220,22 +208,23 @@ li 		ID wave iwym d_count d_firstdate_c? time_c?toc? in 50/100 if (inw_miss==0 |
 
 **duration from c to c+1 [+ / or more] (time-varying single variable)**	
 **note: with and without adjusting for firstdate>=iwym**
-gen time_tonextdisease  = .
-gen time_tonextdisease2 = .
+gen timetonextdisease  = .
+gen timetonextdisease2 = .
 forval 	j=1/`d_countmax'{
 loc 	i=`j'-1
-replace time_tonextdisease  = -iwym + d_firstdate_c`j' if d_count==`i'	
-replace time_tonextdisease2 = -iwym + d_firstdate_c`j' if d_count==`i' & d_firstdate_c`j'>= iwym /*set time_tonextdisease2 to missing if firstdate with some count is smaller than the current date / e.g. if had 2 diseases, then after that went back to 1*/
+replace timetonextdisease  = -iwym + d_firstdate_c`j' if d_count==`i'	
+replace timetonextdisease2 = -iwym + d_firstdate_c`j' if d_count==`i' & d_firstdate_c`j'>= iwym /*set timetonextdisease2 to missing if firstdate with some count is smaller than the current date / e.g. if had 2 diseases, then after that went back to 1*/
 }	
-sum time_tonextdisease*, de
-	li ID wave d_count iwym d_firstdate_c? time_tonextdisease* time_c1toc2 time_c2toc3 if ID==785 // when the disease count decreases, time_tonextdisease2 is missing
-	sum time_tonextdisease* time_c1toc2 if d_count==1
-	*bro ID wave d_count iwym time_tonextdisease* time_c1toc2
-	*bro ID wave d_count iwym d_firstdate_c? time_tonextdisease*  	
-	*bro ID wave d_count iwym d_firstdate_c? time_tonextdisease* if sbalanced 	
-	*bro ID wave d_count iwym d_firstdate_c? time_tonextdisease* if sbalanced & time_tonextdisease<0	
-	// time_tonextdisease can be negative if count decreases from t to t+1
-	// currently, time_tonextdisease2 still ignores the dose: it treats time from 1 to 2 the same as 1 to 4 (2nd accumulates faster) || if sb jumps from 2 to 4, d_firstdate_c3 is equal to d_firstdate_c4 anyway || hence, this measure is simple "to next '1 or more' diseases"
+la var timetonextdisease2 "time (months) from C to C+1 (or more) diseases"
+sum timetonextdisease*, de
+	li ID wave d_count iwym d_firstdate_c? timetonextdisease* time_c1toc2 time_c2toc3 if ID==785 // when the disease count decreases, timetonextdisease2 is missing
+	sum timetonextdisease* time_c1toc2 if d_count==1
+	*bro ID wave d_count iwym timetonextdisease* time_c1toc2
+	*bro ID wave d_count iwym d_firstdate_c? timetonextdisease*  	
+	*bro ID wave d_count iwym d_firstdate_c? timetonextdisease* if sbalanced 	
+	*bro ID wave d_count iwym d_firstdate_c? timetonextdisease* if sbalanced & timetonextdisease<0	
+	// timetonextdisease can be negative if count decreases from t to t+1
+	// currently, timetonextdisease2 still ignores the dose: it treats time from 1 to 2 the same as 1 to 4 (2nd accumulates faster) || if sb jumps from 2 to 4, d_firstdate_c3 is equal to d_firstdate_c4 anyway || hence, this measure is simple "to next '1 or more' diseases"
 
 	
 

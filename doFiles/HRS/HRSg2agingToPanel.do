@@ -30,6 +30,7 @@ timer on 1 				// counts the duration of file computation
 *note: you do not have to change any other section except "Part 1", and the variables in "Part 3"
 ****************************************************************************************************
 ***define folder locations***
+loc data 	"SHARE"
 loc cv 		"X:/My Documents/XdrvData/SHARE/" 	// main folder location (adjust to HRS or other)
 loc h_data 	"`cv'SHAREdata/harmon/"				// harmonized data folder location
 *loc out 	"`cv'SHAREoutput/"					// output folder location (adjust saving location 
@@ -244,7 +245,7 @@ la var	rabym "r death date (ym)"
 timer 		off  1
 timer 		list 1
 xtset 		`ID' wave
-save		"`h_data'H_panel.dta", replace // check if appeared in correct folder!
+save		"`h_data'H_`data'_panel.dta", replace // check if appeared in correct folder!
 
 pause
 
@@ -310,7 +311,7 @@ drop 	`droplist'
 
 macro list 
 sort 	`ID' wave 
-save	"`h_data'H_panel2.dta", replace // check if appeared in correct folder!
+save	"`h_data'H_`data'_panel2.dta", replace // check if appeared in correct folder!
 
 
 ****************************************************************************************************
