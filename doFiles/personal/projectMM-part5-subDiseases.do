@@ -125,12 +125,12 @@ sum 	diff_d_count*
 	**first difference in DISEASECODE, accounting for missing responses in some time-period**
 	foreach code of local alldiseasecodes {
 	bys ID: gen diff_miss_d_`code'  = d_`code' - L.d_`code'
-	bys ID: replace	diff_miss_d_`code'  = d_`code' - L2.d_`code' if L.d_`code'>=. & mi(diff_miss_d_`code') /*L2 necessary if missing t (e.g. w3 in SHARE)*/  
+	bys ID: replace	diff_miss_d_`code'  = d_`code' - L2.d_`code' if L.d_`code'>=. & mi(diff_miss_d_`code')   
 	bys ID: replace	diff_miss_d_`code'  = d_`code' - L3.d_`code' if L2.d_`code'>=. & mi(diff_miss_d_`code')
-	bys ID: gen diff_miss_`code'  = `code' - L.`code'
-	bys ID: replace	diff_miss_`code'  = `code' - L2.`code' if L.`code'>=. & mi(diff_miss_`code') /*L2 necessary if missing t (e.g. w3 in SHARE)*/  
-	bys ID: replace	diff_miss_`code'  = `code' - L3.`code' if L2.`code'>=. & mi(diff_miss_`code')	
-	la var 	diff_miss_d_`code' "1st diff of `code' (raw data)"
+	la var 	diff_miss_d_`code' "1st diff of `code' (raw data)"	
+	bys ID: gen diff_miss_`code'er  = `code'er - L.`code'er
+	bys ID: replace	diff_miss_`code'er  = `code'er - L2.`code'er if L.`code'er>=. & mi(diff_miss_`code'er) 
+	bys ID: replace	diff_miss_`code'er  = `code'er - L3.`code'er if L2.`code'er>=. & mi(diff_miss_`code'er)	
 	la var 	diff_miss_`code'er	"1st diff of d_`code' (ever had | medication)"
 	}
 	
