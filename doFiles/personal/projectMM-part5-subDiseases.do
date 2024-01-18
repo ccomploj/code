@@ -7,12 +7,12 @@
 local eitheror "hibp diab heart lung psych osteo" 
 foreach var of local eitheror { 
 	**# Bookmark #C recording variable as strictly increasing: 
-	bys ID: replace rx`var'r = max(rx`var'r[_n-1], rx`var'r) if inwt==1 // medication use !mi(rx`var'r): does not work well bc variable will be 0 if "ever had" is 0 and "medication" is missing
-	*bys ID: replace `var'er = max(`var'er[_n-1], `var'er) if inwt==1  // ever had: Change also in "onlyeverhad"
-gen 	d_`var' = 	`var'er==1 | rx`var'r==1           if `var'er<. | rx`var'r<. 
+	clonevar	rx`var'r2 = rx`var'r // generate strictly increasing (in time) medication use
+	bys ID: 	replace rx`var'r2 = max(rx`var'r2[_n-1], rx`var'r2) if inwt==1 // medication use !mi(rx`var'r): does not work well bc variable will be 0 if "ever had" is 0 and "medication" is missing
+gen 	d_`var' = 	`var'er==1 | rx`var'r2==1           if `var'er<. | rx`var'r2<. 
 la var 	d_`var'	 	"ever had | taking meds for `var'"
 loc eitherorlist	"`eitherorlist' d_`var'" /*creates a local macro that appends new var at each iteration*/
-}		
+}
 *l ID wave d_osteo* osteo* rxosteo* if ID==958
 
 	/**check to have used correct if-condition above: "if `var'er<. | rx`var'r<.": **
@@ -47,6 +47,7 @@ loc onlyeverhadlist "`onlyeverhadlist' d_`var'"
 
 /**only medication (no "ever had")**
 * note: severe osteoporitic disease can be defined as "self-reported hip-fracture OR taking meds for osteoporosis, hence renamed hibper to osteoer above"
+* note: pay attention to if variable should be strictly increasing in time 
 loc onlymed 	"osteo"
 loc onlymedlist "rxosteor"
 des `onlymedlist'
@@ -91,34 +92,50 @@ table 	(var) wave, statistic(mean d_any d_miss d_count d_count_geq2) stat(max d_
 
 
 **index of disease**
-su 		d_count, meanonly
-local 	d_countmax = r(max) // number of chosen diseases, max of variable
-**# Bookmark #1 This count is the max within an individual, which is NOT the total disease list considered. In most datasets, however, at least one ID has d_countmax
+loc 	d_countmax = wordcount("`alldiseases'") // number of chosen diseases
 gen 	d_count_index = d_count / `d_countmax'
 sum 	d_count_index, de 
 la var 	d_count_index 		"disease index (=count/total diseases)"
 
-**diff_d_count: if one has c diseases, does he keep the disease or does it disappear again?**	
+**First difference in d_count: if one has c diseases, does he keep the disease or does it disappear again? **	
 bys ID: gen 	diff_d_count 	  = d_count - L.d_count
-bys ID: gen 	diff_d_count_miss = d_count - L.d_count
-bys ID: replace	diff_d_count_miss = d_count - L2.d_count if L.d_count>=. & mi(diff_d_count_miss) /*L2 necessary if missing t (e.g. w3 in SHARE)*/  
-bys ID: replace	diff_d_count_miss = d_count - L3.d_count if L2.d_count>=. & mi(diff_d_count_miss)
+bys ID: gen 	diff_miss_d_count = d_count - L.d_count // accounts for gaps, e.g. if not responded in some wave
+bys ID: replace	diff_miss_d_count = d_count - L2.d_count if L.d_count>=. & mi(diff_miss_d_count) /*L2 necessary if missing t (e.g. w3 in SHARE)*/  
+bys ID: replace	diff_miss_d_count = d_count - L3.d_count if L2.d_count>=. & mi(diff_miss_d_count)
 *note: could go further, but if gaps are longer than 4-6y I no longer consider them "first" differences 
 *bro ID wave d_count diff_d_count diff_d_count_miss
-la var 	diff_d_count 		"# of diseases 1st diff"
-la var 	diff_d_count 		"# of diseases 1nd diff (gaps adjusted)"
-tab 	diff_d_count diff_d_count_miss,m
-tab 	d_count 	 diff_d_count_miss,m
+la var 	diff_d_count 		"1st diff of # of diseases"
+la var 	diff_miss_d_count	"1st diff of # of diseases: (L(t-2) used if L(t-1) missing)"
+tab 	diff_d_count diff_miss_d_count,m
+tab 	d_count 	 diff_miss_d_count,m
 sum 	diff_d_count*
 
-	**diff_d_DISEASECODE: same as above**
-	foreach code of local alldiseasecodes {
+	**First difference in d_DISEASECODE: same as above**
+	foreach code of local alldiseasecodes {	
 	bys ID: gen diff_d_`code' 		= d_`code' - L.d_`code'
-	bys ID: gen diff_d_`code'_miss  = d_`code' - L.d_`code'
-	bys ID: replace	diff_d_`code'_miss  = d_`code' - L2.d_`code' if L.d_`code'>=. & mi(diff_d_`code'_miss) /*L2 necessary if missing t (e.g. w3 in SHARE)*/  
-	bys ID: replace	diff_d_`code'_miss  = d_`code' - L3.d_`code' if L2.d_`code'>=. & mi(diff_d_`code'_miss)
 	tab diff_d_`code',m
 	}
+
+	**first difference in DISEASECODE (in some datasets the reports are not strictly increaing)**
+	foreach code of local alldiseasecodes {	
+	bys ID: gen diff_`code'		  = `code' - L.`code'
+	tab diff_`code',m
+	}	
+	
+	**first difference in DISEASECODE, accounting for missing responses in some time-period**
+	foreach code of local alldiseasecodes {
+	bys ID: gen diff_miss_d_`code'  = d_`code' - L.d_`code'
+	bys ID: replace	diff_miss_d_`code'  = d_`code' - L2.d_`code' if L.d_`code'>=. & mi(diff_miss_d_`code') /*L2 necessary if missing t (e.g. w3 in SHARE)*/  
+	bys ID: replace	diff_miss_d_`code'  = d_`code' - L3.d_`code' if L2.d_`code'>=. & mi(diff_miss_d_`code')
+	bys ID: gen diff_miss_`code'  = `code' - L.`code'
+	bys ID: replace	diff_miss_`code'  = `code' - L2.`code' if L.`code'>=. & mi(diff_miss_`code') /*L2 necessary if missing t (e.g. w3 in SHARE)*/  
+	bys ID: replace	diff_miss_`code'  = `code' - L3.`code' if L2.`code'>=. & mi(diff_miss_`code')	
+	la var 	d_miss_d_`code' "1st diff of `code' (raw data)"
+	la var 	d_miss_`code'	"1st diff of d_`code' (ever had | medication)"
+	}
+	
+	
+	
 	
 **age at first onset (any chronic disease observed)**
 gen 	myvar 		= age if d_any==1 /*age, if any disease is present*/
@@ -144,6 +161,7 @@ la var 	d_firstage 	"age of first onset (observed)"
 									observations who had one or more missing diseases.*/
 	
 **age of first onset (g2aging version - self-reported age at first diagnosis)**
+**# Bookmark #1
 	*loc 	locallist "`alldiseasecodes'" 
 	*di 	"`locallist'"
 	*foreach v of local locallist {
@@ -181,9 +199,6 @@ sum 	d_anyever d_anyever_g2
 *****************
 *** Durations ***
 *****************
-su 		d_count, meanonly
-local 	d_countmax = r(max)
-
 **first onset DATE for each disease "count"**
 di 		   "`d_countmax'" /*max. count of diseases defined above*/
 forval 	j=1/`d_countmax' { /*use maximum count of disease list*/
@@ -199,12 +214,12 @@ li 			ID wave dead d_count iwym d_firstdate_c* in 100/116, compress nola /*check
 *note: [there may be gaps of nonresponse, i.e. diseases could jump from 1 to 4 or 2 to 7, because either nonresponse or jump from c to c+2]: if panel not balanced in disease count or there is a real jump, this could cause additional imprecision*
 *note: some people have x count at t, then x-1 count at t+1*
 forval 	j=2/`d_countmax'{
-loc 	i=`j'-1
-gen 	time_c`i'toc`j' = d_firstdate_c`j'-d_firstdate_c`i'
-la var 	time_c`i'toc`j' "months (observed) `i' to `j'+ diseases"
+loc 		i=`j'-1
+gen 		time_c`i'toc`j' = d_firstdate_c`j'-d_firstdate_c`i'
+la var 		time_c`i'toc`j' "months (observed) `i' to `j'+ diseases"
 }
-li 		ID wave iwym d_count d_firstdate_c? time_c?toc? in 85/100 , compress
-li 		ID wave iwym d_count d_firstdate_c? time_c?toc? in 50/100 if (inw_miss==0 | everdead==1), compress
+li 			ID wave iwym d_count d_firstdate_c? time_c?toc? in 85/100 , compress
+li 			ID wave iwym d_count d_firstdate_c? time_c?toc? in 50/100 if (inw_miss==0 | everdead==1), compress
 
 **duration from c to c+1 [+ / or more] (time-varying single variable)**	
 **note: with and without adjusting for firstdate>=iwym**
