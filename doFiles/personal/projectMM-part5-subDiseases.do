@@ -118,7 +118,7 @@ sum 	diff_d_count*
 
 	**first difference in DISEASECODE (in some datasets the reports are not strictly increaing)**
 	foreach code of local alldiseasecodes {	
-	bys ID: gen diff_`code'		  = `code'r - L.`code'r /*r because variable ends with r*/
+	bys ID: gen diff_`code'er		  = `code'er - L.`code'er /*r because variable ends with r*/
 	tab diff_`code',m
 	}	
 	
