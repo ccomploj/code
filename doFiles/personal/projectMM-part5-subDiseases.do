@@ -131,7 +131,7 @@ sum 	diff_d_count*
 	bys ID: replace	diff_miss_`code'  = `code' - L2.`code' if L.`code'>=. & mi(diff_miss_`code') /*L2 necessary if missing t (e.g. w3 in SHARE)*/  
 	bys ID: replace	diff_miss_`code'  = `code' - L3.`code' if L2.`code'>=. & mi(diff_miss_`code')	
 	la var 	diff_miss_d_`code' "1st diff of `code' (raw data)"
-	la var 	diff_miss_`code'	"1st diff of d_`code' (ever had | medication)"
+	la var 	diff_miss_`code'er	"1st diff of d_`code' (ever had | medication)"
 	}
 	
 	
