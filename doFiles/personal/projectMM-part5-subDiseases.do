@@ -1,3 +1,23 @@
+*note: include this file into part5 of the data geneation file using -do- or -include- in Stata. -do- forgets the defined locals
+*note: locals used in this file NEED to be defined inside this file if included using -do-. If included using -include-, this issue is not present.
+
+**# Bookmark #1: important! Check that in your dataset the following operations occur in a previous step
+
+*rename 	hiper osteoer // hipe is used in replacement of osteoer
+
+
+***********************
+*** other variables ***
+***********************
+macro list 
+di 	"`agethreshold' `h_data'"
+*tab 		cohortmin
+egen 		cohortmin5 	= cut(agemin), at (`agethreshold',55,60,65,70) // ,75,80 (used)
+la de 		cohortl5 `agethreshold' "`agethreshold'-54" 55 "55-59" 60 "60-64" 65 "65+"       
+la val 		cohortmin5 cohortl5 // labels value labels
+*tab agemin cohortmin5 
+
+
 ************************
 *** list of diseases ***
 ************************
@@ -7,9 +27,9 @@
 local eitheror "hibp diab heart lung psych osteo" 
 foreach var of local eitheror { 
 	**# Bookmark #C recording variable as strictly increasing: 
-	clonevar	rx`var'r2 = rx`var'r // generate strictly increasing (in time) medication use
+	clonevar			rx`var'r2 = rx`var'r // generate strictly increasing (in time) medication use
 	bys ID: 	replace rx`var'r2 = max(rx`var'r2[_n-1], rx`var'r2) if inwt==1 // medication use !mi(rx`var'r): does not work well bc variable will be 0 if "ever had" is 0 and "medication" is missing
-gen 	d_`var' = 	`var'er==1 | rx`var'r2==1           if `var'er<. | rx`var'r2<. // strictly incr. meds
+gen 	d_`var' = 	`var'er==1 | rx`var'r2==1          if `var'er<. | rx`var'r2<. // strictly incr. meds
 *gen 	d_`var' = 	`var'er==1 | rx`var'r==1           if `var'er<. | rx`var'r<. 
 la var 	d_`var'	 	"ever had | taking meds for `var'"
 loc eitherorlist	"`eitherorlist' d_`var'" /*creates a local macro that appends new var at each iteration*/
@@ -32,7 +52,6 @@ loc eitherorlist	"`eitherorlist' d_`var'" /*creates a local macro that appends n
 																   *other missings are "larger" than (.) */
 	drop d_hibp2-d_hibp4 /*from this part, it is clear that d_hibp4 (=loop) is the correct of the variable*/
 	*/
-
 	
 
 **# Bookmark #2 Note: left out kidney in first analysis in SHARE because this is available only from w6-w8, messing up d_miss
@@ -59,17 +78,7 @@ gen d_`var' = rx`var'r==1       if rx`var'r<.  // `var'er==1 		// |
 */
 
 	**# Bookmark #1 ** reorder variables inside dataset 		
-// 	* Step 1: Get a list of all variables that start with "rx"
-// 	unab rxvars: rx*
-// 	* Step 2: Get a list of all variables that start with "d_"
-// 	unab dvars: d_*
-// 	* Step 3: Order "rx*" variables before "d_*" variables
-// 	foreach var of local rxvars {
-// 		order `var', before(`dvars')
-// 	}	
 	order rx* d_*, after(age)
-		
-		
 		
 
 **"any disease", # of diseases missing, # of diseases present, multimorbidity***
@@ -141,14 +150,14 @@ sum 	diff_d_count*
 	
 	**first difference in DISEASECODE, accounting for missing responses in some time-period**
 	foreach code of local alldiseasecodes {
-	bys ID: gen diff_miss_d_`code'  = d_`code' - L.d_`code'
+	bys ID: gen 	diff_miss_d_`code'  = d_`code' - L.d_`code'
 	bys ID: replace	diff_miss_d_`code'  = d_`code' - L2.d_`code' if L.d_`code'>=. & mi(diff_miss_d_`code')   
 	bys ID: replace	diff_miss_d_`code'  = d_`code' - L3.d_`code' if L2.d_`code'>=. & mi(diff_miss_d_`code')
-	la var 	diff_miss_d_`code' "1st diff ('ever had' | medication) (adj. for gaps) of d_`code'"	
-	bys ID: gen diff_miss_`code'er  = `code'er - L.`code'er
+	la var 			diff_miss_d_`code' "1st diff ('ever had' | medication) (adj. for gaps) of d_`code'"	
+	bys ID: gen 	diff_miss_`code'er  = `code'er - L.`code'er
 	bys ID: replace	diff_miss_`code'er  = `code'er - L2.`code'er if L.`code'er>=. & mi(diff_miss_`code'er) 
 	bys ID: replace	diff_miss_`code'er  = `code'er - L3.`code'er if L2.`code'er>=. & mi(diff_miss_`code'er)	
-	la var 	diff_miss_`code'er	"1st diff (ever had - raw data) (adj. for gaps) of `code'"
+	la var 			diff_miss_`code'er	"1st diff (ever had - raw data) (adj. for gaps) of `code'"
 	}
 	
 	
@@ -282,3 +291,7 @@ sum 	ageatdeath ageatdeathx radage
 drop 	ageatdeath ageatdeathx
 ++
 */
+
+
+
+

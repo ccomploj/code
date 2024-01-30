@@ -31,10 +31,9 @@ timer on 1 				// counts the duration of file computation
 ****************************************************************************************************
 ***define folder locations***
 loc data 	"SHARE"
-loc cv 		"X:/My Documents/XdrvData/SHARE/" 	// main folder location (adjust to HRS or other)
-loc h_data 	"`cv'SHAREdata/harmon/"				// harmonized data folder location
-*loc out 	"`cv'SHAREoutput/"					// output folder location (adjust saving location 
-												// if different path desired)
+loc cv 		"X:/My Documents/XdrvData/`data'/" 	// main folder location (adjust to HRS or other)
+loc h_data 	"`cv'`data'data/harmon/"			// harmonized data folder location
+loc out 	"`cv'`data'output/"					// output folder location (e.g. for output)
 												
 ***Bringing in Core Data***
 **Harmonized data**
@@ -47,7 +46,7 @@ use "`h_data'H_SHARE_f.dta"					  // choose dataset
 **other data**
 *[append other datasets (e.g. from individual waves of HRS-type study) using the available identifiers]
 
-**generate specific identifiers**
+**generate survey-specific identifiers**
 gen 	countryID 	= substr(mergeid, 1,2) 
 gen 	id  		= hhid + pn 				// note id is not unique
 egen	panelid 	= group(countryID id)	
