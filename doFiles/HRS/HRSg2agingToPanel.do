@@ -283,7 +283,6 @@ la var 	male		"male"
 
 tab 	raeducl, gen(educ_) 				// create dummies from categorical variable
 
-
 loc 	droplist "ragender" 				// drop variables that are not needed
 drop 	`droplist'
 
