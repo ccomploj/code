@@ -99,9 +99,13 @@ pause // to continue after a pause, type "q" and enter; browse the data using -b
 ****************************************************************************************************
 ***move r, h, hh indicators at the end of varname (for reshape operation)***
 *describe r* h* hh*, simple
+rename 	(r(##)*) (*[2]r#[1])	// respondent (2-digit wave)
 rename 	(r(#)*) (*[2]r#[1])		// respondent
-rename 	(h(#)*) (*[2]h#[1])		// household
-rename 	(hh(#)*) (*[2]hh#[1]) 	// household
+rename 	(h(##)*) (*[2]h#[1])	// household (2-digit wave)
+rename 	(h(#)*) (*[2]h#[1])		// household 
+rename 	(hh(##)*) (*[2]hh#[1]) 	// household (2-digit wave)
+rename 	(hh(#)*) (*[2]hh#[1]) 	// household 
+rename 	(s(##)*) (*[2]s#[1])	// spouse (2-digit wave)
 rename 	(s(#)*) (*[2]s#[1])	 	// spouse
 *describe r* h* hh* s*  , simple	  
 
@@ -147,7 +151,7 @@ loc		keeplist "`keeplist' `vr'`i'" // append each variable with wave indicator t
 }
 di 		"`keeplist'"
 **keep only locals that are existing variables (e.g. missing mstat3-var causes errors) (details at [a1])**
-isvar 	`keeplist'  	// keeps only local macros that actually exist, stored as "r(varlist)"
+isvar 	`keeplist'  	// keeps only local macros that actually exist, stored as "r(varlist)"; see top of file
 display "`r(varlist)'"
 loc 	vrlistset "`r(varlist)'"
 loc 	keeplist2 "" 	// other survey-specific variables (e.g. eligibility to pension program)
