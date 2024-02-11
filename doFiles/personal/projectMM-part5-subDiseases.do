@@ -1,7 +1,7 @@
 *note: include this file into part5 of the data geneation file using -do- or -include- in Stata. -do- forgets the defined locals
 *note: locals used in this file NEED to be defined inside this file if included using -do-. If included using -include-, this issue is not present.
 
-**# Bookmark #1: important! Check that in your dataset the following operations occur in a previous step
+**# Bookmark #1: important! Check that in your main do file the following operations occur in a previous step:
 
 *rename 	hiper osteoer // hipe is used in replacement of osteoer
 
@@ -78,8 +78,7 @@ gen d_`var' = rx`var'r==1       if rx`var'r<.  // `var'er==1 		// |
 */
 
 	**# Bookmark #1 ** reorder variables inside dataset 		
-	order rx* d_*, after(age)
-		
+	order rx* d_*, after(age)	
 
 **"any disease", # of diseases missing, # of diseases present, multimorbidity***
 loc 	alldiseases "`eitherorlist' `onlyeverhadlist' `onlymedlist'"
