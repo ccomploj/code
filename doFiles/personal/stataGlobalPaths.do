@@ -69,7 +69,7 @@ gl myFolder "G:/My Drive/drvData/CHARLS"
 }
 if "`c(username)'" == "P307344" {
 gl myFolder X:\My Documents\XdrvData\CHARLS
-gl 	outgithubNRPS 	"X:\My Documents\XdrvData\CHARLS\files\1-NRPS" // new output path (saves files directly on document after cloning repo)
+*gl 	outgithubNRPS 	"X:\My Documents\XdrvData\CHARLS\files\1-NRPS" // new output path (saves files directly on document after cloning repo)
 *gl	myGoogle "X:\My Documents\XdrvData\CHARLS"
 *gl outpath  "//Client/G$/Shared drives/sharedStefan/---CHARLS/1-NRPS/outFiles" // get G on UWP on my PC
 
