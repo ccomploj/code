@@ -69,8 +69,8 @@ gl myFolder "G:/My Drive/drvData/CHARLS"
 }
 if "`c(username)'" == "P307344" {
 gl myFolder X:\My Documents\XdrvData\CHARLS
-*gl 	outgithubNRPS 	"X:\My Documents\XdrvData\CHARLS\files\1-NRPS" // new output path (saves files directly on document after cloning repo)
-gl	outgithubNRPS  "\\Client\C$\Users\User/Documents/GitHub/1-projectNRPS-github/files" // save directly from UWP to PC
+gl 	outgithubNRPS 	"X:\My Documents\XdrvData\CHARLS\files\1-NRPS" // new output path (saves files directly on document after cloning repo)
+*gl	outgithubNRPS  "\\Client\C$\Users\User/Documents/GitHub/1-projectNRPS-github/files" // save directly from UWP to PC
 *gl	myGoogle "X:\My Documents\XdrvData\CHARLS"
 }
 
