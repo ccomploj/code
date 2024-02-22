@@ -32,6 +32,7 @@ di 	"`agethreshold' `h_data'"
 	la var 	cognitionstd 	"std(total cognition)"
 	la var  demener  		"has dementia"	
 	
+	gen 	rxdemenr = . // medication
 
 	***correct specific variables (carry forward report after onset)**
 	local carryforwardlist "hibp diab heart lung osteo cancr strok arthr demen" // hiper psych (if disease is missing, this should work nevertheless)
