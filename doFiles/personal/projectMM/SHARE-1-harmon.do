@@ -316,11 +316,9 @@ xtset 		ID wave
 	la de 	wavel 1 "2004 wave" 2 "2006/07 wave" 3 "2008/09 wave" 4 "2011/12 wave" 5 "2013 wave" 6 "2015 wave" 7 "2017 wave" 8 "2019/20 wave" , replace
 	la val 	wave wavel
 	*/
-	
-	
-	
-**# Bookmark #1 *rename 	hiper osteoer (no longer used hip fracture)
-replace osteoer = . 
+		
+	**# Bookmark #1 *rename 	hiper osteoer (no longer used hip fracture)
+	replace osteoer = . 
 	
 save		"`h_data'H_`data'_panel.dta", replace // check if appeared in correct folder!
 
