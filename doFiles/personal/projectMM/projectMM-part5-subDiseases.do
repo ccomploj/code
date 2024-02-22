@@ -27,7 +27,7 @@ di 	"`agethreshold' `h_data'"
 	egen 	cognition_total = rowtotal(tr20r_wtd orientr_wtd)
 	egen 	cognitionstd = std(cognition_total)
 	replace cognitionstd = . if mi(tr20r) | mi(orientr)
-	gen 	demner = (cognitionstd<0) if cognitionstd<. 
+	gen 	demener = (cognitionstd<0) if cognitionstd<. 
 	la var 	cognition_total "Cognition Total"
 	la var 	cognitionstd 	"std(total cognition)"
 	la var  demener  		"has dementia"	

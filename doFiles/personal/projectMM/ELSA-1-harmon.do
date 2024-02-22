@@ -135,28 +135,14 @@ pause
 **note: select first (a) time-varying variables. Below at (b) you can select time-invariant variables.
 **note: add -r-, -s-, or -h- at the end of each selected variable**
 **note: make sure all variables are inserted correctly (e.g. higovr->higov will reshape in an empty column higov)**
-**note: the order here is identical to the codebook in g2aging**
-	
-// 	***(a) time-variant variables***
-// 	loc 	disease "hibper hibpes diaber diabes cancrer cancres lunger lunges hearter heartes stroker strokes arthrer arthres hiper hipes osteoer osteoes alzher alzhes demener demenes psyches psycher" //diseases here (ever had)
-// 	loc 	disease1 "rxhibpr rxhibps rxdiabr rxdiabs trcancrr trcancrs rxlungr rxlungs trdepresr trdepress rxosteor rxosteos rxbldthnr rxbldthns"  // diseases here taking meds
-// 	loc 	disease2 "diagdiabs diagstroks diagarthrs diagcancrs diagchfs daigpsychs diagdemens diagalzhs" // age first diagnosed spouse (something goes wrong here)
-// 	loc 	vrb 	"shltr iadlar `disease' `disease1' `disease2'"						// health
-// 	loc 	vrq		"cesdr"										// psychosocial  //
-// 	loc 	vrlist	`vra' `vrb' `vrc' `vrd' `vre' `vrf' `vrg' `vrh' `vri' `vrj' `vrl' `vrm' `vro' `vrp' `vrq'
-// 	***(b) time-invariant variables***
-// 	loc 	xa 		"inw? rabyear radyear ragender raeducl"		
-// 	loc 	xb 		"raccrooms raccnpeople raccbooks raccbath raccwaterc raccwaterh racctoilet raccheating ramaoccup" // childhood SES
-// 	loc 	xc		"rachshlt ramomeduage radadeduage ramarela"
-// 	loc 	xd 		"radiagdiab radiagstrok radiagarthr radiagcancr radiagchf radiagpsych radiagdemen radiagalzh"	
-	
+**note: the order here is identical to the codebook in g2aging**	
 
 ***(a) time-variant variables***
 loc 	xtra	"hhresphh cplh iwyr iwmr iwstatr iwstats"	// general response info in demographics section
 loc 	vra 	"mstatr nhmlivr ruralh ageyr     `xtra'"		// demographics, identifiers, weights
 	loc 	d_everhad "hibper diaber cancrer lunger hearter stroker arthrer  hiper kidneyer   psycher" //  osteoer
 	*loc 	d_sincelw "hrtattr strokr cancrr hipr" /*these are already incorporated in d_everhad*/
-	loc 	d_agediag "radiaghibp radiagdiab radiagcancr radiaglung radiagheart radiagstrok radiagarthr  radiaghip radiagpsych radiagosteo  radiagkidney" // radiagpsych /*these are time-invariant*/
+	loc 	d_agediag "radiaghibp radiagdiab radiagcancr radiaglung radiagheart radiagstrok radiagarthr  radiaghip radiagpsych radiagosteo  radiagkidney" 
 	loc 	d_medictn "rxhibpr rxdiabr rxheartr rxlungr rxpsychr rxosteor rxcancrr rxstrokr rxarthrr"
 loc 	vrb 	"shltr hlthlmar hlthlmr iadlar drinklr smokenr `d_everhad' `d_sincelw' `d_medictn'"	// health
 loc 	vrc 	"higovr"										// healthcare utilization and insurance
