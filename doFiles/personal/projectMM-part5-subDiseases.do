@@ -34,14 +34,14 @@ di 	"`agethreshold' `h_data'"
 	***Generate additional Variables:***
 	// cognition
 	sum 	tr20r orientr
+		egen tr20rstd = std(tr20r)
+		*egen ser7r = std(ser7r)
+		egen orientrstd = std(orientr)
 	gen 	tr20r_wtd   = tr20r  / 20 * 100
 	gen  	orientr_wtd = orientr / 4 * 100
 	egen 	cognition_total = rowtotal(tr20r_wtd orientr_wtd)
 	egen 	cognitionstd = std(cognition_total)
 	replace cognitionstd = . if mi(tr20r) | mi(orientr)
-		egen tr20rstd = std(tr20r)
-		egen ser7r = std(ser7r)
-		egen orientr = std(orientr)
 	gen 	cogimpaired = (cognitionstd<0) if cognitionstd<. 
 	la var 	cognition_total "Cognition Total"
 	la var 	cognitionstd 	"std(total cognition)"
