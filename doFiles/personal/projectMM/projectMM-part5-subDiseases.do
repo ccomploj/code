@@ -35,7 +35,6 @@ di 	"`agethreshold' `h_data'"
 	// cognition
 	sum 	tr20r orientr
 		egen tr20rstd = std(tr20r)
-		*egen ser7r = std(ser7r)
 		egen orientrstd = std(orientr)
 	gen 	tr20r_wtd   = tr20r  / 20 * 100
 	gen  	orientr_wtd = orientr / 4 * 100
