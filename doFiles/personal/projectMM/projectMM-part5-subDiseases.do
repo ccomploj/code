@@ -18,8 +18,23 @@ di 	"`agethreshold' `h_data'"
 *** list of diseases ***
 ************************
 
+	***dementia*** 
+	sum 	tr20r orientr
+		egen tr20rstd = std(tr20r)
+		egen orientrstd = std(orientr)
+	gen 	tr20r_wtd   = tr20r  / 20 * 100
+	gen  	orientr_wtd = orientr / 4 * 100
+	egen 	cognition_total = rowtotal(tr20r_wtd orientr_wtd)
+	egen 	cognitionstd = std(cognition_total)
+	replace cognitionstd = . if mi(tr20r) | mi(orientr)
+	gen 	demner = (cognitionstd<0) if cognitionstd<. 
+	la var 	cognition_total "Cognition Total"
+	la var 	cognitionstd 	"std(total cognition)"
+	la var  demener  		"has dementia"	
+	
+
 	***correct specific variables (carry forward report after onset)**
-	local carryforwardlist "hibp diab heart lung osteo cancr strok arthr" // psych (if disease is missing, this should work nevertheless)
+	local carryforwardlist "hibp diab heart lung osteo cancr strok arthr demen" // hiper psych (if disease is missing, this should work nevertheless)
 	foreach var of local carryforwardlist{
 	rename 		rx`var'r 	rx`var'r2 	
 	rename 		  `var'er  	  `var'er2  
@@ -30,22 +45,7 @@ di 	"`agethreshold' `h_data'"
 	drop `var'er2 rx`var'r2
 	}
 	
-	***define dementia*** 
-	***Generate additional Variables:***
-	// cognition
-	sum 	tr20r orientr
-		egen tr20rstd = std(tr20r)
-		egen orientrstd = std(orientr)
-	gen 	tr20r_wtd   = tr20r  / 20 * 100
-	gen  	orientr_wtd = orientr / 4 * 100
-	egen 	cognition_total = rowtotal(tr20r_wtd orientr_wtd)
-	egen 	cognitionstd = std(cognition_total)
-	replace cognitionstd = . if mi(tr20r) | mi(orientr)
-	gen 	cogimpaired = (cognitionstd<0) if cognitionstd<. 
-	la var 	cognition_total "Cognition Total"
-	la var 	cognitionstd 	"std(total cognition)"
-	la var  cogimpaired  	"has dementia"	
-	
+
 	
 ***either-or condition***
 ** r has disease: either "ever told by doctor" or "currently taking med for"**
@@ -77,7 +77,7 @@ loc eitherorlist	"`eitherorlist' d_`var'" /*creates a local macro that appends n
 
 **# Bookmark #2 Note: left out kidney in first analysis in SHARE because this is available only from w6-w8, messing up d_miss
 **only ever had (these diseases have no medication)**
-loc onlyeverhad 	"cancr strok arthr"		  // kidney
+loc onlyeverhad 	"cancr strok arthr demen"	 // kidney
 foreach var of local onlyeverhad {
 gen 	d_`var' = 	`var'er==1 	if `var'er<.	/*only one condition*/
 la var 	d_`var' 	"(only) ever had `var'"

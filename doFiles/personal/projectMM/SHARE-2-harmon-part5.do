@@ -195,7 +195,6 @@ la val 	raeducl raeducll
 loc 	droplist 	"ragender" 			// drop variables not needed
 drop 	`droplist'
 // B: health 
-rename 	hiper osteoer
 // C: healthcare use and insurance
 // D: cognition
 // E: financial and housing Wealth

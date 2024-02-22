@@ -149,7 +149,7 @@ pause
 ***(a) time-variant variables***
 loc 	xtra	"hhresphh cplh iwyr iwmr iwstatr iwstats"	// general response info in demographics section
 loc 	vra 	"mstatr nhmlivr ruralh ageyr     `xtra'"		// demographics, identifiers, weights
-	loc 	d_everhad "hibper diaber cancrer lunger hearter stroker arthrer  hiper kidneyer   psycher" //  osteoer
+	loc 	d_everhad "hibper diaber cancrer lunger hearter stroker arthrer  hiper kidneyer   psycher osteoer" //  
 	*loc 	d_sincelw "hrtattr strokr cancrr hipr" /*these are already incorporated in d_everhad*/
 	loc 	d_agediag "radiaghibp radiagdiab radiagcancr radiaglung radiagheart radiagstrok radiagarthr  radiaghip radiagpsych radiagosteo  radiagkidney" // radiagpsych /*these are time-invariant*/
 	loc 	d_medictn "rxhibpr rxdiabr rxheartr rxlungr rxpsychr rxosteor rxcancrr rxstrokr rxarthrr"
@@ -319,6 +319,8 @@ xtset 		ID wave
 	
 	
 	
+**# Bookmark #1 *rename 	hiper osteoer (no longer used hip fracture)
+replace osteoer = . 
 	
 save		"`h_data'H_`data'_panel.dta", replace // check if appeared in correct folder!
 
