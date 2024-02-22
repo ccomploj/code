@@ -11,11 +11,7 @@
 ***********************
 macro list 
 di 	"`agethreshold' `h_data'"
-*tab 		cohortmin
-egen 		cohortmin5 	= cut(agemin), at (`agethreshold',55,60,65,70) // ,75,80 (used)
-la de 		cohortl5 `agethreshold' "`agethreshold'-54" 55 "55-59" 60 "60-64" 65 "65+"       
-la val 		cohortmin5 cohortl5 // labels value labels
-*tab agemin cohortmin5 
+
 
 
 ************************
