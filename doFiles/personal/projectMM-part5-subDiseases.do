@@ -30,6 +30,23 @@ di 	"`agethreshold' `h_data'"
 	drop `var'er2 rx`var'r2
 	}
 	
+	***define dementia*** 
+	***Generate additional Variables:***
+	// cognition
+	sum 	tr20r orientr
+	gen 	tr20r_wtd   = tr20r  / 20 * 100
+	gen  	orientr_wtd = orientr / 4 * 100
+	egen 	cognition_total = rowtotal(tr20r_wtd orientr_wtd)
+	egen 	cognitionstd = std(cognition_total)
+	replace cognitionstd = . if mi(tr20r) | mi(orientr)
+		egen tr20rstd = std(tr20r)
+		egen ser7r = std(ser7r)
+		egen orientr = std(orientr)
+	gen 	cogimpaired = (cognitionstd<0) if cognitionstd<. 
+	la var 	cognition_total "Cognition Total"
+	la var 	cognitionstd 	"std(total cognition)"
+	la var  cogimpaired  	"has dementia"	
+	
 	
 ***either-or condition***
 ** r has disease: either "ever told by doctor" or "currently taking med for"**
