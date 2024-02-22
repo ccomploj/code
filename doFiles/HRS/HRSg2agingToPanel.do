@@ -161,14 +161,14 @@ keep 	`idlist' `vrlistset' `xlist' `keeplist2'
 ***(I) store labels***
 display "`vrlistset'"
 loc vlabellist ""
-foreach v of local vrlistset { 	/*use only the variables that actually exist*/
+foreach v of local vrlistset { 	/*use only the variables that actually exist as vars*/
 local `v'label: variable label `v'	/*store the labels of these variables into "varnamer(/s/h)#"*/
 local `v'label = substr("``v'label'", strpos("``v'label'", " ") + 1, .) /*use only substring of label*/
 display "``v'label'"
 label variable `v' "``v'label'" 	/*relabel the variable with the new substring (without wave number)*/
 }
 des
-**assign a label of a variable across waves to a single local**
+**copy labels of a variable across waves to a single local**
 **note: in a loop, the labels of varnamer1 varnamer2, ., varnamerT are here used to define a single local 
 *		macro. This local macro will then be used to assign it as a label to the new variable varnamer(/s/h)
 **note: this loop could be written differently. Currently the label of the last varname available (e.g. 

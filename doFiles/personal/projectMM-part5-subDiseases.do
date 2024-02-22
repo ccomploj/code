@@ -29,6 +29,7 @@ foreach var of local eitheror {
 	**# Bookmark #C recording variable as strictly increasing: 
 	clonevar			rx`var'r2 = rx`var'r // generate strictly increasing (in time) medication use
 	bys ID: 	replace rx`var'r2 = max(rx`var'r2[_n-1], rx`var'r2) if inwt==1 // medication use !mi(rx`var'r): does not work well bc variable will be 0 if "ever had" is 0 and "medication" is missing
+	bys ID: 	replace `var'er = max(`var'er[_n-1], `var'er) if inwt==1  // ever had: Change also in "onlyeverhad"	(should not replace in most surveys)
 gen 	d_`var' = 	`var'er==1 | rx`var'r2==1          if `var'er<. | rx`var'r2<. // strictly incr. meds
 *gen 	d_`var' = 	`var'er==1 | rx`var'r==1           if `var'er<. | rx`var'r<. 
 la var 	d_`var'	 	"ever had | taking meds for `var'"
@@ -59,7 +60,7 @@ loc eitherorlist	"`eitherorlist' d_`var'" /*creates a local macro that appends n
 loc onlyeverhad 	"cancr strok arthr"		  // kidney
 foreach var of local onlyeverhad {
 **# Bookmark #C2
-	*bys ID: replace `var'er = max(`var'er[_n-1], `var'er) if inwt==1  // ever had: Change also in "onlyeverhad"
+	bys ID: replace `var'er = max(`var'er[_n-1], `var'er) if inwt==1  // ever had: Change also in "onlyeverhad" (should not replace in most surveys)
 gen 	d_`var' = 	`var'er==1 	if `var'er<.	/*only one condition*/
 la var 	d_`var' 	"(only) ever had `var'"
 loc onlyeverhadlist "`onlyeverhadlist' d_`var'" 
