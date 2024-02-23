@@ -9,7 +9,7 @@ set graphics on
 
 
 ***choose data***
-loc data "ELSA"
+loc data "SHARE"
 
 ***define folder locations***
 if "`c(username)'" == "P307344" { // UWP server
@@ -58,6 +58,7 @@ loc wavelast 		"14" 	// select survey-specific last wave
 loc ptestname 		"cesdr"
 loc pthreshold		"3"
 	keep 	if hacohort<=5 	
+*	keep if wave>2 & wave<14 // cognitive measures not consistently available
 }	
 if "`data'"=="SHAREELSA" {
 loc agethreshold 	"50" // select survey-specific lower age threshold
@@ -101,9 +102,8 @@ loc sample 		"sfull" // sbalanced
 
 
 *** +++++++++++++++++++ histograms of dependent variable +++++++++++++++++++ ***
-*loc sample	"sfull"
 loc 	y "d_count"
-foreach y in "d_count" "diff_d_count" {
+foreach y in "d_count" "diff_d_count" "cognitionstd" {
 hist `y'	if `sample'==1, `opt_global' 
 gr export 	"$outpath/fig/`saveloc'/g_hist_`sample'_`y'.jpg", replace
 }
@@ -178,31 +178,31 @@ drop tempvar
 
 loc y "d_count"
 loc x "age"
-loc sample "male==0"
 loc ylabel: variable label `y'
-** scatter count by age **
-preserve 
-collapse (mean) `y'=`y' if `sample'==1, by(`x') // if age>`agethreshold'
-scatter `y' `x' , ytitle("mean `ylabel'")
-gr export 	"$outpath/fig/main/g_byage_`sample'_`y'.jpg", replace					
-restore
+	/** scatter count by age **
+	preserve 
+	collapse (mean) `y'=`y' if `sample'==1, by(`x') // if age>`agethreshold'
+	scatter `y' `x' , ytitle("mean `ylabel'")
+	gr export 	"$outpath/fig/main/g_byage_`sample'_`y'.jpg", replace					
+	restore
+	*/
 	** scatter count by age by baseline count OR onset count **
 loc attime "d_countatfirstobs" 
 preserve
 collapse (mean) `y'=`y' if `sample'==1, by(`x' `attime')  
 twoway (connected `y' `x' if `attime'==0) (connected `y' `x' if `attime'==1) (connected `y' `x' if `attime'==2) (connected `y' `x' if `attime'==3) (connected `y' `x' if `attime'==4) (connected `y' `x' if `attime'==5), ytitle("mean `ylabel'") legend(order(1 "0 diseases at baseline" 2 "1 disease at baseline" 3 "2 diseases at baseline" 4 "3 diseases at baseline" 5 "4 diseases at baseline")) // if age>50; only plot 5 
-gr export 	"$outpath/fig/main/g_byage_`sample'_`y'_bycountatfirstobs.jpg", replace			
+gr export 	"$outpath/fig/main/g_byage-countatfirstobs_`sample'_`y'.jpg", replace			
 restore
 *STOP
 	** scatter count by age by baseline count OR onset count **
 loc attime "d_countatonset" 
 preserve
 collapse (mean) `y'=`y' if `sample'==1, by(`x' `attime')  
-twoway (connected `y' `x' if `attime'==0) (connected `y' `x' if `attime'==1) (connected `y' `x' if `attime'==2) (connected `y' `x' if `attime'==3) (connected `y' `x' if `attime'==4) (connected `y' `x' if `attime'==5), ytitle("mean `ylabel'") legend(order(1 "1 disease at onset" 2 "2 disease at onset" 3 "3 diseases at onset" 4 "4 diseases at onset" 5 "4 diseases at onset")) // if age>50; only plot 5 
-gr export 	"$outpath/fig/main/g_byage_`sample'_`y'_bycountatonset.jpg", replace			
+twoway (connected `y' `x' if `attime'==0) (connected `y' `x' if `attime'==1) (connected `y' `x' if `attime'==2) (connected `y' `x' if `attime'==3) (connected `y' `x' if `attime'==4) (connected `y' `x' if `attime'==5), ytitle("mean `ylabel'") legend(order(1 "1 disease at onset" 2 "2 diseases at onset" 3 "3 diseases at onset" 4 "4 diseases at onset" 5 "4 diseases at onset")) // if age>50; only plot 5 
+gr export 	"$outpath/fig/main/g_byage-countatonset_`sample'_`y'.jpg", replace			
 restore
 pause
-*STOP
+STOP
 */			
 
 
@@ -216,10 +216,12 @@ loc 	 ylabel: var label `y'
 loc 	 timevar "timesincefirstobs" // timesincefirstobs_yr | time | timesincefirstobs
 collapse (mean) `y'_mean = `y' 	(count) `y'_freq = `y' if `sample'==1, by(cohortmin5 `timevar') // & inw1==1 & everdead==0
 xtset 	 cohortmin5 `timevar'
-loc 	 y2 	"`y'_mean"	
-	di "`y2'"
-	sum `y2'
-xtline 	 `y2', overlay i(cohortmin5) t(`timevar') // ytitle("mean `ylabel'") `opt_global'
+loc 	 y 	"`y'_mean"	
+	di "`y'"
+	sum `y'
+xtline 	 `y', overlay i(cohortmin5) t(`timevar') ytitle("mean `ylabel'") `opt_global'
+*	loc x "timesincefirstobs"
+*	twoway (connected `y' `x' if cohortmin5==`agethreshold') (connected `y' `x' if cohortmin5==55) (connected `y' `x' if cohortmin5==60) (connected `y' `x' if cohortmin5==65) , ytitle("mean `ylabel'") legend(order(1 "baseline age 50-54" 2 "baseline age 55-59" 3 "baseline age 60-64" 4 "baseline age 65-69")) // if age>50; only plot 5 
 gr export 	"$outpath/fig/main/g_bytime-cohortmin5_`sample'_d_count.jpg", replace
 qui log close log
 pause	
@@ -253,10 +255,15 @@ margins 	`timevar', noestimcheck // atmeans
 marginsplot, xdimension(`timevar') ytitle("`ylabel'") note("Notes: This marginsplot uses the following sample: `samplelabel' and no controls." "The underlying regression is: `reg'")  // xla(, ang(45))  ytitle("`ylabel'")
 gr export 	"$outpath/fig/`saveloc'/g_bytime_`sample'_`y'.jpg", replace
 */
+	**with controls**
+	`reg'	`y' i.`timevar'##male `ctrls' if `sample' // with controls
+	margins 	`timevar'#raeducl, noestimcheck 
+	marginsplot, xdimension(`timevar') ytitle("`ylabel'") note("Notes: This marginsplot uses the following sample: `samplelabel'" "and no controls." "The underlying regression is: `reg'") // xla(, ang(45))
+	gr export 	"$outpath/fig/`saveloc'/g_bytime_`sample'_`y'_bymale.jpg", replace
 **with controls**
 `reg'	`y' i.`timevar'##raeducl `ctrls' if `sample' // with controls
 margins 	`timevar'#raeducl, noestimcheck 
-marginsplot, xdimension(`timevar') ytitle("`ylabel'") note("Notes: This marginsplot uses the following sample: `samplelabel' and the following controls: `ctrls'." "The underlying regression is: `reg'") // xla(, ang(45))
+marginsplot, xdimension(`timevar') ytitle("`ylabel'") note("Notes: This marginsplot uses the following sample: `samplelabel'" "and the following controls: `ctrls'." "The underlying regression is: `reg'") // xla(, ang(45))
 gr export 	"$outpath/fig/`saveloc'/g_bytime_`sample'_`y'_withctrls.jpg", replace
 	*qui log close log
 */	

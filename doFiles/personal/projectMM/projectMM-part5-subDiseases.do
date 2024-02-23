@@ -43,8 +43,8 @@ di 	"`agethreshold' `h_data'"
 	rename 		  `var'er  	  `var'er2  
 	clonevar	rx`var'r =  rx`var'r2
 	clonevar  	  `var'er  =  `var'er2
-	bys ID: 	replace rx`var'r2 = max(rx`var'r2[_n-1], rx`var'r2)   if inwt==1 // medication use !mi(rx`var'r): does not work well bc variable will be 0 if "ever had" is 0 and "medication" is missing
-	bys ID: 	replace `var'er2  = max(  `var'er2[_n-1],   `var'er2) if inwt==1  // ever had: Change also in "onlyeverhad"	(should not replace in most surveys)
+	bys ID: 	replace rx`var'r = max(rx`var'r[_n-1], rx`var'r)   if inwt==1 // medication use !mi(rx`var'r): does not work well bc variable will be 0 if "ever had" is 0 and "medication" is missing
+	bys ID: 	replace `var'er  = max(  `var'er[_n-1],   `var'er) if inwt==1  // ever had: Change also in "onlyeverhad"	(should not replace in most surveys)
 **# Bookmark #1 (correction not yet successful)
 	*	replace rx`var'r = 0 if !mi(rx`var'r) &  `var'er==0 // if someone does not have the disease, they should not report taking medications for it 
 	drop `var'er2 rx`var'r2
@@ -82,8 +82,9 @@ loc eitherorlist	"`eitherorlist' d_`var'" /*creates a local macro that appends n
 	
 
 **# Bookmark #2 Note: left out kidney in first analysis in SHARE because this is available only from w6-w8, messing up d_miss
+**# Bookmark #1 Dementia is excluded because definition difficult to make comparable across countries. Option B: could use different tests (but even then those are not consistent across time always)
 **only ever had (these diseases have no medication)**
-loc onlyeverhad 	"cancr strok arthr demen"	 // kidney
+loc onlyeverhad 	"cancr strok arthr"	 // demen kidney
 foreach var of local onlyeverhad {
 gen 	d_`var' = 	`var'er==1 	if `var'er<.	/*only one condition*/
 la var 	d_`var' 	"(only) ever had `var'"

@@ -77,6 +77,7 @@ drop if agemin<`agethreshold'
 ****************************************************************************************************	
 *** definition of global vars ***
 loc sample "sfull"
+set scheme s1color	
 	
 /*** packages needed for regression ***
 ssc install gologit2 // search and install gologit2

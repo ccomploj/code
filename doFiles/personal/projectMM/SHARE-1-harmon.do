@@ -317,8 +317,10 @@ xtset 		ID wave
 	la val 	wave wavel
 	*/
 		
-	**# Bookmark #1 *rename 	hiper osteoer (no longer used hip fracture)
+	**# Bookmark #1 *rename 	hiper osteoer (no longer used hip fracture), only meds
 	replace osteoer = . 
+	
+	
 	
 save		"`h_data'H_`data'_panel.dta", replace // check if appeared in correct folder!
 
