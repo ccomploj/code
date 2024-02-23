@@ -79,13 +79,10 @@ drop if agemin<`agethreshold'
 loc sample "sfull"
 	
 /*** packages needed for regression ***
-<<<<<<< Updated upstream
-=======
 ssc install gologit2 // search and install gologit2
 rnethelp "http://fmwww.bc.edu/RePEc/bocode/o/oparallel.sthlp" // for brant test
 findit spost13 // needed for -mtable-, but also brant test	
 ssc install regoprob2
->>>>>>> Stashed changes
 */
 
 /*** descriptions of new methods ***

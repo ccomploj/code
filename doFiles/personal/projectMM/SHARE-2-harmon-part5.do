@@ -6,7 +6,7 @@ clear all		/*clears all data in memory*/
 
 
 ***define folder locations***
-loc data 		"HRS" // SHARE | ELSA (note for ELSA part5-subDiseases may be incorrect because other diseases are present)
+loc data 		"SHARE" // SHARE | ELSA (note for ELSA part5-subDiseases may be incorrect because other diseases are present)
 loc datalist 	"SHARE HRS ELSA"
 *foreach data of local datalist{
 
