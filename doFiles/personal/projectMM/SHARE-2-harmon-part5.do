@@ -315,7 +315,7 @@ count 	if hacohort	==1 //
 count 	if inw1		==1	// 
 codebook ID, compact 	// 83,310 IDs
 codebook ID, compact 	// 79,420 IDs
-keep 	if agemin<=70 /*exclude all observations from people who are very old when first observed*/
+keep 	if agemin<70 /*exclude all observations from people who are very old when first observed*/
 codebook ID, compact
 log close logSampleselection
 	

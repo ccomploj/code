@@ -95,6 +95,7 @@ la var  agegrp 	"age"
 *tabstat age, by(agegrp) stats(min max)
 
 *** define locals to apply to entire file ***
+set scheme s1color
 loc opt_global 	"scheme(s1color)"
 loc sample 		"sfull" // sbalanced
 
@@ -106,7 +107,7 @@ foreach y in "d_count" "diff_d_count" {
 hist `y'	if `sample'==1, `opt_global' 
 gr export 	"$outpath/fig/`saveloc'/g_hist_`sample'_`y'.jpg", replace
 }
-STOP
+*STOP
 */
 
 *** +++++++++++++++++++ raw mean and se by age-group +++++++++++++++++++ ***
@@ -185,15 +186,15 @@ collapse (mean) `y'=`y' if `sample'==1, by(`x') // if age>`agethreshold'
 scatter `y' `x' , ytitle("mean `ylabel'")
 gr export 	"$outpath/fig/main/g_byage_`sample'_`y'.jpg", replace					
 restore
-** scatter count by age by baseline count OR onset count **
+	** scatter count by age by baseline count OR onset count **
 loc attime "d_countatfirstobs" 
 preserve
 collapse (mean) `y'=`y' if `sample'==1, by(`x' `attime')  
 twoway (connected `y' `x' if `attime'==0) (connected `y' `x' if `attime'==1) (connected `y' `x' if `attime'==2) (connected `y' `x' if `attime'==3) (connected `y' `x' if `attime'==4) (connected `y' `x' if `attime'==5), ytitle("mean `ylabel'") legend(order(1 "0 diseases at baseline" 2 "1 disease at baseline" 3 "2 diseases at baseline" 4 "3 diseases at baseline" 5 "4 diseases at baseline")) // if age>50; only plot 5 
 gr export 	"$outpath/fig/main/g_byage_`sample'_`y'_bycountatfirstobs.jpg", replace			
 restore
-*STOP			
-** scatter count by age by baseline count OR onset count **
+*STOP
+	** scatter count by age by baseline count OR onset count **
 loc attime "d_countatonset" 
 preserve
 collapse (mean) `y'=`y' if `sample'==1, by(`x' `attime')  
@@ -201,7 +202,7 @@ twoway (connected `y' `x' if `attime'==0) (connected `y' `x' if `attime'==1) (co
 gr export 	"$outpath/fig/main/g_byage_`sample'_`y'_bycountatonset.jpg", replace			
 restore
 pause
-STOP
+*STOP
 */			
 
 
@@ -218,7 +219,7 @@ xtset 	 cohortmin5 `timevar'
 loc 	 y2 	"`y'_mean"	
 	di "`y2'"
 	sum `y2'
-*xtline 	 `y2', overlay i(cohortmin5) t(`timevar') // ytitle("mean `ylabel'") `opt_global'
+xtline 	 `y2', overlay i(cohortmin5) t(`timevar') // ytitle("mean `ylabel'") `opt_global'
 gr export 	"$outpath/fig/main/g_bytime-cohortmin5_`sample'_d_count.jpg", replace
 qui log close log
 pause	
@@ -226,19 +227,7 @@ restore
 pause
 *STOP
 */
-/**corresponding regression with tests*
- sample 3
-loc ctrls 	"married male i.raeducl"
-eststo mxtreg: 		qui	xtreg  		`y' ib(`agethreshold').cohortmin5##c.timesincefirstobs `ctrls' if `sample'==1, vce(robust) // or
-eststo mxtologit: 	qui	xtologit  	`y' ib(`agethreshold').cohortmin5##c.timesincefirstobs `ctrls' if `sample'==1, vce(cluster ID) or	
-	*could use gologit here
-*esttab m1 m2 m3 m4, b se nobase la mtitles("xtreg" "xtpoisson" "xtologit" "xtologit or" )
-esttab m*, nobase  // using 	"$outpath/o_cohortmin5_time_`y'" , tex fragment //`opt_sumstat'  
-margins, dydx(timesincefirstobs)
-marginsplot 
-pause
-*STOP
-	*/
+
 
 *** +++ graph by TIME: vars (with and without controlling for covariates) +++ ***
 log using "$outpath/logs/log-g_bytime.txt", text replace name(log)
@@ -256,7 +245,7 @@ loc 	reg 		"xtreg" // xtreg | xtologit is very slow; choice may depend on distri
 	*foreach y of local ylist { /*repeat graph for each selected variable*/
 loc 	ylabel : variable label `y'		/*uses variable label of y*/	
 qui {
-/**without controls**
+**without controls**
 	*qui log using "$outpath/logs/log-g_bytime.txt", text replace name(log) // put here if want to close it everytime regardless of running loop
 	*di 	"timevar: `timevar' | ctrls `ctrls' | y: `y' | ylist `ylist' | sample `sample'"
 	sum `y' `timevar'
@@ -277,7 +266,7 @@ gr export 	"$outpath/fig/`saveloc'/g_bytime_`sample'_`y'_withctrls.jpg", replace
 }
 qui log close log
 pause
-*STOP
+STOP
 */
 	
 	
