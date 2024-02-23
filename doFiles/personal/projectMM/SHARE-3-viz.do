@@ -57,8 +57,18 @@ loc upperthreshold	"85" // select survey-specific upper age threshold
 loc wavelast 		"14" 	// select survey-specific last wave
 loc ptestname 		"cesdr"
 loc pthreshold		"3"
-	keep 	if hacohort<=5 
-	keep 	if wave>=3 // due to cognitive test tr20
+	keep 	if hacohort<=5 	
+}	
+if "`data'"=="SHAREELSA" {
+loc agethreshold 	"50" // select survey-specific lower age threshold
+loc upperthreshold	"85" // select survey-specific upper age threshold	
+loc wavelast 		"9" 	// select survey-specific last wave
+loc ptestname 		"cesdr"
+loc pthreshold		"3"
+	drop if agemin<50  & dataset=="SHARE"
+	drop if agemin<50  & dataset=="ELSA"
+	*drop if wave==3    & dataset=="SHARE" // already dropped
+	drop if hacohort>2 & dataset=="SHARE"  
 }	
 loc t "male"
 drop if agemin<`agethreshold'	
@@ -66,53 +76,6 @@ drop if agemin<`agethreshold'
 
 
 
-***generate (stratification) samples (same for all surveys)***
-gen 	sbalanced 	= (inw_miss==0 | everdead==1)	
-gen 	sneverdead  = (sfull & everdead==0)
-loc 	shealthyatfirstobs "sfull & d_anyatfirstobs==0"
-gen 	shealthyatfirstobs 	= `shealthyatfirstobs' if d_anyatfirstobs<. /*if d_anyatfirstobs missing, we do not know if the ID was healthy or not at baseline, hence this should be missing*/
-
-	**# Bookmark #1	
-	*replace sbalanced = 0 if everiwstatr0==0 | everiwstatr4==0 | everiwstatr9==0 /*this could be adjusted further to cases when iwstatr0 follows "dead" status*/
-
-**varlabels of samples**
-la var 	sbalanced 			"balanced"
-la var 	shealthyatfirstobs  "`shealthyatfirstobs'"
-
-**value labels of samples**
-la de 	shealthyl 	0 "has disease at baseline" 1 "has no disease at baseline"
-la val 	shealthyatfirstobs shealthyl 
-
-
-*** Additional Variables ***
-** post indicator after first onset (observed) **
-gen post = (iwym - firstdate_c1 > 0) if !mi(iwym - firstdate_c1) // first date observed with d_any==1 is set to 0 
-*bro ID wave age firstage firstdate_c1 iwym post* d_any timesincefirstonset // if d_anyever==0
-*tab timesincefirstonset post ,m
-
-**duration since onset**
-gen 	timesincefirstonset = iwym - firstdate_c1 if (iwym - firstdate_c1>=0)
-la var 	timesincefirstonset "time (months) since first disease"	
-
-**duration from *first* onset to death (in years)**
-gen 	time_onsettodeath =  (radym - firstdate_c1)/12
-*gen 	time_onsettodeathx = (raxym - firstdate_c1)/12 
-la var 	time_onsettodeath "years first onset to death (observed)" 
-*la var 	time_onsettodeathx "years first onset to death (observed) (eol module)" 
-
-*bro ID wave radyear raxyear time_ons* firstyear_c1 firstdate_c1 d_any if time_onsettodeathx<0 /*using rad seems more correct than rax, bc no negative values*/
-gen 	time_onsettodeath_age	 = radage-firstage 
-gen 	time_onsettodeath_age_g2 = radage-firstage_g2
-*sum 	radage radyear radmonth raxyear raxmonth time_onsetto*
-li 		ID wave iwym dead d_count firstdate_c1 firstdate_c2 ra?ym time_onsettodeath* in 1/16, compress nola
-*bro 	ID wave iwym dead d_count firstdate_c1 firstdate_c2 ra?ym time_onsettodeath*  if time_onsettodeath<0
-*++
-*/
-pause 	
-
-
-
-		gen 	timesincefirstobs_yr = timesincefirstobs if time==iwyr
 
 
 			

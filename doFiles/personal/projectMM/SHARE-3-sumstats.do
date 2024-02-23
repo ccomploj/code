@@ -54,7 +54,18 @@ loc upperthreshold	"85" // select survey-specific upper age threshold
 loc wavelast 		"14" 	// select survey-specific last wave
 loc ptestname 		"cesdr"
 loc pthreshold		"3"
-	keep 	if hacohort<=5 
+	keep 	if hacohort<=5 	
+}	
+if "`data'"=="SHAREELSA" {
+loc agethreshold 	"50" // select survey-specific lower age threshold
+loc upperthreshold	"85" // select survey-specific upper age threshold	
+loc wavelast 		"9" 	// select survey-specific last wave
+loc ptestname 		"cesdr"
+loc pthreshold		"3"
+	drop if agemin<50  & dataset=="SHARE"
+	drop if agemin<50  & dataset=="ELSA"
+	*drop if wave==3    & dataset=="SHARE" // already dropped
+	drop if hacohort>2 & dataset=="SHARE"  
 }	
 loc t "male"
 drop if agemin<`agethreshold'	
