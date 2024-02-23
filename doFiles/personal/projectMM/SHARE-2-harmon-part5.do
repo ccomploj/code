@@ -6,7 +6,7 @@ clear all		/*clears all data in memory*/
 
 
 ***define folder locations***
-loc data 		"HRS" // SHARE | ELSA (note for ELSA: part5-subDiseases may be incorrect because other diseases are included in measure)
+loc data 		"SHARE" // SHARE | ELSA (note for ELSA: part5-subDiseases may be incorrect because other diseases are included in measure)
 loc datalist 	"SHARE HRS ELSA"
 *foreach data of local datalist{
 
@@ -173,7 +173,7 @@ la de 		cohortl `agethreshold' "`agethreshold'-59" 60 "60-69" 70 "70-79" 80 "80+
 la de 		cohortl5 `agethreshold' "`agethreshold'-54" 55 "55-59" 60 "60-64" 65 "65-69" 70 "70-74" 75 "75-79" 80 "80+"       
 la val 		cohort 		cohortl // labels value labels
 la val 		cohortmin 	cohortl // labels value labels
-la val 		cohortmin5 	cohortl // labels value labels
+la val 		cohortmin5 	cohortl5 // labels value labels
 tab			age		cohort, m
 tab			agemin 	cohort, m
 
