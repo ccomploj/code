@@ -9,7 +9,7 @@ set graphics on
 
 
 ***choose data***
-loc data "SHARE"
+loc data "ELSA"
 
 ***define folder locations***
 if "`c(username)'" == "P307344" { // UWP server
@@ -231,7 +231,6 @@ pause
 
 *** +++ graph by TIME: vars (with and without controlling for covariates) +++ ***
 log using "$outpath/logs/log-g_bytime.txt", text replace name(log)
-**graph by time**
 **# Bookmark #1 Can I do this here with xtologit?
 loc 	timevar 	"timesincefirstobs"
 loc 	ctrls 		"age male"
