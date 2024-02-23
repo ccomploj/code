@@ -6,7 +6,7 @@ clear all		/*clears all data in memory*/
 
 
 ***define folder locations***
-loc data 		"SHARE" // SHARE | ELSA (note for ELSA part5-subDiseases may be incorrect because other diseases are present)
+loc data 		"HRS" // SHARE | ELSA (note for ELSA part5-subDiseases may be incorrect because other diseases are present)
 loc datalist 	"SHARE HRS ELSA"
 *foreach data of local datalist{
 
@@ -286,8 +286,8 @@ use 	"`h_data'H_`data'_panel2.dta", clear // load earlier dataset
 ***********************************
 
 *do 	"C:/Users/User/Documents/GitHub/code/doFiles/personal/projectMM-part5-subDiseases.do" // do does not include locals inside subfile
-*include "C:/Users/User/Documents/GitHub/code/doFiles/personal/projectMM-part5-subDiseases.do" // "include" includes current locals into subfile
-include "https://raw.githubusercontent.com/ccomploj/code/main/doFiles/personal/projectMM/projectMM-part5-subDiseases.do"
+include "C:/Users/User/Documents/GitHub/code/doFiles/personal/projectMM/projectMM-part5-subDiseases.do" // "include" includes current locals into subfile
+*include "https://raw.githubusercontent.com/ccomploj/code/main/doFiles/personal/projectMM/projectMM-part5-subDiseases.do"
 *include "https://github.com/ccomploj/code/blob/b10904f2877ec259d5b3760add674141438686ec/doFiles/personal/projectMM/projectMM-part5-subDiseases.do" // permalink (does not work)
 
 

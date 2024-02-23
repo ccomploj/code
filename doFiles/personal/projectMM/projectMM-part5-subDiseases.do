@@ -18,6 +18,7 @@ di 	"`agethreshold' `h_data'"
 *** list of diseases ***
 ************************
 
+**# Bookmark #2 (adding dementia reduces sample by about half due to missing responses to both tests)
 	***dementia*** 
 	sum 	tr20r orientr
 		egen tr20rstd = std(tr20r)
@@ -35,7 +36,7 @@ di 	"`agethreshold' `h_data'"
 	gen 	rxdemenr = . // medication
 	gen 	radiagdemen = . 
 
-	***correct specific variables (carry forward report after onset)**
+	***correct disease list (carry forward report after onset)**
 	local carryforwardlist "hibp diab heart lung osteo cancr strok arthr demen" // hiper psych (if disease is missing, this should work nevertheless)
 	foreach var of local carryforwardlist{
 	rename 		rx`var'r 	rx`var'r2 	
@@ -44,6 +45,8 @@ di 	"`agethreshold' `h_data'"
 	clonevar  	  `var'er  =  `var'er2
 	bys ID: 	replace rx`var'r2 = max(rx`var'r2[_n-1], rx`var'r2)   if inwt==1 // medication use !mi(rx`var'r): does not work well bc variable will be 0 if "ever had" is 0 and "medication" is missing
 	bys ID: 	replace `var'er2  = max(  `var'er2[_n-1],   `var'er2) if inwt==1  // ever had: Change also in "onlyeverhad"	(should not replace in most surveys)
+**# Bookmark #1 (correction not yet successful)
+	*	replace rx`var'r = 0 if !mi(rx`var'r) &  `var'er==0 // if someone does not have the disease, they should not report taking medications for it 
 	drop `var'er2 rx`var'r2
 	}
 	
@@ -54,6 +57,7 @@ di 	"`agethreshold' `h_data'"
 local eitheror "hibp diab heart lung psych osteo" 
 foreach var of local eitheror { 
 gen 	d_`var' = 	`var'er==1 | rx`var'r==1           if `var'er<. | rx`var'r<. 
+	gen 	d2_`var' = 	`var'er==1           if `var'er<.  
 la var 	d_`var'	 	"ever had | taking meds for `var'"
 loc eitherorlist	"`eitherorlist' d_`var'" /*creates a local macro that appends new var at each iteration*/
 }

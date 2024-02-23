@@ -103,18 +103,17 @@ loc ctrls 	"educ_* male"
 	rename 	raeduclcat2 educ_vocational
 	rename  raeduclcat3 educ_university
 *	sample 1
-*	keep if d_count<6
 /*** ols (suitable only if assuming count approximates unobserved health reasonably well) ***	
 eststo m1: xtreg `y' age `ctrls'  if `sample'==1 , re
 esttab m1 m2, se 
 STOP
 */
-*** Ordinal model with Cross-sectional data: this is NOT considering the panel dimension ***	
+/*** Ordinal model with Cross-sectional data: this is NOT considering the panel dimension ***	
 ** ologit ** 
 eststo m1: ologit 	`y' age `ctrls' if `sample'==1 & d_count<7, vce(robust) // ologit using all waves
 brant, detail // brant only works on ologit; not xtologit. xtologit and ologit are not identical when only 1 time period is used; brant does not work with d_count>=8 because of perfect prediction 
 ** gologit2 ** 
-log using 	"$outpath/logs/log-t-regd_count-age-gologit2.txt", text replace name(gologit2) 
+log using 	"$outpath/logs/log-t-regd_count-age-gologit2`data'.txt", text replace name(gologit2) 
 eststo m2: gologit2 `y' age `ctrls'	if `sample'==1, vce(cluster ID) autofit gamma // cutpoints (intercept) are identical to ologit (but not xtologit)
 qui log close gologit2
 *STOP
@@ -122,13 +121,14 @@ qui log close gologit2
 
 *** Ordinal model with PANEL data: this is NOT considering the panel dimension ***	
 ** regoprob2 **
-log using 	"$outpath/logs/log-t-regd_count-age-regoprob2.txt", text replace name(regoprob2) 
+log using 	"$outpath/logs/log-t-regd_count-age-regoprob2`data'.txt", text replace name(regoprob2) 
 eststo panel1: regoprob2 `y' age `ctrls' if `sample'==1, i(ID) autofit   
 qui log close regoprob2
-STOP
+*STOP
+*/
 
 *** xt-ordered logit ***
-eststo m3: xtologit `y' age `ctrls'	if `sample'==1, vce(cluster ID) // -vce(cl ID)- is equivalent to -robust-
+eststo m3: xtologit `y' age `ctrls'	if `sample'==1, vce(cluster ID)  // -vce(cl ID)- is equivalent to -robust-
 *margins, at(age=(50(2)80))
 *margins, dydx(`marginsvar') // at(male = (1 0)) 
 *marginsplot 
@@ -136,8 +136,10 @@ eststo m3: xtologit `y' age `ctrls'	if `sample'==1, vce(cluster ID) // -vce(cl I
 	 *	sum 	p?
 *mtable, dydx(raeducl) //  at(male = (0 1) raeducl = (1 2 3)) // at(male = (0 1) ) // raeducl = (0 1 2 ))	
 
-esttab panel1 		using "$outpath/t_regd_count-age-regoprob2", tex replace
-esttab m1 m2 panel1 using "$outpath/t_regd_count-age", tex replace
+esttab panel1 		using "$outpath/t_regd_count-age-regoprob2`data'", tex replace
+esttab panel1 		using "$outpath/t_regd_count-age-regoprob2`data'", html replace
+esttab m1 m2 panel1 using "$outpath/t_regd_count-age`data'", tex replace
+esttab m1 m2 panel1 using "$outpath/t_regd_count-age`data'", html replace
 
 
 log close log
