@@ -57,17 +57,6 @@ loc ptestname 		"cesdr"
 loc pthreshold		"3"
 	keep 	if hacohort<=5 	
 }	
-if "`data'"=="SHAREELSA" {
-loc agethreshold 	"50" // select survey-specific lower age threshold
-loc upperthreshold	"85" // select survey-specific upper age threshold	
-loc wavelast 		"9" 	// select survey-specific last wave
-loc ptestname 		"cesdr"
-loc pthreshold		"3"
-	drop if agemin<50  & dataset=="SHARE"
-	drop if agemin<50  & dataset=="ELSA"
-	*drop if wave==3    & dataset=="SHARE" // already dropped
-	drop if hacohort>2 & dataset=="SHARE"  
-}	
 loc t "male"
 drop if agemin<`agethreshold'	
 **********************
@@ -79,13 +68,10 @@ drop if agemin<`agethreshold'
 loc sample "sfull"
 	
 /*** packages needed for regression ***
-<<<<<<< Updated upstream
-=======
 ssc install gologit2 // search and install gologit2
 rnethelp "http://fmwww.bc.edu/RePEc/bocode/o/oparallel.sthlp" // for brant test
 findit spost13 // needed for -mtable-, but also brant test	
 ssc install regoprob2
->>>>>>> Stashed changes
 */
 
 /*** descriptions of new methods ***

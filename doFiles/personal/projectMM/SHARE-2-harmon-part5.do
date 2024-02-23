@@ -35,9 +35,9 @@ use 			"`h_data'/H_`data'_panel.dta", replace
 
 
 	***log entire file***
-	*log using 	"`h_data'logdoSHARE-2-harmonPart5.txt", text replace name(logDofile) // ends w/ -log close logDofile- || in folder location  
-	log using 	"`out'/logdoSHARE-2-harmonPart5.txt", text replace name(logDofile) // ends w/ -log close logDofile- || in dataoutput location
-	*log using 	"G:/My Drive/projects/projectMultimorbidity/outfiles/logs/logdoSHARE-2-harmonPart5.txt", text replace name(logDofile) // ends w/ -log close logDofile- || in specific location 
+	*log using 	"`h_data'logdo`data'-2-harmonPart5.txt", text replace name(logDofile) // ends w/ -log close logDofile- || in folder location  
+	log using 	"`out'/logdo`data'-2-harmonPart5.txt", text replace name(logDofile) // ends w/ -log close logDofile- || in dataoutput location
+	*log using 	"G:/My Drive/projects/projectMultimorbidity/outfiles/logs/logdo`data'-2-harmonPart5.txt", text replace name(logDofile) // ends w/ -log close logDofile- || in specific location 
 	
 	**flexible to dataset**
 	if "`data'"=="CHARLS" {
@@ -238,7 +238,6 @@ corr 	depress_selfrep psycher if wave==2 /*about 0.25 in SHARE in the second wav
 *****************
 *** Attrition *** 
 *****************
-*use	"./SHAREdata/harmon/H_panel2.dta", replace 
 tab 	iwstatr
 gen 	iwstatr0 = (iwstatr==0) if iwstatr<.
 gen 	iwstatr4 = (iwstatr==4) if iwstatr<.
