@@ -11,6 +11,7 @@ set graphics on
 ***choose data***
 loc data "HRS"
 
+
 ***define folder locations***
 if "`c(username)'" == "P307344" { // UWP server
 loc cv 		"X:/My Documents/XdrvData/`data'/"

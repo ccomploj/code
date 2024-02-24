@@ -39,7 +39,7 @@ di 	"`agethreshold' `h_data'"
 	*gen 	demener = (cognitionstd<0) if cognitionstd<. 
 		qui sum cognitionstd, detail
 		local lower_quartile = r(p25)
-		generate demener = cognitionstd < `lower_quartile'	
+		generate demener = cognitionstd < `lower_quartile'	if !mi(cognitionstd)
 	la var 	cognition_total "Cognition Total"
 	*la var cognitionstd 	"std(total cognition)"
 	la var  demener  		"has dementia"	
@@ -67,6 +67,7 @@ di 	"`agethreshold' `h_data'"
 ***either-or condition***
 ** r has disease: either "ever told by doctor" or "currently taking med for"**
 local eitheror "hibp diab heart lung psych osteo" 
+	loc eitherorlist ""
 foreach var of local eitheror { 
 gen 	d_`var' = 	`var'er==1 | rx`var'r==1           if `var'er<. | rx`var'r<. 
 	gen 	d2_`var' = 	`var'er==1           if `var'er<.  
@@ -97,6 +98,7 @@ loc eitherorlist	"`eitherorlist' d_`var'" /*creates a local macro that appends n
 **# Bookmark #1 Dementia is excluded because definition difficult to make comparable across countries. Option B: could use different tests (but even then those are not consistent across time always)
 **only ever had (these diseases have no medication)**
 loc onlyeverhad 	"cancr strok arthr demen"	 // demen kidney
+	loc onlyeverhadlist ""
 foreach var of local onlyeverhad {
 gen 	d_`var' = 	`var'er==1 	if `var'er<.	/*only one condition*/
 la var 	d_`var' 	"(only) ever had `var'"
@@ -119,6 +121,8 @@ gen d_`var' = rx`var'r==1       if rx`var'r<.  // `var'er==1 		// |
 	order rx* d_*, after(age)	
 
 **"any disease", # of diseases missing, # of diseases present, multimorbidity***
+	*loc 	alldiseases 	""
+	*loc 	alldiseasecodes ""
 loc 	alldiseases "`eitherorlist' `onlyeverhadlist' `onlymedlist'"
 loc 	alldiseasecodes "`eitheror' `onlyeverhad' `onlymed'"
 di 		"`alldiseases'" /*(!) check all diseases are shown: if one local is empty, this is simply ignored!*/
@@ -209,7 +213,9 @@ li 		ID wave age d_any firstage in 1/16 /*check correct generation*/
 la var 	firstage 	"age of first onset (observed)"
 
 
-	/**age at first onset, for each disease separately:**
+	**age at first onset, for each disease separately:**
+	di "`alldiseases'"
+	loc 	firstagelist "" 	
 	foreach d of local alldiseases {
 	gen 	first_age 		= age if `d'==1
 	bys ID: egen firstage_`d' = min(first_age)
@@ -231,6 +237,7 @@ la var 	firstage 	"age of first onset (observed)"
 	*di 	"`locallist'"
 	*foreach v of local locallist {
 di 	"`alldiseasecodes'"
+	loc 	radiaglist "" 
 foreach v of local alldiseasecodes {		
 loc 	radiaglist "`radiaglist' radiag`v'" 
 }

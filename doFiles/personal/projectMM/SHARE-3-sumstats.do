@@ -7,6 +7,9 @@ clear all		/*clears all data in memory*/
 
 ***choose data***
 loc data "ELSA"
+loc datalist 	"SHARE HRS ELSA"
+foreach data of local datalist{
+
 
 ***define folder locations***
 if "`c(username)'" == "P307344" { // UWP server
@@ -267,4 +270,4 @@ restore
 */
 */
 
-	
+}	
