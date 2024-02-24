@@ -10,6 +10,8 @@ set graphics on
 
 ***choose data***
 loc data "HRS"
+loc datalist 	"SHARE HRS ELSA"
+foreach data of local datalist{
 
 
 ***define folder locations***
@@ -267,12 +269,11 @@ gr export 	"$outpath/fig/`saveloc'/g_bytime_`sample'_`y'.jpg", replace
 margins 	`timevar'#raeducl, noestimcheck 
 marginsplot, xdimension(`timevar') ytitle("`ylabel'") note("Notes: This marginsplot uses the following sample: `samplelabel'" "and the following controls: `ctrls'." "The underlying regression is: `reg'") // xla(, ang(45))
 gr export 	"$outpath/fig/`saveloc'/g_bytime_`sample'_`y'_withctrls.jpg", replace
-	*qui log close log
 */	
 }
-}
-}
 qui log close log
+}
+}
 pause
 STOP
 */

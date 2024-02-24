@@ -38,7 +38,7 @@ di 	"`agethreshold' `h_data'"
 		gen 	cognitionstd = tr20rstd
 	*gen 	demener = (cognitionstd<0) if cognitionstd<. 
 		qui sum cognitionstd, detail
-		local lower_quartile = r(p25)
+		local lower_quartile = r(p20)
 		generate demener = cognitionstd < `lower_quartile'	if !mi(cognitionstd)
 	la var 	cognition_total "Cognition Total"
 	*la var cognitionstd 	"std(total cognition)"
