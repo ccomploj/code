@@ -155,7 +155,8 @@ loc 	vra 	"mstatr nhmlivr ruralh ageyr     `xtra'"		// demographics, identifiers
 	loc 	d_medictn "rxhibpr rxdiabr rxheartr rxlungr rxpsychr rxosteor rxcancrr rxstrokr rxarthrr"
 loc 	vrb 	"shltr hlthlmar hlthlmr iadlar drinklr smokenr `d_everhad' `d_sincelw' `d_medictn'"	// health
 loc 	vrc 	"higovr"										// healthcare utilization and insurance
-loc 	vrd  	"tr20r orientr"									// cognition
+loc 	xtra2 	"cogimpr verbfr" 
+loc 	vrd  	"tr20r orientr `xtra2'"									// cognition
 loc 	vre		""												// financial and housing wealth
 loc		vrf 	""												// income and consumption
 loc 	vrg 	"hhreshh"										// family structure

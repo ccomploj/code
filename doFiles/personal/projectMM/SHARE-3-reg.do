@@ -56,6 +56,7 @@ loc wavelast 		"14" 	// select survey-specific last wave
 loc ptestname 		"cesdr"
 loc pthreshold		"3"
 	keep 	if hacohort<=5 	
+	keep if wave>=3 & wave<=13 // cognitive measures not consistently available
 }	
 if "`data'"=="SHAREELSA" {
 loc agethreshold 	"50" // select survey-specific lower age threshold
@@ -75,6 +76,12 @@ drop if agemin<`agethreshold'
 ****************************************************************************************************
 *Part 7*: Regression (general)
 ****************************************************************************************************	
+*** additional variables *** 
+tab raeducl, gen(raeduclcat)
+drop 	raeduclcat1
+rename 	raeduclcat2 educ_vocational
+rename  raeduclcat3 educ_university
+
 *** definition of global vars ***
 loc sample "sfull"
 set scheme s1color	
@@ -84,6 +91,7 @@ ssc install gologit2 // search and install gologit2
 rnethelp "http://fmwww.bc.edu/RePEc/bocode/o/oparallel.sthlp" // for brant test
 findit spost13 // needed for -mtable-, but also brant test	
 ssc install regoprob2
+ssc install seqlogit
 */
 
 /*** descriptions of new methods ***
@@ -107,60 +115,117 @@ esttab d_mm* using "$outpath/reg/o_logitbywaved_mm" , `esttab_opt' tex nocons
 */
 *keep if wave==1 & d_count<4
 *** +++ Table: what predicts the count? (ordered model) +++ ***
-loc y 		"d_count"
-loc ctrls 	"educ_* male"
-	tab raeducl, gen(raeduclcat)
-	drop 	raeduclcat1
-	rename 	raeduclcat2 educ_vocational
-	rename  raeduclcat3 educ_university
-		preserve 
-		sample 50
-		keep if d_count<7
 
-/*** ols (suitable only if assuming count approximates unobserved health reasonably well) ***	
-eststo m1: xtreg `y' age `ctrls'  if `sample'==1 , re
-esttab m1 m2, se 
-STOP
-*/
-/*** Ordinal model with Cross-sectional data: this is NOT considering the panel dimension ***	
-** ologit ** 
-eststo m1: ologit 	`y' age `ctrls' if `sample'==1 & d_count<7, vce(robust) // ologit using all waves
-brant, detail // brant only works on ologit; not xtologit. xtologit and ologit are not identical when only 1 time period is used; brant does not work with d_count>=8 because of perfect prediction 
-** gologit2 ** 
-log using 	"$outpath/logs/log-t-regd_count-age-gologit2`data'.txt", text replace name(gologit2) 
-eststo m2: gologit2 `y' age `ctrls'	if `sample'==1, vce(cluster ID) autofit gamma // cutpoints (intercept) are identical to ologit (but not xtologit)
-qui log close gologit2
-*STOP
-*/
+loc y 		"d_count"
+loc ctrls 	"educ_* male"	
+		preserve 
+		*sample 50
+		keep if d_count<7
+		timer clear 1 		
+		timer on 	1 
+	
 
 *** Ordinal model with PANEL data: this is NOT considering the panel dimension ***	
 ** regoprob2 **
+timer clear 2 		
+timer on 	2 
 log using 	"$outpath/logs/log-t-regd_count-age-regoprob2`data'.txt", text replace name(regoprob2) 
-eststo panel1: regoprob2 `y' age `ctrls' if `sample'==1, i(ID) autofit   
+eststo regoprob2: regoprob2 `y' age `ctrls' if `sample'==1, i(ID) autofit   
 qui log close regoprob2
+timer off  	2
+esttab regoprob2 			using "$outpath/t_regd_count-age-regoprob2`data'", tex replace
+esttab regoprob2 			using "$outpath/t_regd_count-age-regoprob2`data'", html replace
 *STOP
 */
 
+*** Ordinal model with Cross-sectional data: this is NOT considering the panel dimension ***	
+** gologit2 ** 
+timer clear 3 		
+timer on 	3 
+log using 	"$outpath/logs/log-t-regd_count-age-gologit2`data'.txt", text replace name(gologit2) 
+eststo gologit2: gologit2 `y' age `ctrls'	if `sample'==1, vce(cluster ID) autofit gamma // cutpoints (intercept) are identical to ologit (but not xtologit)
+qui log close gologit2
+timer off  	3
+esttab gologit2     		using "$outpath/t_regd_count-age-gologit2`data'", tex replace
+esttab gologit2				using "$outpath/t_regd_count-age-gologit2`data'", html replace
+
+** ologit ** 
+log using 		"$outpath/logs/log-t-regd_count-age-ologit`data'.txt", text replace name(ologit) 
+eststo ologit: 	ologit 	`y' age `ctrls' if `sample'==1 & d_count<7, vce(robust) // ologit using all waves
+brant, detail // brant only works on ologit; not xtologit. xtologit and ologit are not identical when only 1 time period is used; brant does not work with d_count>=8 because of perfect prediction 
+qui log close 	ologit 
+esttab ologit 	    		using "$outpath/t_regd_count-age-ologit`data'", tex replace
+esttab ologit				using "$outpath/t_regd_count-age-ologit`data'", html replace
+*STOP
+*/
+
+
 *** xt-ordered logit ***
-eststo m3: xtologit `y' age `ctrls'	if `sample'==1, vce(cluster ID)  // -vce(cl ID)- is equivalent to -robust-
+log using 		"$outpath/logs/log-t-regd_count-age-ologit`data'.txt", text replace name(xtologit) 
+eststo xtologit: xtologit 	`y' age `ctrls'	if `sample'==1, vce(cluster ID)  // -vce(cl ID)- is equivalent to -robust-
+qui log close 	xtologit 
+esttab xtologit 	    	using "$outpath/t_regd_count-age-xtologit`data'", tex replace
+esttab xtologit				using "$outpath/t_regd_count-age-xtologit`data'", html replace
+
 *margins, at(age=(50(2)80))
 *margins, dydx(`marginsvar') // at(male = (1 0)) 
 *marginsplot 
 	 *	predict p0 p1 p2 p3 p4 p5 p6 p7, pr // p9 
 	 *	sum 	p?
 *mtable, dydx(raeducl) //  at(male = (0 1) raeducl = (1 2 3)) // at(male = (0 1) ) // raeducl = (0 1 2 ))	
+*/
 
-esttab panel1 		using "$outpath/t_regd_count-age-regoprob2`data'", tex replace
-esttab panel1 		using "$outpath/t_regd_count-age-regoprob2`data'", html replace
+*** ols (suitable only if assuming count approximates unobserved health reasonably well) ***	
+log using 	"$outpath/logs/log-t-regd_count-age-ologit`data'.txt", text replace name(xtreg) 
+eststo xtreg: xtreg `y' age `ctrls'  if `sample'==1 , re
+qui log close xtreg
+esttab m1 m2, se 
+esttab xtreg using "$outpath/t_regd_count-age-xtreg`data'", tex replace
+esttab xtreg using "$outpath/t_regd_count-age-xtreg`data'", html replace
+*STOP
+*/
+
+esttab xtreg xtologit ologit gologit2 regoprob2 using "$outpath/t_regd_count-age-combined`data'", tex replace
+esttab xtreg xtologit ologit gologit2 regoprob2 using "$outpath/t_regd_count-age-combined`data'", html replace
+
+
+timer 		off  1
+timer 		list 1 2	
+STOP
+
+
+
+*** multinomial logit ***
+log using 	"$outpath/logs/log-t-regd_count-age-mlogit`data'.txt", text replace name(mlogit) 
+eststo mlog1: mlogit d_count age `ctrls' if `sample'==1 & d_count<7, vce(cluster ID)
+log close mlogit
+esttab mlog1 using "$outpath/t-regd_count-cohort-mlogit.tex", b se nobase nogaps replace
+esttab mlog1 using "$outpath/t-regd_count-cohort-mlogit.html", b se nobase nogaps replace
+*STOP
+*/
+
+
+*** sequential logit ***
+log using 	"$outpath/logs/log-t-regd_count-age-seqlogit`data'.txt", text replace name(mlogit) 
+// tab d_count, gen(d_count)
+eststo seqlog1: seqlogit d_count age `ctrls' if `sample'==1 & d_count<7, vce(cluster ID) tree(0 : 1 2 3 4 5 6, 1 : 2 3 4 5 6, 2 : 3 4 5 6, 3 : 4 5 6, 4 : 5 6, 5: 6) ofinterest(age) 
+seqlogitdecomp age, table // at(coh 1.5 south 0 paeduc 12) table
+
+timer 		off  1
+timer 		list 1	
+STOP
+
+
+esttab m2, b se nobase nogaps
+esttab m2 using "$outpath/t-regd_count-cohort-gologit2.html", b se nobase nogaps replace
+
+
+
+
+
 esttab m1 m2 panel1 using "$outpath/t_regd_count-age`data'", tex replace
 esttab m1 m2 panel1 using "$outpath/t_regd_count-age`data'", html replace
 
-
-log close log
-esttab m2, b se nobase nogaps
-esttab m2 using "$outpath/t-regd_count-cohort-gologit2.html", b se nobase nogaps replace
-timer 		off  1
-timer 		list 1	
 
 
 

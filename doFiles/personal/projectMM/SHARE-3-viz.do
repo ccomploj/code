@@ -9,7 +9,7 @@ set graphics on
 
 
 ***choose data***
-loc data "SHARE"
+loc data "HRS"
 
 ***define folder locations***
 if "`c(username)'" == "P307344" { // UWP server
@@ -58,7 +58,8 @@ loc wavelast 		"14" 	// select survey-specific last wave
 loc ptestname 		"cesdr"
 loc pthreshold		"3"
 	keep 	if hacohort<=5 	
-*	keep if wave>2 & wave<14 // cognitive measures not consistently available
+	drop if wave<=2    
+	drop if wave>=14   		
 }	
 if "`data'"=="SHAREELSA" {
 loc agethreshold 	"50" // select survey-specific lower age threshold
@@ -202,7 +203,7 @@ twoway (connected `y' `x' if `attime'==0) (connected `y' `x' if `attime'==1) (co
 gr export 	"$outpath/fig/main/g_byage-countatonset_`sample'_`y'.jpg", replace			
 restore
 pause
-STOP
+*STOP
 */			
 
 
@@ -257,7 +258,7 @@ gr export 	"$outpath/fig/`saveloc'/g_bytime_`sample'_`y'.jpg", replace
 */
 	**with controls**
 	`reg'	`y' i.`timevar'##male `ctrls' if `sample' // with controls
-	margins 	`timevar'#raeducl, noestimcheck 
+	margins 	`timevar'#male, noestimcheck 
 	marginsplot, xdimension(`timevar') ytitle("`ylabel'") note("Notes: This marginsplot uses the following sample: `samplelabel'" "and no controls." "The underlying regression is: `reg'") // xla(, ang(45))
 	gr export 	"$outpath/fig/`saveloc'/g_bytime_`sample'_`y'_bymale.jpg", replace
 **with controls**

@@ -55,6 +55,8 @@ loc wavelast 		"14" 	// select survey-specific last wave
 loc ptestname 		"cesdr"
 loc pthreshold		"3"
 	keep 	if hacohort<=5 	
+	drop if wave<=2    
+	drop if wave>=14   		
 }	
 if "`data'"=="SHAREELSA" {
 loc agethreshold 	"50" // select survey-specific lower age threshold
@@ -70,7 +72,6 @@ loc pthreshold		"3"
 loc t "male"
 drop if agemin<`agethreshold'	
 **********************
-
 
 pause 			// press q+enter to continue after pause or turn off pauses above
 
@@ -202,7 +203,7 @@ loc 	sample 		"sfull" //
 foreach sample in 	"sfull" "shealthyatfirstobs" { //"shealthy"  /*comment out line if single sample*/
 loc 	samplelabel: variable label `sample' /*adds var label to local*/
 loc 	notes 		""
-loc 	notes 		"Notes: The Table shows (number of nonmissing observations) | (mean) | (sd) | The sample used is: `samplelabel'. The sample cohorts that are included are: `hacohortl'" // where cohorts 1 and 2 are included
+*loc 	notes 		"Notes: The Table shows (number of nonmissing observations) | (mean) | (sd) | The sample used is: `samplelabel'. The sample cohorts that are included are: `hacohortl'" // where cohorts 1 and 2 are included
 di "`sample'"
 sum `continuous' `cont_onlymean' `categorical' if `sample' 
 

@@ -38,3 +38,13 @@ append 		using "`tempdata'", force
 loc data 	"SHAREELSA"
 save  		"./`data'/`data'data/harmon/H_`data'_panel2-MM.dta", replace
 
+tempfile 	tempdata2
+save 		"`tempdata2'", replace
+
+loc data 	"HRS"
+use 		"./`data'/`data'data/harmon/H_`data'_panel2-MM.dta", clear	
+gen 		dataset = "HRS"
+append 		using "`tempdata2'", force
+drop wave
+loc data 	"SHAREELSAHRS"
+save  		"./`data'/`data'data/harmon/H_`data'_panel2-MM.dta", replace

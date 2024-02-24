@@ -23,16 +23,28 @@ di 	"`agethreshold' `h_data'"
 	sum 	tr20r orientr
 		egen tr20rstd = std(tr20r)
 		egen orientrstd = std(orientr)
-	gen 	tr20r_wtd   = tr20r  / 20 * 100
-	gen  	orientr_wtd = orientr / 4 * 100
+	gen 	tr20r_wtd   = (tr20r +1) / 20 * 100
+	gen  	orientr_wtd = (orientr +1) / 4 * 100
 	egen 	cognition_total = rowtotal(tr20r_wtd orientr_wtd)
-	egen 	cognitionstd = std(cognition_total)
-	replace cognitionstd = . if mi(tr20r) | mi(orientr)
-	gen 	demener = (cognitionstd<0) if cognitionstd<. 
+	egen 	cognitionstd1 = std(cognition_total)
+	replace cognitionstd1 = . if mi(tr20r_wtd) | mi(tr20r_wtd)
+
+	egen rowmiss = rowmiss(tr20r_wtd orientr_wtd)
+	egen ts = rowtotal(tr20r_wtd orientr_wtd) // if rowmiss==0
+	egen cognitionstd2 = std(ts) if rowmiss==0
+	drop rowmiss 
+	
+	
+		gen 	cognitionstd = tr20rstd
+	*gen 	demener = (cognitionstd<0) if cognitionstd<. 
+		qui sum cognitionstd, detail
+		local lower_quartile = r(p25)
+		generate demener = cognitionstd < `lower_quartile'	
 	la var 	cognition_total "Cognition Total"
-	la var 	cognitionstd 	"std(total cognition)"
+	*la var cognitionstd 	"std(total cognition)"
 	la var  demener  		"has dementia"	
 	
+
 	gen 	rxdemenr = . // medication
 	gen 	radiagdemen = . 
 
@@ -84,7 +96,7 @@ loc eitherorlist	"`eitherorlist' d_`var'" /*creates a local macro that appends n
 **# Bookmark #2 Note: left out kidney in first analysis in SHARE because this is available only from w6-w8, messing up d_miss
 **# Bookmark #1 Dementia is excluded because definition difficult to make comparable across countries. Option B: could use different tests (but even then those are not consistent across time always)
 **only ever had (these diseases have no medication)**
-loc onlyeverhad 	"cancr strok arthr"	 // demen kidney
+loc onlyeverhad 	"cancr strok arthr demen"	 // demen kidney
 foreach var of local onlyeverhad {
 gen 	d_`var' = 	`var'er==1 	if `var'er<.	/*only one condition*/
 la var 	d_`var' 	"(only) ever had `var'"
@@ -197,7 +209,7 @@ li 		ID wave age d_any firstage in 1/16 /*check correct generation*/
 la var 	firstage 	"age of first onset (observed)"
 
 
-	**age at first onset, for each disease separately:**
+	/**age at first onset, for each disease separately:**
 	foreach d of local alldiseases {
 	gen 	first_age 		= age if `d'==1
 	bys ID: egen firstage_`d' = min(first_age)
@@ -210,6 +222,8 @@ la var 	firstage 	"age of first onset (observed)"
 									age could also be the result of the one disease "missing", while others 
 									were present in a given year. To remedy this issue, should delete
 									observations who had one or more missing diseases.*/
+	*/								
+	
 	
 **age of first onset (g2aging version - self-reported age at first diagnosis)**
 **# Bookmark #1
