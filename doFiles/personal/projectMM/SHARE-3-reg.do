@@ -92,6 +92,8 @@ rnethelp "http://fmwww.bc.edu/RePEc/bocode/o/oparallel.sthlp" // for brant test
 findit spost13 // needed for -mtable-, but also brant test	
 ssc install regoprob2
 ssc install seqlogit
+search st0359 // DH model (xtdhreg)
+findit mdraws // DH model required package
 */
 
 /*** descriptions of new methods ***
@@ -125,12 +127,19 @@ loc ctrls 	"educ_* male"
 		timer on 	1 
 	
 
+*** Double Hurdle Model *** 
+xtdhreg `y' age `ctrls'	, hd(age) trace
+STOP
+	
+	
 *** Ordinal model with PANEL data: this is NOT considering the panel dimension ***	
 ** regoprob2 **
 timer clear 2 		
 timer on 	2 
-log using 	"$outpath/logs/log-t-regd_count-age-regoprob2`data'.txt", text replace name(regoprob2) 
+log using 		"$outpath/logs/log-t-regd_count-age-regoprob2`data'.txt", text replace name(regoprob2) 
 eststo regoprob2: regoprob2 `y' age `ctrls' if `sample'==1, i(ID) autofit   
+estadd local model "regoprob2"
+esttimates save "$outpath/logs/t-regd_count-age-`data'estimates" 
 qui log close regoprob2
 timer off  	2
 esttab regoprob2 			using "$outpath/t_regd_count-age-regoprob2`data'", tex replace
@@ -144,6 +153,8 @@ timer clear 3
 timer on 	3 
 log using 	"$outpath/logs/log-t-regd_count-age-gologit2`data'.txt", text replace name(gologit2) 
 eststo gologit2: gologit2 `y' age `ctrls'	if `sample'==1, vce(cluster ID) autofit gamma // cutpoints (intercept) are identical to ologit (but not xtologit)
+estadd local model "gologit2"
+esttimates save "$outpath/logs/t-regd_count-age-`data'estimates" , append
 qui log close gologit2
 timer off  	3
 esttab gologit2     		using "$outpath/t_regd_count-age-gologit2`data'", tex replace
@@ -152,6 +163,7 @@ esttab gologit2				using "$outpath/t_regd_count-age-gologit2`data'", html replac
 ** ologit ** 
 log using 		"$outpath/logs/log-t-regd_count-age-ologit`data'.txt", text replace name(ologit) 
 eststo ologit: 	ologit 	`y' age `ctrls' if `sample'==1 & d_count<7, vce(robust) // ologit using all waves
+estadd local model "ologit"
 brant, detail // brant only works on ologit; not xtologit. xtologit and ologit are not identical when only 1 time period is used; brant does not work with d_count>=8 because of perfect prediction 
 qui log close 	ologit 
 esttab ologit 	    		using "$outpath/t_regd_count-age-ologit`data'", tex replace
@@ -163,6 +175,7 @@ esttab ologit				using "$outpath/t_regd_count-age-ologit`data'", html replace
 *** xt-ordered logit ***
 log using 		"$outpath/logs/log-t-regd_count-age-ologit`data'.txt", text replace name(xtologit) 
 eststo xtologit: xtologit 	`y' age `ctrls'	if `sample'==1, vce(cluster ID)  // -vce(cl ID)- is equivalent to -robust-
+estadd local model "xtologit"
 qui log close 	xtologit 
 esttab xtologit 	    	using "$outpath/t_regd_count-age-xtologit`data'", tex replace
 esttab xtologit				using "$outpath/t_regd_count-age-xtologit`data'", html replace
@@ -185,8 +198,8 @@ esttab xtreg using "$outpath/t_regd_count-age-xtreg`data'", html replace
 *STOP
 */
 
-esttab xtreg xtologit ologit gologit2 regoprob2 using "$outpath/t_regd_count-age-combined`data'", tex replace
-esttab xtreg xtologit ologit gologit2 regoprob2 using "$outpath/t_regd_count-age-combined`data'", html replace
+esttab xtreg xtologit ologit gologit2 regoprob2 using "$outpath/t_regd_count-age-combined`data'", tex replace stats(N r2 model)
+esttab xtreg xtologit ologit gologit2 regoprob2 using "$outpath/t_regd_count-age-combined`data'", html replace stats(N r2 model)
 
 
 timer 		off  1
@@ -210,6 +223,7 @@ log using 	"$outpath/logs/log-t-regd_count-age-seqlogit`data'.txt", text replace
 // tab d_count, gen(d_count)
 eststo seqlog1: seqlogit d_count age `ctrls' if `sample'==1 & d_count<7, vce(cluster ID) tree(0 : 1 2 3 4 5 6, 1 : 2 3 4 5 6, 2 : 3 4 5 6, 3 : 4 5 6, 4 : 5 6, 5: 6) ofinterest(age) 
 seqlogitdecomp age, table // at(coh 1.5 south 0 paeduc 12) table
+	*seqlogit d_count age male educ*, tree (0:1 2 3 4 5 6 7 8 , 1:2 3 4 5 6 7 8, 2:3 4 5 6 7 8 , 3:4 5 6 7 8, 4:5 6 7 8 , 5:6 7 8 , 6:7 8 , 7:8) // group(ID) 
 
 timer 		off  1
 timer 		list 1	

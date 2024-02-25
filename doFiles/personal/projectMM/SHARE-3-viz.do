@@ -3,7 +3,7 @@ pause off
 log close _all 	/*closes all open log files*/
 clear all		/*clears all data in memory*/
 set graphics on 
-*set graphics off /*disables graphics*/
+set graphics off /*disables graphics*/
 
 
 
@@ -164,7 +164,7 @@ twoway 	///
  xla(`agethreshold'(5) `upperthreshold') xsc(r(`agethreshold' `upperthreshold')) ytitle("N observations", axis(2)) xline(70, lcolor(gray) lwidth(vthin)) ///  /*uncomment for age-group graph*/ ///
 /// yscale(range(0 2000) axis(2)) /// /*adjust scale of 2nd axis*/ 
 /*leave this line empty*/
-gr export 	"$outpath/fig/main/g_by`x'_`y'.jpg", replace 
+gr export 	"$outpath/fig/main/g_crude_by`x'_`y'.jpg", replace 
 restore	
 }
 pause
@@ -195,7 +195,7 @@ loc attime "d_countatfirstobs"
 preserve
 collapse (mean) `y'=`y' if `sample'==1, by(`x' `attime')  
 twoway (connected `y' `x' if `attime'==0) (connected `y' `x' if `attime'==1) (connected `y' `x' if `attime'==2) (connected `y' `x' if `attime'==3) (connected `y' `x' if `attime'==4) (connected `y' `x' if `attime'==5), ytitle("mean `ylabel'") legend(order(1 "0 diseases at baseline" 2 "1 disease at baseline" 3 "2 diseases at baseline" 4 "3 diseases at baseline" 5 "4 diseases at baseline")) // if age>50; only plot 5 
-gr export 	"$outpath/fig/main/g_byage-countatfirstobs_`sample'_`y'.jpg", replace			
+gr export 	"$outpath/fig/main/g_crude_byage-countatfirstobs_`sample'_`y'.jpg", replace			
 restore
 *STOP
 	** scatter count by age by baseline count OR onset count **
@@ -203,7 +203,7 @@ loc attime "d_countatonset"
 preserve
 collapse (mean) `y'=`y' if `sample'==1, by(`x' `attime')  
 twoway (connected `y' `x' if `attime'==0) (connected `y' `x' if `attime'==1) (connected `y' `x' if `attime'==2) (connected `y' `x' if `attime'==3) (connected `y' `x' if `attime'==4) (connected `y' `x' if `attime'==5), ytitle("mean `ylabel'") legend(order(1 "1 disease at onset" 2 "2 diseases at onset" 3 "3 diseases at onset" 4 "4 diseases at onset" 5 "4 diseases at onset")) // if age>50; only plot 5 
-gr export 	"$outpath/fig/main/g_byage-countatonset_`sample'_`y'.jpg", replace			
+gr export 	"$outpath/fig/main/g_crude_byage-countatonset_`sample'_`y'.jpg", replace			
 restore
 pause
 *STOP
@@ -226,7 +226,7 @@ loc 	 y 	"`y'_mean"
 xtline 	 `y', overlay i(cohortmin5) t(`timevar') ytitle("mean `ylabel'") `opt_global'
 *	loc x "timesincefirstobs"
 *	twoway (connected `y' `x' if cohortmin5==`agethreshold') (connected `y' `x' if cohortmin5==55) (connected `y' `x' if cohortmin5==60) (connected `y' `x' if cohortmin5==65) , ytitle("mean `ylabel'") legend(order(1 "baseline age 50-54" 2 "baseline age 55-59" 3 "baseline age 60-64" 4 "baseline age 65-69")) // if age>50; only plot 5 
-gr export 	"$outpath/fig/main/g_bytime-cohortmin5_`sample'_d_count.jpg", replace
+gr export 	"$outpath/fig/main/g_crude_bytime-cohortmin5_`sample'_d_count.jpg", replace
 qui log close log
 pause	
 restore 
@@ -257,18 +257,18 @@ qui {
 `reg' 	`y' i.`timevar'  		if `sample' // without controls
 margins 	`timevar', noestimcheck // atmeans
 marginsplot, xdimension(`timevar') ytitle("`ylabel'") note("Notes: This marginsplot uses the following sample: `samplelabel' and no controls." "The underlying regression is: `reg'")  // xla(, ang(45))  ytitle("`ylabel'")
-gr export 	"$outpath/fig/`saveloc'/g_bytime_`sample'_`y'.jpg", replace
+gr export 	"$outpath/fig/`saveloc'/g_reg_bytime_`sample'_`y'.jpg", replace
 */
-	**with controls**
+	**with controls (male)**
 	`reg'	`y' i.`timevar'##male `ctrls' if `sample' // with controls
 	margins 	`timevar'#male, noestimcheck 
 	marginsplot, xdimension(`timevar') ytitle("`ylabel'") note("Notes: This marginsplot uses the following sample: `samplelabel'" "and no controls." "The underlying regression is: `reg'") // xla(, ang(45))
-	gr export 	"$outpath/fig/`saveloc'/g_bytime_`sample'_`y'_bymale.jpg", replace
-**with controls**
+	gr export 	"$outpath/fig/`saveloc'/g_reg_bytime-male_`sample'_`y'.jpg", replace
+**with controls (educ)**
 `reg'	`y' i.`timevar'##raeducl `ctrls' if `sample' // with controls
 margins 	`timevar'#raeducl, noestimcheck 
 marginsplot, xdimension(`timevar') ytitle("`ylabel'") note("Notes: This marginsplot uses the following sample: `samplelabel'" "and the following controls: `ctrls'." "The underlying regression is: `reg'") // xla(, ang(45))
-gr export 	"$outpath/fig/`saveloc'/g_bytime_`sample'_`y'_withctrls.jpg", replace
+gr export 	"$outpath/fig/`saveloc'/g_reg_bytime-educ_`sample'_`y'.jpg", replace
 */	
 }
 qui log close log
