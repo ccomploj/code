@@ -120,26 +120,26 @@ esttab d_mm* using "$outpath/reg/o_logitbywaved_mm" , `esttab_opt' tex nocons
 
 loc y 		"d_count"
 loc ctrls 	"educ_* male"	
-		preserve 
+		*preserve 
 		*sample 50
 		keep if d_count<7
 		timer clear 1 		
 		timer on 	1 
 	
 
-*** Double Hurdle Model *** 
+/*** Double Hurdle Model *** 
 xtdhreg `y' age `ctrls'	, hd(age) trace
 STOP
-	
+*/	
 	
 *** Ordinal model with PANEL data: this is NOT considering the panel dimension ***	
-** regoprob2 **
+/** regoprob2 **
 timer clear 2 		
 timer on 	2 
 log using 		"$outpath/logs/log-t-regd_count-age-regoprob2`data'.txt", text replace name(regoprob2) 
 eststo regoprob2: regoprob2 `y' age `ctrls' if `sample'==1, i(ID) autofit   
 estadd local model "regoprob2"
-esttimates save "$outpath/logs/t-regd_count-age-`data'estimates" 
+estimates save "$outpath/logs/t-regd_count-age-`data'estimates" 
 qui log close regoprob2
 timer off  	2
 esttab regoprob2 			using "$outpath/t_regd_count-age-regoprob2`data'", tex replace
@@ -148,19 +148,19 @@ esttab regoprob2 			using "$outpath/t_regd_count-age-regoprob2`data'", html repl
 */
 
 *** Ordinal model with Cross-sectional data: this is NOT considering the panel dimension ***	
-** gologit2 ** 
+/** gologit2 ** 
 timer clear 3 		
 timer on 	3 
 log using 	"$outpath/logs/log-t-regd_count-age-gologit2`data'.txt", text replace name(gologit2) 
 eststo gologit2: gologit2 `y' age `ctrls'	if `sample'==1, vce(cluster ID) autofit gamma // cutpoints (intercept) are identical to ologit (but not xtologit)
 estadd local model "gologit2"
-esttimates save "$outpath/logs/t-regd_count-age-`data'estimates" , append
+estimates save "$outpath/logs/t-regd_count-age-`data'estimates" , append
 qui log close gologit2
 timer off  	3
 esttab gologit2     		using "$outpath/t_regd_count-age-gologit2`data'", tex replace
 esttab gologit2				using "$outpath/t_regd_count-age-gologit2`data'", html replace
 
-** ologit ** 
+/** ologit ** 
 log using 		"$outpath/logs/log-t-regd_count-age-ologit`data'.txt", text replace name(ologit) 
 eststo ologit: 	ologit 	`y' age `ctrls' if `sample'==1 & d_count<7, vce(robust) // ologit using all waves
 estadd local model "ologit"
@@ -172,7 +172,7 @@ esttab ologit				using "$outpath/t_regd_count-age-ologit`data'", html replace
 */
 
 
-*** xt-ordered logit ***
+/*** xt-ordered logit ***
 log using 		"$outpath/logs/log-t-regd_count-age-ologit`data'.txt", text replace name(xtologit) 
 eststo xtologit: xtologit 	`y' age `ctrls'	if `sample'==1, vce(cluster ID)  // -vce(cl ID)- is equivalent to -robust-
 estadd local model "xtologit"
@@ -188,7 +188,7 @@ esttab xtologit				using "$outpath/t_regd_count-age-xtologit`data'", html replac
 *mtable, dydx(raeducl) //  at(male = (0 1) raeducl = (1 2 3)) // at(male = (0 1) ) // raeducl = (0 1 2 ))	
 */
 
-*** ols (suitable only if assuming count approximates unobserved health reasonably well) ***	
+/*** ols (suitable only if assuming count approximates unobserved health reasonably well) ***	
 log using 	"$outpath/logs/log-t-regd_count-age-ologit`data'.txt", text replace name(xtreg) 
 eststo xtreg: xtreg `y' age `ctrls'  if `sample'==1 , re
 qui log close xtreg
@@ -217,36 +217,33 @@ esttab mlog1 using "$outpath/t-regd_count-cohort-mlogit.html", b se nobase nogap
 *STOP
 */
 
-
+set seed 500
+*** +++ Table: transitions +++ ***
 *** sequential logit ***
-log using 	"$outpath/logs/log-t-regd_count-age-seqlogit`data'.txt", text replace name(mlogit) 
+log using 	"$outpath/logs/log-t-regd_count-age-seqlogit`data'.txt", text replace name(seqlogit) 
 // tab d_count, gen(d_count)
-eststo seqlog1: seqlogit d_count age `ctrls' if `sample'==1 & d_count<7, vce(cluster ID) tree(0 : 1 2 3 4 5 6, 1 : 2 3 4 5 6, 2 : 3 4 5 6, 3 : 4 5 6, 4 : 5 6, 5: 6) ofinterest(age) 
-seqlogitdecomp age, table // at(coh 1.5 south 0 paeduc 12) table
-	*seqlogit d_count age male educ*, tree (0:1 2 3 4 5 6 7 8 , 1:2 3 4 5 6 7 8, 2:3 4 5 6 7 8 , 3:4 5 6 7 8, 4:5 6 7 8 , 5:6 7 8 , 6:7 8 , 7:8) // group(ID) 
-
+preserve
+keep if d_count<7
+	sample 10
+eststo seqlogit: seqlogit d_count age male i.raeducl if `sample'==1, vce(cluster ID) tree(0:1 2 3 4 5 6, 1:2 3 4 5 6, 2: 3 4 5 6, 3: 4 5 6, 4: 5 6, 5:6) ofinterest(raeducl) over(c.age) or 
+*seqlogitdecomp age, table // at(coh 1.5 south 0 paeduc 12) table
+seqlogitdecomp, area // at(male 0 educ_vocational 0 educ_university 0)
+log close seqlogit
 timer 		off  1
 timer 		list 1	
 STOP
+*/
 
 
-esttab m2, b se nobase nogaps
-esttab m2 using "$outpath/t-regd_count-cohort-gologit2.html", b se nobase nogaps replace
-
-
-
-
-
+/*** combine results to a single table ***
 esttab m1 m2 panel1 using "$outpath/t_regd_count-age`data'", tex replace
 esttab m1 m2 panel1 using "$outpath/t_regd_count-age`data'", html replace
+*/
 
 
 
 
-
-	++
- c.cohortmin5##c.cohortmin5 `ctrls' if `sample'==1 & wave==1, vce(robust)	
-	* Display the results
+* Display the results
 //	estat ic		
 
 
@@ -254,7 +251,6 @@ esttab m1 m2 panel1 using "$outpath/t_regd_count-age`data'", html replace
 
 
 
-*** transitions *** 
 	*** suggestion of bertrand *** 
 	loc ctrls "age male raeducl"
 	gen presentintplus1 = !mi(d_count) & !mi(F.d_count) // should work for all pairs

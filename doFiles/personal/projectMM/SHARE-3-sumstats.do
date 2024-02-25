@@ -6,9 +6,9 @@ clear all		/*clears all data in memory*/
 
 
 ***choose data***
-loc data "ELSA"
+loc data "HRS"
 loc datalist 	"SHARE HRS ELSA"
-foreach data of local datalist{
+*foreach data of local datalist{
 
 
 ***define folder locations***

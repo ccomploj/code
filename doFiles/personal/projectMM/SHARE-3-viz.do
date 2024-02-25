@@ -11,7 +11,7 @@ set graphics off /*disables graphics*/
 ***choose data***
 loc data "HRS"
 loc datalist 	"SHARE HRS ELSA"
-foreach data of local datalist{
+*foreach data of local datalist{
 
 
 ***define folder locations***

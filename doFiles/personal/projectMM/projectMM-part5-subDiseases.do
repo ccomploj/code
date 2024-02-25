@@ -60,7 +60,7 @@ di 	"`agethreshold' `h_data'"
 	bys ID: 	replace rx`var'r = max(rx`var'r[_n-1], rx`var'r)   if inwt==1 // medication use !mi(rx`var'r): does not work well bc variable will be 0 if "ever had" is 0 and "medication" is missing
 	bys ID: 	replace `var'er  = max(  `var'er[_n-1],   `var'er) if inwt==1  // ever had: Change also in "onlyeverhad"	(should not replace in most surveys)
 **# Bookmark #1 (correction not yet successful)
-	*	replace rx`var'r = 0 if !mi(rx`var'r) &  `var'er==0 // if someone does not have the disease, they should not report taking medications for it 
+		replace rx`var'r = 0 if !mi(rx`var'r) &  `var'er==0 // if someone does not have the disease, they should not report taking medications for it 
 	drop `var'er2 rx`var'r2
 	}
 	
@@ -72,7 +72,7 @@ local eitheror "hibp diab heart lung psych osteo"
 	loc eitherorlist ""
 foreach var of local eitheror { 
 gen 	d_`var' = 	`var'er==1 | rx`var'r==1           if `var'er<. | rx`var'r<. 
-	gen 	d2_`var' = 	`var'er==1           if `var'er<.  
+	*gen 	d2_`var' = 	`var'er==1           if `var'er<. // to check that d_ gives the same result 
 la var 	d_`var'	 	"ever had | taking meds for `var'"
 loc eitherorlist	"`eitherorlist' d_`var'" /*creates a local macro that appends new var at each iteration*/
 }
@@ -395,6 +395,14 @@ gen 	time_onsettodeath_age_g2 = radage-firstage_g2
 li 		ID wave iwym dead d_count firstdate_c1 firstdate_c2 ra?ym time_onsettodeath* in 1/16, compress nola
 *bro 	ID wave iwym dead d_count firstdate_c1 firstdate_c2 ra?ym time_onsettodeath*  if time_onsettodeath<0
 *++
+
+** pre-treatment variables (before onset) ** 
+	// currently using same time period to not lose observations
+	gen  myvar = workr if timesincefirstobs == 0
+	egen pretreat_work = max(myvar)
+	drop myvar
+
+
 */
 pause 	
 

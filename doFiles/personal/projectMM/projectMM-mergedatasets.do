@@ -49,6 +49,7 @@ drop wave
 loc data 	"SHAREELSAHRS"
 save  		"./`data'/`data'data/harmon/H_`data'_panel2-MM.dta", replace
 
+		bys dataset: tab cohort d_any if age>50, col nofreq
 		bys dataset: tab cohort demen if age>50, col nofreq
 bys dataset: tab agemin demener, col nofreq m
 tab tr20r cohortmin5, m // check if any cohort more likely to not be in the sample
