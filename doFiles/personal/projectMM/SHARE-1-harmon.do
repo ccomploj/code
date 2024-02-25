@@ -154,7 +154,7 @@ loc 	vra 	"mstatr nhmlivr ruralh ageyr     `xtra'"		// demographics, identifiers
 	loc 	d_agediag "radiaghibp radiagdiab radiagcancr radiaglung radiagheart radiagstrok radiagarthr  radiaghip radiagpsych radiagosteo  radiagkidney" // radiagpsych /*these are time-invariant*/
 	loc 	d_medictn "rxhibpr rxdiabr rxheartr rxlungr rxpsychr rxosteor rxcancrr rxstrokr rxarthrr"
 loc 	vrb 	"shltr hlthlmar hlthlmr iadlar drinklr smokenr `d_everhad' `d_sincelw' `d_medictn'"	// health
-loc 	vrc 	"higovr"										// healthcare utilization and insurance
+loc 	vrc 	"higovr     nrshom1yr hosp1yr doctor1yr doctim1yr homcar1yr drugs1wr"										// healthcare utilization and insurance
 loc 	xtra2 	"cogimpr verbfr" 
 loc 	vrd  	"tr20r orientr `xtra2'"									// cognition
 loc 	vre		""												// financial and housing wealth

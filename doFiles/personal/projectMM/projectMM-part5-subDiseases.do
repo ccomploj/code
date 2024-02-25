@@ -398,9 +398,11 @@ li 		ID wave iwym dead d_count firstdate_c1 firstdate_c2 ra?ym time_onsettodeath
 
 ** pre-treatment variables (before onset) ** 
 	// currently using same time period to not lose observations
-	gen  myvar = workr if timesincefirstobs == 0
-	egen pretreat_work = max(myvar)
-	drop myvar
+	gen myvar =  workr 	  if timesincefirstobs == 0
+	gen myvar2 = marriedr if timesincefirstobs == 0
+	bys ID: egen pretreat_workr = max(myvar)
+	bys ID: egen pretreat_workr = max(myvar2)
+	drop myvar*
 
 
 */

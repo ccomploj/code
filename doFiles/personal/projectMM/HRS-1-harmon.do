@@ -156,7 +156,7 @@ loc 	vra 	"mstatr nhmlivr agey_br     `xtra'"		// demographics, identifiers, wei
 	loc 	d_agediag "radiaghibp radiagdiab radiagcancr radiaglung radiagheart radiagstrok radiagarthr  radiaghip radiagpsych radiagosteo  radiagkidney" // radiagpsych /*these are time-invariant*/
 	loc 	d_medictn "rxhibpr rxdiabr rxheartr rxlungr rxpsychr rxosteor rxcancrr rxstrokr rxarthrr"
 loc 	vrb 	"shltr hlthlmar hlthlmr iadlar drinklr smokenr `d_everhad' `d_sincelw' `d_medictn' cesdr"	// health
-loc 	vrc 	"higovr"										// healthcare utilization and insurance
+loc 	vrc 	"higovr 	hiltcr lifeinr"										// healthcare utilization and insurance
 	loc xtra2 	"bwc20r mstotr cogtotr"
 loc 	vrd  	"tr20r orientr `xtra2'"							// cognition (mostly only asked to 65+ and not proxy)
 loc 	vre		""												// financial and housing wealth
