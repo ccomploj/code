@@ -111,7 +111,7 @@ foreach y in "d_count" "diff_d_count" "cognitionstd" {
 hist `y'	if `sample'==1, `opt_global' 
 gr export 	"$outpath/fig/`saveloc'/g_hist_`sample'_`y'.jpg", replace
 }
-*STOP
+STOP
 */
 
 *** +++++++++++++++++++ raw mean and se by age-group +++++++++++++++++++ ***

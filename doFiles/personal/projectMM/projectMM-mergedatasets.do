@@ -31,11 +31,12 @@ gen 		dataset = "SHARE"
 append 		using "`tempdata'", force
 
 **# Bookmark #1
-	label drop time
+	label drop time // time label does not match accurately across countries
 	drop if wave==3    & dataset=="SHARE"
 	replace wave = wave-1 if dataset=="SHARE"
 	drop wave // wave is no longer relevant now
 loc data 	"SHAREELSA"
+xtset ID time
 save  		"./`data'/`data'data/harmon/H_`data'_panel2-MM.dta", replace
 
 tempfile 	tempdata2
@@ -47,6 +48,7 @@ gen 		dataset = "HRS"
 append 		using "`tempdata2'", force
 drop wave
 loc data 	"SHAREELSAHRS"
+xtset ID time
 save  		"./`data'/`data'data/harmon/H_`data'_panel2-MM.dta", replace
 
 		bys dataset: tab cohort d_any if age>50, col nofreq
