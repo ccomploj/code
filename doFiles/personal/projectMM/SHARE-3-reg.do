@@ -7,6 +7,8 @@ clear all		/*clears all data in memory*/
 
 ***choose data***
 loc data "SHARE"
+loc datalist 	"SHARE HRS ELSA"
+*foreach data of local datalist{
 
 ***define folder locations***
 if "`c(username)'" == "P307344" { // UWP server
@@ -119,8 +121,8 @@ esttab d_mm* using "$outpath/reg/o_logitbywaved_mm" , `esttab_opt' tex nocons
 *** +++ Table: what predicts the count? (ordered model) +++ ***
 
 loc y 			"d_count"
-*loc ctrlsextra 	"c.age#i.male c.age#i.educ_vocational c.age#i.educ_university pretreat_workr pretreat_marriedr"
-loc ctrls 		"educ_* male `ctrlsextra'"
+*loc ctrlsextra "c.age#i.male c.age#i.educ_vocational c.age#i.educ_university pretreat_workr pretreat_marriedr"
+loc ctrls 		"educ_* male `ctrlsextra' c.age#i.raeducl c.age#i.male"
 		*preserve 
 		*sample 50
 		keep if d_count<8
@@ -138,13 +140,13 @@ STOP
 timer clear 2 		
 timer on 	2 
 log using 		"$outpath/logs/log-t-regd_count-age-regoprob2`data'.txt", text replace name(regoprob2) 
-eststo regoprob2: regoprob2 `y' age `ctrls' if `sample'==1, i(ID) npl(age) // autofit   
+eststo regoprob2`data': regoprob2 `y' age `ctrls' if `sample'==1 & data==`data', i(ID) npl(age) // autofit   
 estadd local model "regoprob2"
 estimates save "$outpath/logs/t-regd_count-age-`data'estimates" 
 qui log close regoprob2
 timer off  	2
-esttab regoprob2 			using "$outpath/t_regd_count-age-regoprob2`data'", tex replace
-esttab regoprob2 			using "$outpath/t_regd_count-age-regoprob2`data'", html replace
+esttab regoprob2`data' 			using "$outpath/t_regd_count-age-regoprob2`data'", tex replace
+esttab regoprob2`data' 			using "$outpath/t_regd_count-age-regoprob2`data'", html replace
 *STOP
 */
 
@@ -153,33 +155,33 @@ esttab regoprob2 			using "$outpath/t_regd_count-age-regoprob2`data'", html repl
 timer clear 3 		
 timer on 	3 
 log using 	"$outpath/logs/log-t-regd_count-age-gologit2`data'.txt", text replace name(gologit2) 
-eststo gologit2: gologit2 `y' age `ctrls'	if `sample'==1, vce(cluster ID) gamma npl(age) // autofit // cutpoints (intercept) are identical to ologit (but not xtologit)
+eststo gologit2`data': gologit2 `y' age `ctrls'	if `sample'==1 & data==`data', vce(cluster ID) gamma npl(age) // autofit // cutpoints (intercept) are identical to ologit (but not xtologit)
 estadd local model "gologit2"
 estimates save "$outpath/logs/t-regd_count-age-`data'estimates" , append
 qui log close gologit2
 timer off  	3
-esttab gologit2     		using "$outpath/t_regd_count-age-gologit2`data'", tex replace
-esttab gologit2				using "$outpath/t_regd_count-age-gologit2`data'", html replace
+esttab gologit2`data'     		using "$outpath/t_regd_count-age-gologit2`data'", tex replace
+esttab gologit2`data'			using "$outpath/t_regd_count-age-gologit2`data'", html replace
 
 ** ologit ** 
 log using 		"$outpath/logs/log-t-regd_count-age-ologit`data'.txt", text replace name(ologit) 
-eststo ologit: 	ologit 	`y' age `ctrls' if `sample'==1, vce(robust) // ologit using all waves
+eststo ologit`data': 	ologit 	`y' age `ctrls' if `sample'==1 & data==`data', vce(robust) // ologit using all waves
 estadd local model "ologit"
 *brant, detail // brant only works on ologit; not xtologit. xtologit and ologit are not identical when only 1 time period is used; brant does not work with d_count>=8 because of perfect prediction 
 qui log close 	ologit 
-esttab ologit 	    		using "$outpath/t_regd_count-age-ologit`data'", tex replace
-esttab ologit				using "$outpath/t_regd_count-age-ologit`data'", html replace
+esttab ologit`data' 	    		using "$outpath/t_regd_count-age-ologit`data'", tex replace
+esttab ologit`data'				using "$outpath/t_regd_count-age-ologit`data'", html replace
 *STOP
 */
 
 
 *** xt-ordered logit ***
 log using 		"$outpath/logs/log-t-regd_count-age-ologit`data'.txt", text replace name(xtologit) 
-eststo xtologit: xtologit 	`y' age `ctrls'	if `sample'==1, vce(cluster ID)  // -vce(cl ID)- is equivalent to -robust-
+eststo xtologit`data': xtologit 	`y' age `ctrls'	if `sample'==1 & data==`data', vce(cluster ID)  // -vce(cl ID)- is equivalent to -robust-
 estadd local model "xtologit"
 qui log close 	xtologit 
-esttab xtologit 	    	using "$outpath/t_regd_count-age-xtologit`data'", tex replace
-esttab xtologit				using "$outpath/t_regd_count-age-xtologit`data'", html replace
+esttab xtologit`data' 		    	using "$outpath/t_regd_count-age-xtologit`data'", tex replace
+esttab xtologit`data'				using "$outpath/t_regd_count-age-xtologit`data'", html replace
 
 *margins, at(age=(50(2)80))
 *margins, dydx(`marginsvar') // at(male = (1 0)) 
@@ -191,17 +193,17 @@ esttab xtologit				using "$outpath/t_regd_count-age-xtologit`data'", html replac
 
 *** ols (suitable only if assuming count approximates unobserved health reasonably well) ***	
 log using 	"$outpath/logs/log-t-regd_count-age-ologit`data'.txt", text replace name(xtreg) 
-eststo xtreg:  xtreg `y' age				 `ctrls'  if `sample'==1 , re
-eststo xtreg2: xtreg `y' c.age##i.cohortmin5 `ctrls'  if `sample'==1 , re
+eststo xtreg`data':  xtreg `y' age				 `ctrls'  if `sample'==1 & data==`data', re
+eststo xtreg`data': xtreg `y' c.age##i.cohortmin5 `ctrls'  if `sample'==1 & data==`data', re
 qui log close xtreg
 esttab m1 m2, se 
-esttab xtreg using "$outpath/t_regd_count-age-xtreg`data'", tex replace
-esttab xtreg using "$outpath/t_regd_count-age-xtreg`data'", html replace
+esttab xtreg* using "$outpath/t_regd_count-age-xtreg`data'", tex replace
+esttab xtreg* using "$outpath/t_regd_count-age-xtreg`data'", html replace
 *STOP
 */
 
-esttab xtreg xtreg2 xtologit ologit gologit2 regoprob2 using "$outpath/t_regd_count-age-combined`data'", tex replace stats(N r2 model)
-esttab xtreg xtreg2 xtologit ologit gologit2 regoprob2 using "$outpath/t_regd_count-age-combined`data'", html replace stats(N r2 model)
+esttab xtreg`data' xtologit`data' ologit`data' gologit2`data' regoprob2`data' using "$outpath/t_regd_count-age-combined`data'", tex replace stats(N r2 model)
+esttab xtreg`data' xtreg2`data' xtologit`data' ologit`data' gologit2`data' regoprob2`data' using "$outpath/t_regd_count-age-combined`data'", html replace stats(N r2 model)
 
 
 timer 		off  1
@@ -210,7 +212,7 @@ STOP
 
 
 
-*** multinomial logit ***
+/*** multinomial logit ***
 log using 	"$outpath/logs/log-t-regd_count-age-mlogit`data'.txt", text replace name(mlogit) 
 eststo mlog1: mlogit d_count age `ctrls' if `sample'==1 & d_count<7, vce(cluster ID)
 log close mlogit
