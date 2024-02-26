@@ -171,11 +171,12 @@ egen 		cohort 		= cut(age)	 , at (`agethreshold',60,70,80,120)
 egen 		cohortmin 	= cut(agemin), at (`agethreshold',60,70,80,120)
 egen 		cohortmin5 	= cut(agemin), at (`agethreshold',55,60,65,70,75,80,120)
 tab 		cohort
-la de 		cohortl `agethreshold' "`agethreshold'-59" 60 "60-69" 70 "70-79" 80 "80+"       
-la de 		cohortl5 `agethreshold' "`agethreshold'-54" 55 "55-59" 60 "60-64" 65 "65-69" 70 "70-74" 75 "75-79" 80 "80+"       
+la de 		cohortl `agethreshold'  "ages `agethreshold'-59" 60 "ages 60-69" 70 "ages 70-79" 80 "ages 80+"       
+la de 		cohortminl `agethreshold'  "ageatfirstobs: `agethreshold'-59" 60 "ageatfirstobs: 60-69" 70 "ageatfirstobs: 70-79" 80 "ageatfirstobs: 80+"       
+la de 		cohortmin5l `agethreshold' "ageatfirstobs: `agethreshold'-54" 55 "ageatfirstobs: 55-59" 60 "ageatfirstobs: 60-64" 65 "ageatfirstobs: 65-69" 70 "ageatfirstobs: 70-74" 75 "ageatfirstobs: 75-79" 80 "ageatfirstobs: 80+"       
 la val 		cohort 		cohortl // labels value labels
-la val 		cohortmin 	cohortl // labels value labels
-la val 		cohortmin5 	cohortl5 // labels value labels
+la val 		cohortmin 	cohortminl // labels value labels
+la val 		cohortmin5 	cohortmin5l // labels value labels
 tab			age		cohort, m
 tab			agemin 	cohort, m
 
