@@ -138,7 +138,7 @@ STOP
 timer clear 2 		
 timer on 	2 
 log using 		"$outpath/logs/log-t-regd_count-age-regoprob2`data'.txt", text replace name(regoprob2) 
-eststo regoprob2: regoprob2 `y' age `ctrls' if `sample'==1, i(ID) autofit   
+eststo regoprob2: regoprob2 `y' age `ctrls' if `sample'==1, i(ID) npl(age) // autofit   
 estadd local model "regoprob2"
 estimates save "$outpath/logs/t-regd_count-age-`data'estimates" 
 qui log close regoprob2
@@ -153,7 +153,7 @@ esttab regoprob2 			using "$outpath/t_regd_count-age-regoprob2`data'", html repl
 timer clear 3 		
 timer on 	3 
 log using 	"$outpath/logs/log-t-regd_count-age-gologit2`data'.txt", text replace name(gologit2) 
-eststo gologit2: gologit2 `y' age `ctrls'	if `sample'==1, vce(cluster ID) autofit gamma // cutpoints (intercept) are identical to ologit (but not xtologit)
+eststo gologit2: gologit2 `y' age `ctrls'	if `sample'==1, vce(cluster ID) gamma npl(age) // autofit // cutpoints (intercept) are identical to ologit (but not xtologit)
 estadd local model "gologit2"
 estimates save "$outpath/logs/t-regd_count-age-`data'estimates" , append
 qui log close gologit2

@@ -21,6 +21,11 @@ loc data 	"ELSA"
 use 		"./`data'/`data'data/harmon/H_`data'_panel2-MM.dta", clear	
 gen 		countryID = "EN"
 gen 		dataset   = "ELSA"
+**differentiate ID by dataset**
+egen 		new_id = concat(dataset ID), punct("")
+replace 	ID new_id
+drop 		new_id
+
 tempfile 	tempdata
 save 		"`tempdata'", replace
 
@@ -28,6 +33,11 @@ save 		"`tempdata'", replace
 loc data 	"SHARE"
 use 		"./`data'/`data'data/harmon/H_`data'_panel2-MM.dta", clear	
 gen 		dataset = "SHARE"
+**differentiate ID by dataset**
+egen 		new_id = concat(dataset ID), punct("")
+replace 	ID new_id
+drop 		new_id
+
 append 		using "`tempdata'", force
 
 **# Bookmark #1
@@ -35,8 +45,9 @@ append 		using "`tempdata'", force
 	drop if wave==3    & dataset=="SHARE"
 	replace wave = wave-1 if dataset=="SHARE"
 	drop wave // wave is no longer relevant now
-loc data 	"SHAREELSA"
+
 xtset ID time
+loc data 	"SHAREELSA"
 save  		"./`data'/`data'data/harmon/H_`data'_panel2-MM.dta", replace
 
 tempfile 	tempdata2
@@ -45,10 +56,15 @@ save 		"`tempdata2'", replace
 loc data 	"HRS"
 use 		"./`data'/`data'data/harmon/H_`data'_panel2-MM.dta", clear	
 gen 		dataset = "HRS"
+**differentiate ID by dataset**
+egen 		new_id = concat(dataset ID), punct("")
+replace 	ID new_id
+drop 		new_id
+
 append 		using "`tempdata2'", force
 drop wave
+xtset 		ID time
 loc data 	"SHAREELSAHRS"
-xtset ID time
 save  		"./`data'/`data'data/harmon/H_`data'_panel2-MM.dta", replace
 
 		bys dataset: tab cohort d_any if age>50, col nofreq
