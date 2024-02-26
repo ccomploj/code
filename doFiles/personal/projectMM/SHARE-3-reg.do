@@ -118,11 +118,12 @@ esttab d_mm* using "$outpath/reg/o_logitbywaved_mm" , `esttab_opt' tex nocons
 *keep if wave==1 & d_count<4
 *** +++ Table: what predicts the count? (ordered model) +++ ***
 
-loc y 		"d_count"
-loc ctrls 	"educ_* male"	
+loc y 			"d_count"
+*loc ctrlsextra 	"c.age#i.male c.age#i.educ_vocational c.age#i.educ_university pretreat_workr pretreat_marriedr"
+loc ctrls 		"educ_* male `ctrlsextra'"
 		*preserve 
 		*sample 50
-		keep if d_count<7
+		keep if d_count<8
 		timer clear 1 		
 		timer on 	1 
 	
@@ -133,7 +134,7 @@ STOP
 */	
 	
 *** Ordinal model with PANEL data: this is NOT considering the panel dimension ***	
-/** regoprob2 **
+** regoprob2 **
 timer clear 2 		
 timer on 	2 
 log using 		"$outpath/logs/log-t-regd_count-age-regoprob2`data'.txt", text replace name(regoprob2) 
@@ -148,7 +149,7 @@ esttab regoprob2 			using "$outpath/t_regd_count-age-regoprob2`data'", html repl
 */
 
 *** Ordinal model with Cross-sectional data: this is NOT considering the panel dimension ***	
-/** gologit2 ** 
+** gologit2 ** 
 timer clear 3 		
 timer on 	3 
 log using 	"$outpath/logs/log-t-regd_count-age-gologit2`data'.txt", text replace name(gologit2) 
@@ -160,11 +161,11 @@ timer off  	3
 esttab gologit2     		using "$outpath/t_regd_count-age-gologit2`data'", tex replace
 esttab gologit2				using "$outpath/t_regd_count-age-gologit2`data'", html replace
 
-/** ologit ** 
+** ologit ** 
 log using 		"$outpath/logs/log-t-regd_count-age-ologit`data'.txt", text replace name(ologit) 
-eststo ologit: 	ologit 	`y' age `ctrls' if `sample'==1 & d_count<7, vce(robust) // ologit using all waves
+eststo ologit: 	ologit 	`y' age `ctrls' if `sample'==1, vce(robust) // ologit using all waves
 estadd local model "ologit"
-brant, detail // brant only works on ologit; not xtologit. xtologit and ologit are not identical when only 1 time period is used; brant does not work with d_count>=8 because of perfect prediction 
+*brant, detail // brant only works on ologit; not xtologit. xtologit and ologit are not identical when only 1 time period is used; brant does not work with d_count>=8 because of perfect prediction 
 qui log close 	ologit 
 esttab ologit 	    		using "$outpath/t_regd_count-age-ologit`data'", tex replace
 esttab ologit				using "$outpath/t_regd_count-age-ologit`data'", html replace
@@ -172,7 +173,7 @@ esttab ologit				using "$outpath/t_regd_count-age-ologit`data'", html replace
 */
 
 
-/*** xt-ordered logit ***
+*** xt-ordered logit ***
 log using 		"$outpath/logs/log-t-regd_count-age-ologit`data'.txt", text replace name(xtologit) 
 eststo xtologit: xtologit 	`y' age `ctrls'	if `sample'==1, vce(cluster ID)  // -vce(cl ID)- is equivalent to -robust-
 estadd local model "xtologit"
@@ -188,9 +189,10 @@ esttab xtologit				using "$outpath/t_regd_count-age-xtologit`data'", html replac
 *mtable, dydx(raeducl) //  at(male = (0 1) raeducl = (1 2 3)) // at(male = (0 1) ) // raeducl = (0 1 2 ))	
 */
 
-/*** ols (suitable only if assuming count approximates unobserved health reasonably well) ***	
+*** ols (suitable only if assuming count approximates unobserved health reasonably well) ***	
 log using 	"$outpath/logs/log-t-regd_count-age-ologit`data'.txt", text replace name(xtreg) 
-eststo xtreg: xtreg `y' age `ctrls'  if `sample'==1 , re
+eststo xtreg:  xtreg `y' age				 `ctrls'  if `sample'==1 , re
+eststo xtreg2: xtreg `y' c.age##i.cohortmin5 `ctrls'  if `sample'==1 , re
 qui log close xtreg
 esttab m1 m2, se 
 esttab xtreg using "$outpath/t_regd_count-age-xtreg`data'", tex replace
@@ -198,8 +200,8 @@ esttab xtreg using "$outpath/t_regd_count-age-xtreg`data'", html replace
 *STOP
 */
 
-esttab xtreg xtologit ologit gologit2 regoprob2 using "$outpath/t_regd_count-age-combined`data'", tex replace stats(N r2 model)
-esttab xtreg xtologit ologit gologit2 regoprob2 using "$outpath/t_regd_count-age-combined`data'", html replace stats(N r2 model)
+esttab xtreg xtreg2 xtologit ologit gologit2 regoprob2 using "$outpath/t_regd_count-age-combined`data'", tex replace stats(N r2 model)
+esttab xtreg xtreg2 xtologit ologit gologit2 regoprob2 using "$outpath/t_regd_count-age-combined`data'", html replace stats(N r2 model)
 
 
 timer 		off  1
