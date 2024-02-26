@@ -121,8 +121,8 @@ esttab d_mm* using "$outpath/reg/o_logitbywaved_mm" , `esttab_opt' tex nocons
 *** +++ Table: what predicts the count? (ordered model) +++ ***
 
 loc y 			"d_count"
-*loc ctrlsextra "c.age#i.male c.age#i.educ_vocational c.age#i.educ_university pretreat_workr pretreat_marriedr"
-loc ctrls 		"educ_* male `ctrlsextra' c.age#i.raeducl c.age#i.male"
+loc ctrlsextra "c.age#i.male c.age#i.educ_vocational c.age#i.educ_university "
+loc ctrls 		"educ_* male `ctrlsextra' pretreat_workr pretreat_marriedr"
 		*preserve 
 		*sample 50
 		keep if d_count<8
