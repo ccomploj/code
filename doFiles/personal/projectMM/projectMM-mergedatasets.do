@@ -20,7 +20,6 @@ cd  		"`cv'"
 loc data 	"ELSA"
 use 		"./`data'/`data'data/harmon/H_`data'_panel2-MM.dta", clear	
 gen 		countryID = "EN"
-gen 		dataset   = "ELSA"
 rename 		ID IDold // 
 
 tempfile 	tempdata
@@ -29,7 +28,7 @@ save 		"`tempdata'", replace
 
 loc data 	"SHARE"
 use 		"./`data'/`data'data/harmon/H_`data'_panel2-MM.dta", clear	
-gen 		dataset = "SHARE"
+*gen 		dataset = "SHARE"
 rename 		ID IDold
 
 append 		using "`tempdata'", force
@@ -51,7 +50,7 @@ save 		"`tempdata2'", replace
 
 loc data 	"HRS"
 use 		"./`data'/`data'data/harmon/H_`data'_panel2-MM.dta", clear	
-gen 		dataset = "HRS"
+*gen 		dataset = "HRS"
 rename 		ID IDold
 
 append 		using "`tempdata2'", force

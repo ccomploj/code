@@ -326,7 +326,7 @@ log close logSampleselection
 
 
 
-
+gen dataset = "`data'"
 sort 	ID wave
 save	"`h_data'H_`data'_panel2-MM.dta", replace // check if appeared in correct folder!
 *pause 

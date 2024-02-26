@@ -121,7 +121,10 @@ esttab d_mm* using "$outpath/reg/o_logitbywaved_mm" , `esttab_opt' tex nocons
 *** +++ Table: what predicts the count? (ordered model) +++ ***
 
 loc y 			"d_count"
-loc ctrlsextra "c.age#i.male c.age#i.educ_vocational c.age#i.educ_university "
+	gen age_male = age*male
+	gen age_educ_voc = age*educ_vocational
+	gen age_educ_uni = age*educ_university	
+loc ctrlsextra "age_male age_educ_voc age_educ_uni"
 loc ctrls 		"educ_* male `ctrlsextra' pretreat_workr pretreat_marriedr"
 		*preserve 
 		*sample 50
@@ -140,7 +143,7 @@ STOP
 timer clear 2 		
 timer on 	2 
 log using 		"$outpath/logs/log-t-regd_count-age-regoprob2`data'.txt", text replace name(regoprob2) 
-eststo regoprob2`data': regoprob2 `y' age `ctrls' if `sample'==1 & data==`data', i(ID) npl(age) // autofit   
+eststo regoprob2`data': regoprob2 `y' age `ctrls' if `sample'==1 & dataset==`data', i(ID) npl(age) // autofit   
 estadd local model "regoprob2"
 estimates save "$outpath/logs/t-regd_count-age-`data'estimates" 
 qui log close regoprob2
@@ -155,7 +158,7 @@ esttab regoprob2`data' 			using "$outpath/t_regd_count-age-regoprob2`data'", htm
 timer clear 3 		
 timer on 	3 
 log using 	"$outpath/logs/log-t-regd_count-age-gologit2`data'.txt", text replace name(gologit2) 
-eststo gologit2`data': gologit2 `y' age `ctrls'	if `sample'==1 & data==`data', vce(cluster ID) gamma npl(age) // autofit // cutpoints (intercept) are identical to ologit (but not xtologit)
+eststo gologit2`data': gologit2 `y' age `ctrls'	if `sample'==1 & dataset==`data', vce(cluster ID) gamma npl(age) // autofit // cutpoints (intercept) are identical to ologit (but not xtologit)
 estadd local model "gologit2"
 estimates save "$outpath/logs/t-regd_count-age-`data'estimates" , append
 qui log close gologit2
@@ -165,7 +168,7 @@ esttab gologit2`data'			using "$outpath/t_regd_count-age-gologit2`data'", html r
 
 ** ologit ** 
 log using 		"$outpath/logs/log-t-regd_count-age-ologit`data'.txt", text replace name(ologit) 
-eststo ologit`data': 	ologit 	`y' age `ctrls' if `sample'==1 & data==`data', vce(robust) // ologit using all waves
+eststo ologit`data': 	ologit 	`y' age `ctrls' if `sample'==1 & dataset==`data', vce(robust) // ologit using all waves
 estadd local model "ologit"
 *brant, detail // brant only works on ologit; not xtologit. xtologit and ologit are not identical when only 1 time period is used; brant does not work with d_count>=8 because of perfect prediction 
 qui log close 	ologit 
@@ -177,7 +180,7 @@ esttab ologit`data'				using "$outpath/t_regd_count-age-ologit`data'", html repl
 
 *** xt-ordered logit ***
 log using 		"$outpath/logs/log-t-regd_count-age-ologit`data'.txt", text replace name(xtologit) 
-eststo xtologit`data': xtologit 	`y' age `ctrls'	if `sample'==1 & data==`data', vce(cluster ID)  // -vce(cl ID)- is equivalent to -robust-
+eststo xtologit`data': xtologit 	`y' age `ctrls'	if `sample'==1 & dataset==`data', vce(cluster ID)  // -vce(cl ID)- is equivalent to -robust-
 estadd local model "xtologit"
 qui log close 	xtologit 
 esttab xtologit`data' 		    	using "$outpath/t_regd_count-age-xtologit`data'", tex replace
