@@ -4,11 +4,11 @@ log close _all 	/*closes all open log files*/
 clear all		/*clears all data in memory*/
 
 
-loc append_estimates "replace" /*replace only at first iteration*/ 
 ***choose data***
 loc data 		"SHARE"
 loc datalist 	"SHARE ELSA HRS"
 foreach data of local datalist{
+loc append_estimates "replace" /*replace only at first iteration (only works when same file name and run through full loop)*/ 
 
 
 ***define folder locations***

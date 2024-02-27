@@ -6,9 +6,9 @@ clear all		/*clears all data in memory*/
 
 
 ***choose data***
-loc data "HRS"
+loc data "SHARE"
 loc datalist 	"SHARE HRS ELSA"
-*foreach data of local datalist{
+foreach data of local datalist{
 
 
 ***define folder locations***
@@ -75,7 +75,7 @@ loc t "male"
 drop if agemin<`agethreshold'	
 **********************
 set graphics on 
-set graphics off /*disables graphics*/
+*set graphics off /*disables graphics*/
 
 
 
@@ -100,18 +100,19 @@ la var  agegrp 	"age"
 set scheme s1color
 loc opt_global 	"scheme(s1color)"
 loc sample 		"sfull" // sbalanced
+loc samplelabel: variable label `sample'
 
 
-*** +++++++++++++++++++ histograms of dependent variable +++++++++++++++++++ ***
+/*** +++++++++++++++++++ histograms of dependent variable +++++++++++++++++++ ***
 loc 	y "d_count"
 foreach y in "d_count" "diff_d_count" "cognitionstd" {
 hist `y'	if `sample'==1, `opt_global' 
 gr export 	"$outpath/fig/`saveloc'/g_hist_`sample'_`y'.jpg", replace
 }
-STOP
+*STOP
 */
 
-*** +++++++++++++++++++ raw mean and se by age-group +++++++++++++++++++ ***
+/*** +++++++++++++++++++ raw mean and se by age-group +++++++++++++++++++ ***
 loc y 		"d_any"
 loc ylist	"pubpenr d_any d_count d_count_index" // 
 loc x 		"agegrp" // age | agegrp |  time
@@ -169,55 +170,64 @@ pause
 */	
 
 
-*** +++++++++++++++++++ scatterplot by age (Fig 1 in De Nardi) +++++++++++++++++++ ***
+*** +++++++++++++++++++ scatterplot by age (c.f. Fig 1 in De Nardi) +++++++++++++++++++ ***
 gen tempvar = d_count if inw_first==wave // count at baseline
-bys ID: egen d_countatfirstobs = max(tempvar) 
-drop tempvar
-gen tempvar = d_count if timesincefirstonset==0 // count 
-bys ID: egen d_countatonset = max(tempvar) 
-drop tempvar
+bys ID: egen countatfirstobs = max(tempvar) 
+recode countatfirstobs (0 = 0 "0 diseases at baseline") (1 = 1 "1 diseases at baseline") (2 = 2 "2 diseases at baseline") (3 = 3 "3 diseases at baseline") (4/10 = 4 "4+ diseases at baseline"), gen(countatfirstobs2)
+drop tempvar countatfirstobs
+rename countatfirstobs2 countatfirstobs 
+
+gen tempvar = d_count if timesincefirstonset==0 // count at onset
+bys ID: egen countatonset = max(tempvar) 
+replace countatonset =. if age<firstage // if first onset not experienced yet, should not include
+recode countatonset (1/2 = 1 "1 or 2 diseases at onset") (3/4 = 2 "3 or 4 diseases at onset") (5/15 = 3 "5 or more at onset"), gen(countatonset2)
+drop tempvar countatonset
+rename countatonset2 countatonset 
 
 loc y "d_count"
 loc x "age"
 loc ylabel: variable label `y'
-	/** scatter count by age **
-	preserve 
-	collapse (mean) `y'=`y' if `sample'==1, by(`x') // if age>`agethreshold'
-	scatter `y' `x' , ytitle("mean `ylabel'")
-	gr export 	"$outpath/fig/main/g_byage_`sample'_`y'.jpg", replace					
-	restore
-	*/
 	** scatter count by age by baseline count OR onset count **
-loc attime "d_countatfirstobs" 
+loc z 	  "countatfirstobs" // countatonset | countatfirstobs
+loc zlist "countatfirstobs countatonset"
+foreach z of local zlist{
+	**define labels**
+	loc counter   "1"
+	loc connectedlist "" /*clear content of connectedlist*/
+	loc labellist "" /*need to delete local if in loop*/		
+	levelsof `z', local(levels)
+	foreach l of local levels{
+	loc 	valuel : label (`z') `l'				
+	di "`y'"
+	local connectedlist "`connectedlist'  (connected `y' `x' if `z'==`l')"
+	local labellist  `labellist' `counter' `"`valuel'"'   
+	loc counter = `counter'+1	
+	}
+	di "`connectedlist' "
+	mac list _labellist	 // should not display, but mac list 
 preserve
-collapse (mean) `y'=`y' if `sample'==1, by(`x' `attime')  
-twoway (connected `y' `x' if `attime'==0) (connected `y' `x' if `attime'==1) (connected `y' `x' if `attime'==2) (connected `y' `x' if `attime'==3) (connected `y' `x' if `attime'==4) (connected `y' `x' if `attime'==5), ytitle("mean `ylabel'") legend(order(1 "0 diseases at baseline" 2 "1 disease at baseline" 3 "2 diseases at baseline" 4 "3 diseases at baseline" 5 "4 diseases at baseline")) // if age>50; only plot 5 
-gr export 	"$outpath/fig/main/g_crude_byage-countatfirstobs_`sample'_`y'.jpg", replace			
+collapse (mean) `y'=`y' if `sample'==1, by(`z' `x')  
+twoway `connectedlist', legend(order (`labellist')) // ytitle(`ylabel')
+gr export 	"$outpath/fig/main/g_crude_byage-`z'_`sample'_`y'.jpg", replace			
 restore
+} 
 *STOP
-	** scatter count by age by baseline count OR onset count **
-loc attime "d_countatonset" 
-preserve
-collapse (mean) `y'=`y' if `sample'==1, by(`x' `attime')  
-twoway (connected `y' `x' if `attime'==0) (connected `y' `x' if `attime'==1) (connected `y' `x' if `attime'==2) (connected `y' `x' if `attime'==3) (connected `y' `x' if `attime'==4) (connected `y' `x' if `attime'==5), ytitle("mean `ylabel'") legend(order(1 "1 disease at onset" 2 "2 diseases at onset" 3 "3 diseases at onset" 4 "4 diseases at onset" 5 "4 diseases at onset")) // if age>50; only plot 5 
-gr export 	"$outpath/fig/main/g_crude_byage-countatonset_`sample'_`y'.jpg", replace			
-restore
-pause
-*STOP
-*/			
+*/
+
 
 
 
 *** ++++++++++++ xtline by age group +++++++++ ***
+*** +++ graph by TIME: crude plotting and xtreg with and without covariates+++ ***
 preserve 
 log using "$outpath/logs/log-g_bytime-cohortmin5.txt", text replace name(log)	
 loc 	 y 		"d_count"
 loc 	 ylabel: var label `y'
 ** graph: xtline by age group **
 loc 	 timevar "timesincefirstobs" // timesincefirstobs_yr | time | timesincefirstobs
-collapse (mean) `y'_mean = `y' 	(count) `y'_freq = `y' if `sample'==1, by(cohortmin5 `timevar') // & inw1==1 & everdead==0
+collapse (mean) `y' = `y' 	(count) `y'_freq = `y' if `sample'==1, by(cohortmin5 `timevar') // & inw1==1 & everdead==0
 xtset 	 cohortmin5 `timevar'
-loc 	 y 	"`y'_mean"	
+loc 	 y2 	"`y'"	
 	di "`y'"
 	sum `y'
 xtline 	 `y', overlay i(cohortmin5) t(`timevar') ytitle("mean `ylabel'") `opt_global'
@@ -226,7 +236,29 @@ xtline 	 `y', overlay i(cohortmin5) t(`timevar') ytitle("mean `ylabel'") `opt_gl
 gr export 	"$outpath/fig/main/g_crude_bytime-cohortmin5_`sample'_d_count.jpg", replace
 qui log close log
 pause	
-restore 
+restore 	
+	** plot using margins **
+	clonevar radyear2 = radyear 
+	recode 	 radyear2 (. = 0)
+	loc reg "xtreg `y' i.timesincefirstobs#i.cohortmin5"
+	`reg'
+	margins i.timesincefirstobs#i.cohortmin5
+	marginsplot, ytitle("predicted `ylabel'") note("Notes: This marginsplot uses the following sample: `samplelabel'" "and no controls" "The underlying regression is: `reg'") title("Adjusted Predictions") // noci
+	gr export 	"$outpath/fig/main/g_reg_bytime-cohortmin5_`sample'_d_count.jpg", replace
+	** plot using margins with controls **
+	loc ctrls "male marriedr"
+	loc reg "xtreg `y' i.timesincefirstobs#i.cohortmin5 `ctrls'"
+	`reg' 
+	margins i.timesincefirstobs#i.cohortmin5 
+	marginsplot, ytitle("predicted `ylabel'") note("Notes: This marginsplot uses the following sample: `samplelabel'" "and the following controls: `ctrls'." "The underlying regression is: `reg'") title("Adjusted Predictions") // noci
+	gr export 	"$outpath/fig/main/g_reg_bytime-cohortmin5_`sample'_d_count_adj.jpg", replace
+	** plot using margins with controls, adj. for mortality**
+	loc ctrls "male marriedr i.radyear2"
+	loc reg "xtreg `y' i.timesincefirstobs#i.cohortmin5 `ctrls'"
+	`reg' 
+	margins i.timesincefirstobs#i.cohortmin5 
+	marginsplot, ytitle("predicted `ylabel'") note("Notes: This marginsplot uses the following sample: `samplelabel'" "and the following controls: `ctrls'." "The underlying regression is: `reg'") title("Adjusted Predictions") // noci
+	gr export 	"$outpath/fig/main/g_reg_bytime-cohortmin5_`sample'_d_count_adj_mortality.jpg", replace
 pause
 *STOP
 */
@@ -238,7 +270,7 @@ log using "$outpath/logs/log-g_bytime.txt", text replace name(log)
 loc 	timevar 	"timesincefirstobs"
 loc 	ctrls 		"age male"
 loc 	y			"d_count"
-loc 	ylist 		"d_count d_count_index   timetonextdisease2" //
+loc 	ylist 		"d_count d_count_index timetonextdisease2" //
 loc 	reg 		"xtreg" // xtreg | xtologit is very slow; choice may depend on distribution of dependent variable; using index may indeed be the most appropriate.
 *foreach sample in 	"sfull" "sneverdead" "shealthyatfirstobs"  { /*first sample defined at top of file*/
 	di "Sample is: `sample' and variables are:"
