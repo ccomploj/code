@@ -33,7 +33,7 @@ rename 		ID IDold
 
 append 		using "`tempdata'", force
 
-**# Bookmark #1
+**# Bookmark #1: this only applies to first merged dataset
 	label drop time // time label does not match accurately across countries
 	drop if wave==3    & dataset=="SHARE"
 	replace wave = wave-1 if dataset=="SHARE"
@@ -54,7 +54,8 @@ use 		"./`data'/`data'data/harmon/H_`data'_panel2-MM.dta", clear
 rename 		ID IDold
 
 append 		using "`tempdata2'", force
-		**# Bookmark #2
+		**# Bookmark #2 this applies to previous data (where similar was already applied) and the newly merged data
+		label drop time
 		drop wave
 drop ID
 egen ID 	= group(dataset IDold)	
