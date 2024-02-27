@@ -7,8 +7,8 @@ loc append_iterationlog "replace" /*short iteration log at the end of the loop*/
 
 
 ***choose data***
-loc data "SHARE"
-loc datalist 	"SHARE HRS ELSA"
+loc data 		"SHARE"
+loc datalist 	"SHARE ELSA HRS"
 foreach data of local datalist{
 
 ***define folder locations***
@@ -130,8 +130,9 @@ loc ctrls 		"educ_* male `ctrlsextra' pretreat_workr pretreat_marriedr"
 		*preserve 
 		*sample 50
 		keep if d_count<8
-		timer clear 1 		
-		timer on 	1 
+		timer clear 	1 		
+		timer on 		1 
+		loc timerlist  "1"
 	
 
 /*** Double Hurdle Model *** 
@@ -145,10 +146,12 @@ timer clear 2
 timer on 	2 
 log using 		"$outpath/logs/log-t-regd_count-age-regoprob2`data'.txt", text replace name(regoprob2) 
 eststo regoprob2`data': regoprob2 `y' age `ctrls' if `sample'==1 & dataset=="`data'", i(ID) npl(age) // autofit   
-estadd local model "regoprob2"
+estadd local regtype "regoprob2"
 estimates save "$outpath/logs/t-regd_count-age-`data'estimates" 
-qui log close regoprob2
 timer off  	2
+timer list  2
+loc timerlist "`timerlist' 2"
+qui log close regoprob2
 esttab regoprob2`data' 			using "$outpath/t_regd_count-age-regoprob2`data'", tex replace
 esttab regoprob2`data' 			using "$outpath/t_regd_count-age-regoprob2`data'", html replace
 *STOP
@@ -160,17 +163,19 @@ timer clear 3
 timer on 	3 
 log using 	"$outpath/logs/log-t-regd_count-age-gologit2`data'.txt", text replace name(gologit2) 
 eststo gologit2`data': gologit2 `y' age `ctrls'	if `sample'==1 & dataset=="`data'", vce(cluster ID) gamma npl(age) // autofit // cutpoints (intercept) are identical to ologit (but not xtologit)
-estadd local model "gologit2"
+estadd local regtype "gologit2"
 estimates save "$outpath/logs/t-regd_count-age-`data'estimates" , append
-qui log close gologit2
 timer off  	3
+timer list  3
+loc timerlist "`timerlist' 3"
+qui log close gologit2
 esttab gologit2`data'     		using "$outpath/t_regd_count-age-gologit2`data'", tex replace
 esttab gologit2`data'			using "$outpath/t_regd_count-age-gologit2`data'", html replace
 
 ** ologit ** 
 log using 		"$outpath/logs/log-t-regd_count-age-ologit`data'.txt", text replace name(ologit) 
 eststo ologit`data': 	ologit 	`y' age `ctrls' if `sample'==1 & dataset=="`data'", vce(robust) // ologit using all waves
-estadd local model "ologit"
+estadd local regtype "ologit"
 *brant, detail // brant only works on ologit; not xtologit. xtologit and ologit are not identical when only 1 time period is used; brant does not work with d_count>=8 because of perfect prediction 
 qui log close 	ologit 
 esttab ologit`data' 	    		using "$outpath/t_regd_count-age-ologit`data'", tex replace
@@ -182,7 +187,7 @@ esttab ologit`data'				using "$outpath/t_regd_count-age-ologit`data'", html repl
 *** xt-ordered logit ***
 log using 		"$outpath/logs/log-t-regd_count-age-ologit`data'.txt", text replace name(xtologit) 
 eststo xtologit`data': xtologit 	`y' age `ctrls'	if `sample'==1 & dataset=="`data'", vce(cluster ID)  // -vce(cl ID)- is equivalent to -robust-
-estadd local model "xtologit"
+estadd local regtype "xtologit"
 qui log close 	xtologit 
 esttab xtologit`data' 		    	using "$outpath/t_regd_count-age-xtologit`data'", tex replace
 esttab xtologit`data'				using "$outpath/t_regd_count-age-xtologit`data'", html replace
@@ -196,18 +201,18 @@ esttab xtologit`data'				using "$outpath/t_regd_count-age-xtologit`data'", html 
 */
 
 *** ols (suitable only if assuming count approximates unobserved health reasonably well) ***	
-log using 	"$outpath/logs/log-t-regd_count-age-ologit`data'.txt", text replace name(xtreg) 
-eststo xtreg`data':  xtreg `y' age				 `ctrls'  if `sample'==1 & data=="`data'", re
+log using 	"$outpath/logs/log-t-regd_count-age-xtologit`data'.txt", text replace name(xtreg) 
+eststo xtreg`data': xtreg `y' age				 `ctrls'  if `sample'==1 & data=="`data'", re
 eststo xtreg`data': xtreg `y' c.age##i.cohortmin5 `ctrls'  if `sample'==1 & data=="`data'", re
+estadd local regtype "xtreg"
 qui log close xtreg
-esttab m1 m2, se 
 esttab xtreg* using "$outpath/t_regd_count-age-xtreg`data'", tex replace
 esttab xtreg* using "$outpath/t_regd_count-age-xtreg`data'", html replace
 *STOP
 */
 
-esttab xtreg`data' xtologit`data' ologit`data' gologit2`data' regoprob2`data' using "$outpath/t_regd_count-age-combined`data'", tex replace stats(N r2 model)
-esttab xtreg`data' xtreg2`data' xtologit`data' ologit`data' gologit2`data' regoprob2`data' using "$outpath/t_regd_count-age-combined`data'", html replace stats(N r2 model)
+esttab *`data' using "$outpath/t_regd_count-age-combined`data'", tex replace stats(N r2 regtype)
+esttab *`data' using "$outpath/t_regd_count-age-combined`data'", html replace stats(N r2 regtype)
 
 
 
@@ -215,10 +220,9 @@ esttab xtreg`data' xtreg2`data' xtologit`data' ologit`data' gologit2`data' regop
 
 log using 		"$outpath/logs/iterationlog.txt", text `append_iterationlog' name(iterationlog)
 timer 					off  1
-timer 					list 1 2 3 
+timer 					list `timerlist' 
 di 						"Loop with `data' completed." 
 loc append_iterationlog "append" /*append after this*/ 
-
 log close iterationlog
 STOP
 }
@@ -252,15 +256,10 @@ STOP
 */
 
 
-
-
 /*** combine results to a single table ***
 esttab m1 m2 panel1 using "$outpath/t_regd_count-age`data'", tex replace
 esttab m1 m2 panel1 using "$outpath/t_regd_count-age`data'", html replace
 */
-
-
-
 
 * Display the results
 //	estat ic		
