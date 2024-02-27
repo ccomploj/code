@@ -15,7 +15,7 @@ loc datalist 	"SHARE HRS ELSA"
 if "`c(username)'" == "P307344" { // UWP server
 loc cv 		"X:/My Documents/XdrvData/`data'/"
 loc outloc 	"`cv'" // to save locally 
-*loc outloc "\\Client\C$\Users\User\Documents\GitHub\2-projectMM-`data'\" // from UWP save directly to PC
+*loc outloc "\\Client\C$\Users\User\Documents\GitHub\2-projectMM-`data'\" // from UWP save directly to PC (only works with full version of Citrix)
 }
 else {
 loc	cv 		"G:/My Drive/drvData/`data'/" // own PC

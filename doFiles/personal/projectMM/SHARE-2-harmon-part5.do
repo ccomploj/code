@@ -164,7 +164,7 @@ la var 		 agemin "age when first observed"
 gen 		 ageatfirstobs = agemin
 
 **define cohorts (choice of definition depends on survey sampling eligibility)**
-egen 		cohort 		= cut(age)	 , at (`agethreshold',60,70,80,120) 	
+egen 		cohort 		= cut(age), at (`agethreshold',60,70,80,120) 	
 egen 		cohort5 	= cut(age), at (`agethreshold',55,60,65,70,75,80,120)
 egen 		cohortmin 	= cut(agemin), at (`agethreshold',60,70,80,120)
 egen 		cohortmin5 	= cut(agemin), at (`agethreshold',55,60,65,70,75,80,120)

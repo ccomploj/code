@@ -15,7 +15,7 @@ foreach data of local datalist{
 if "`c(username)'" == "P307344" { // UWP server
 loc cv 		"X:/My Documents/XdrvData/`data'/"
 loc outloc 	"`cv'" // to save locally 
-*loc outloc "\\Client\C$\Users\User\Documents\GitHub\2-projectMM-`data'\" // from UWP save directly to PC
+*loc outloc "\\Client\C$\Users\User\Documents\GitHub\2-projectMM-`data'\" // from UWP save directly to PC (only works with full version of Citrix)
 }
 else {
 loc	cv 		"G:/My Drive/drvData/`data'/" // own PC
@@ -246,15 +246,15 @@ restore
 	marginsplot, ytitle("predicted `ylabel'") note("Notes: This marginsplot uses the following sample: `samplelabel'" "and no controls" "The underlying regression is: `reg'") title("Adjusted Predictions") // noci
 	gr export 	"$outpath/fig/main/g_reg_bytime-cohortmin5_`sample'_d_count.jpg", replace
 	** plot using margins with controls **
-	loc ctrls "male marriedr"
-	loc reg "xtreg `y' i.timesincefirstobs#i.cohortmin5 `ctrls'"
+	loc ctrls "male marriedr raeducl i.timesincefirstobs#i.male i.timesincefirstobs#i.raeducl"
+	loc reg 	xtreg `y' i.timesincefirstobs#i.cohortmin5 `ctrls'
 	`reg' 
 	margins i.timesincefirstobs#i.cohortmin5 
 	marginsplot, ytitle("predicted `ylabel'") note("Notes: This marginsplot uses the following sample: `samplelabel'" "and the following controls: `ctrls'." "The underlying regression is: `reg'") title("Adjusted Predictions") // noci
 	gr export 	"$outpath/fig/main/g_reg_bytime-cohortmin5_`sample'_d_count_adj.jpg", replace
 	** plot using margins with controls, adj. for mortality**
-	loc ctrls "male marriedr i.radyear2"
-	loc reg "xtreg `y' i.timesincefirstobs#i.cohortmin5 `ctrls'"
+	loc ctrls "male marriedr raeducl i.timesincefirstobs#i.male i.timesincefirstobs#i.raeducl i.radyear2"
+	loc reg 	xtreg `y' i.timesincefirstobs#i.cohortmin5 `ctrls'
 	`reg' 
 	margins i.timesincefirstobs#i.cohortmin5 
 	marginsplot, ytitle("predicted `ylabel'") note("Notes: This marginsplot uses the following sample: `samplelabel'" "and the following controls: `ctrls'." "The underlying regression is: `reg'") title("Adjusted Predictions") // noci
