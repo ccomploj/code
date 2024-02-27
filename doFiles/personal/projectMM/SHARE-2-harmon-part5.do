@@ -10,20 +10,17 @@ clear all		/*clears all data in memory*/
 ***define folder locations***
 loc data 		"SHARE" // SHARE | ELSA (note for ELSA: part5-subDiseases may be incorrect because other diseases are included in measure)
 loc datalist 	"SHARE HRS ELSA"
-foreach data of local datalist{
+*foreach data of local datalist{
 
+loc github_p5subdiseases "https://raw.githubusercontent.com/ccomploj/code/main/doFiles/personal/projectMM/projectMM-part5-subDiseases.do" // on all devices use github link
 
 **flexible to OS**
 if "`c(username)'" == "P307344" { // UWP server
 loc cv 		"X:/My Documents/XdrvData/`data'/"
-loc outloc 	"\\Client\C$\Users\User\Documents\GitHub\2-projectMM-`data'\" 
-	*gl  outpath "\\Client\C$\Users\User\Documents\GitHub\2-projectMM-`data'\files"
-	*gl  outpath "`cv'files"
 }
-else {
+if "`c(username)'" == "User" { // personal PC
 loc	cv 		"G:/My Drive/drvData/`data'/"
-loc	outloc 	"C:/Users/User/Documents/GitHub/2-projectMM-`data'" 	
-	*gl 	outpath "C:/Users/User/Documents/GitHub/2-projectMM-`data'/files" 	
+loc github_p5subdiseases "C:/Users/User/Documents/GitHub/code/doFiles/personal/projectMM/projectMM-part5-subDiseases.do" // on my device use offline file
 }
 
 loc h_data 		"`cv'`data'data/harmon/" 		  // harmonized data folder location
@@ -168,6 +165,7 @@ gen 		 ageatfirstobs = agemin
 
 **define cohorts (choice of definition depends on survey sampling eligibility)**
 egen 		cohort 		= cut(age)	 , at (`agethreshold',60,70,80,120) 	
+egen 		cohort5 	= cut(age), at (`agethreshold',55,60,65,70,75,80,120)
 egen 		cohortmin 	= cut(agemin), at (`agethreshold',60,70,80,120)
 egen 		cohortmin5 	= cut(agemin), at (`agethreshold',55,60,65,70,75,80,120)
 tab 		cohort
@@ -286,8 +284,8 @@ use 	"`h_data'H_`data'_panel2.dta", clear // load earlier dataset
 ***********************************
 *** diseases list and durations ***
 ***********************************
-
-include "C:/Users/User/Documents/GitHub/code/doFiles/personal/projectMM/projectMM-part5-subDiseases.do" // "include" includes current locals into subfile
+include  "`github_p5subdiseases'"
+*include "C:/Users/User/Documents/GitHub/code/doFiles/personal/projectMM/projectMM-part5-subDiseases.do" // "include" includes current locals into subfile
 *include "https://raw.githubusercontent.com/ccomploj/code/main/doFiles/personal/projectMM/projectMM-part5-subDiseases.do"
 *include "https://github.com/ccomploj/code/blob/b10904f2877ec259d5b3760add674141438686ec/doFiles/personal/projectMM/projectMM-part5-subDiseases.do" // permalink (does not work)
 

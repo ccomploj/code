@@ -14,7 +14,8 @@ loc datalist 	"SHARE HRS ELSA"
 ***define folder locations***
 if "`c(username)'" == "P307344" { // UWP server
 loc cv 		"X:/My Documents/XdrvData/`data'/"
-loc outloc 	"\\Client\C$\Users\User\Documents\GitHub\2-projectMM-`data'\" 
+loc outloc 	"`cv'" // to save locally 
+*loc outloc "\\Client\C$\Users\User\Documents\GitHub\2-projectMM-`data'\" // from UWP save directly to PC
 }
 else {
 loc	cv 		"G:/My Drive/drvData/`data'/" // own PC
@@ -24,7 +25,6 @@ gl 	outpath 	"`outloc'/files" /*output folder location*/
 loc saveloc 	"main" // main | supplement /*saving location*/
 cd  			"`cv'"	
 use 			"./`data'data/harmon/H_`data'_panel2-MM.dta", clear	
-
 
 **define country-specific locals**
 if "`data'"=="CHARLS" {
@@ -58,8 +58,7 @@ loc wavelast 		"14" 	// select survey-specific last wave
 loc ptestname 		"cesdr"
 loc pthreshold		"3"
 	keep 	if hacohort<=5 	
-	drop if wave<=2    
-	drop if wave>=14   		
+	keep if wave>=3 & wave<=13 // cognitive measures not consistently available
 }	
 if "`data'"=="SHAREELSA" {
 loc agethreshold 	"50" // select survey-specific lower age threshold
@@ -139,6 +138,8 @@ tab 	iwstatr wave  		// full sample
 	sum firstage firstage_g2
 	*/
 	
+	
+	*** check if any of the diseases is based on age ***
 	
 
 

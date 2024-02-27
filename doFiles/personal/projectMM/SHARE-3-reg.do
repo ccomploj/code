@@ -2,20 +2,20 @@ pause on
 pause off
 log close _all 	/*closes all open log files*/
 clear all		/*clears all data in memory*/
-loc append_iterationlog "replace" /*short iteration log at the end of the loop*/ 
 
 
-
+loc append_estimates "replace" /*replace only at first iteration*/ 
 ***choose data***
 loc data 		"SHARE"
 loc datalist 	"SHARE ELSA HRS"
 foreach data of local datalist{
 
+
 ***define folder locations***
 if "`c(username)'" == "P307344" { // UWP server
 loc cv 		"X:/My Documents/XdrvData/`data'/"
 loc outloc 	"`cv'" // to save locally 
-*loc outloc 	"\\Client\C$\Users\User\Documents\GitHub\2-projectMM-`data'\" 
+*loc outloc "\\Client\C$\Users\User\Documents\GitHub\2-projectMM-`data'\" // from UWP save directly to PC
 }
 else {
 loc	cv 		"G:/My Drive/drvData/`data'/" // own PC
@@ -25,7 +25,6 @@ gl 	outpath 	"`outloc'/files" /*output folder location*/
 loc saveloc 	"main" // main | supplement /*saving location*/
 cd  			"`cv'"	
 use 			"./`data'data/harmon/H_`data'_panel2-MM.dta", clear	
-
 
 **define country-specific locals**
 if "`data'"=="CHARLS" {
@@ -75,6 +74,9 @@ loc pthreshold		"3"
 loc t "male"
 drop if agemin<`agethreshold'	
 **********************
+loc append_iterationlog "replace" /*short iteration log at the end of the loop*/ 
+
+
 
 ****************************************************************************************************
 *Part 7*: Regression (general)
@@ -134,11 +136,6 @@ loc ctrls 		"educ_* male `ctrlsextra' pretreat_workr pretreat_marriedr"
 		timer on 		1 
 		loc timerlist  "1"
 	
-
-/*** Double Hurdle Model *** 
-xtdhreg `y' age `ctrls'	, hd(age) trace
-STOP
-*/	
 	
 *** Ordinal model with PANEL data: this is NOT considering the panel dimension ***	
 ** regoprob2 **
@@ -147,7 +144,8 @@ timer on 	2
 log using 		"$outpath/logs/log-t-regd_count-age-regoprob2`data'.txt", text replace name(regoprob2) 
 eststo regoprob2`data': regoprob2 `y' age `ctrls' if `sample'==1 & dataset=="`data'", i(ID) npl(age) // autofit   
 estadd local regtype "regoprob2"
-estimates save "$outpath/logs/t-regd_count-age-`data'estimates" 
+estimates save "$outpath/logs/t-regd_count-age-`data'estimates" , `append_estimates'
+loc append_estimates "append"
 timer off  	2
 timer list  2
 loc timerlist "`timerlist' 2"
@@ -164,7 +162,7 @@ timer on 	3
 log using 	"$outpath/logs/log-t-regd_count-age-gologit2`data'.txt", text replace name(gologit2) 
 eststo gologit2`data': gologit2 `y' age `ctrls'	if `sample'==1 & dataset=="`data'", vce(cluster ID) gamma npl(age) // autofit // cutpoints (intercept) are identical to ologit (but not xtologit)
 estadd local regtype "gologit2"
-estimates save "$outpath/logs/t-regd_count-age-`data'estimates" , append
+estimates save "$outpath/logs/t-regd_count-age-`data'estimates" , `append_estimates'
 timer off  	3
 timer list  3
 loc timerlist "`timerlist' 3"
@@ -176,6 +174,7 @@ esttab gologit2`data'			using "$outpath/t_regd_count-age-gologit2`data'", html r
 log using 		"$outpath/logs/log-t-regd_count-age-ologit`data'.txt", text replace name(ologit) 
 eststo ologit`data': 	ologit 	`y' age `ctrls' if `sample'==1 & dataset=="`data'", vce(robust) // ologit using all waves
 estadd local regtype "ologit"
+estimates save "$outpath/logs/t-regd_count-age-`data'estimates" , `append_estimates'
 *brant, detail // brant only works on ologit; not xtologit. xtologit and ologit are not identical when only 1 time period is used; brant does not work with d_count>=8 because of perfect prediction 
 qui log close 	ologit 
 esttab ologit`data' 	    		using "$outpath/t_regd_count-age-ologit`data'", tex replace
@@ -188,6 +187,7 @@ esttab ologit`data'				using "$outpath/t_regd_count-age-ologit`data'", html repl
 log using 		"$outpath/logs/log-t-regd_count-age-ologit`data'.txt", text replace name(xtologit) 
 eststo xtologit`data': xtologit 	`y' age `ctrls'	if `sample'==1 & dataset=="`data'", vce(cluster ID)  // -vce(cl ID)- is equivalent to -robust-
 estadd local regtype "xtologit"
+estimates save "$outpath/logs/t-regd_count-age-`data'estimates" , `append_estimates'
 qui log close 	xtologit 
 esttab xtologit`data' 		    	using "$outpath/t_regd_count-age-xtologit`data'", tex replace
 esttab xtologit`data'				using "$outpath/t_regd_count-age-xtologit`data'", html replace
@@ -205,6 +205,7 @@ log using 	"$outpath/logs/log-t-regd_count-age-xtologit`data'.txt", text replace
 eststo xtreg`data': xtreg `y' age				 `ctrls'  if `sample'==1 & data=="`data'", re
 eststo xtreg`data': xtreg `y' c.age##i.cohortmin5 `ctrls'  if `sample'==1 & data=="`data'", re
 estadd local regtype "xtreg"
+estimates save "$outpath/logs/t-regd_count-age-`data'estimates" , `append_estimates'
 qui log close xtreg
 esttab xtreg* using "$outpath/t_regd_count-age-xtreg`data'", tex replace
 esttab xtreg* using "$outpath/t_regd_count-age-xtreg`data'", html replace

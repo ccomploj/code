@@ -65,6 +65,7 @@ di 	"`agethreshold' `h_data'"
 	}
 	
 
+
 	
 ***either-or condition***
 ** r has disease: either "ever told by doctor" or "currently taking med for"**
@@ -204,7 +205,12 @@ sum 	diff_d_count*
 	}
 	
 	
-	
+	/*** check if any condition is perfectly predicted by age (based on age-eligiblity to the question) ***
+	foreach d of local alldiseases  {
+	tab cohort5 `d'	,m /*if nothing is odd, would seem okay. If we have more people entering later 
+	(e.g. inw1==0 & inw2==1, or based on hacohort), this could lead to a jump in the graphs */
+	} 
+	*/
 
 **age at first onset (any chronic disease observed)**
 gen 	myvar 		= age if d_any==1 /*age, if any disease is present*/
@@ -231,6 +237,8 @@ la var 	firstage 	"age of first onset (observed)"
 									were present in a given year. To remedy this issue, should delete
 									observations who had one or more missing diseases.*/
 	*/								
+	
+
 	
 	
 **age of first onset (g2aging version - self-reported age at first diagnosis)**
