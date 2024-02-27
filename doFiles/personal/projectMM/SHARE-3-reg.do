@@ -9,7 +9,7 @@ loc data 		"SHARE"
 
 *loc append_iterationlog "replace" /*short iteration log at the end of the loop*/ 
 loc datalist 	"SHARE ELSA HRS"
-*foreach data of local datalist {
+foreach data of local datalist {
 
 ***define folder locations***
 if "`c(username)'" == "P307344" { // UWP server
@@ -128,15 +128,15 @@ loc y 			"d_count"
 	gen age_educ_uni = age*educ_university	
 loc ctrlsextra "age_male age_educ_voc age_educ_uni"
 loc ctrls 		"educ_* male `ctrlsextra' pretreat_workr pretreat_marriedr"
-		*preserve 
-		*sample 50
-		keep if d_count<4
+		preserve 
+		*sample 20
+		*keep if d_count<4
 		timer clear 	1 		
 		timer on 		1 
 		loc timerlist  "1"
 	
 *** Ordinal model with PANEL data: this is NOT considering the panel dimension ***	
-** regoprob2 **
+/** regoprob2 **
 timer clear 2 		
 timer on 	2 
 log using 		"$outpath/logs/log-t-regd_count-age-regoprob2`data'.txt", text replace name(regoprob2) 
@@ -212,8 +212,8 @@ esttab xtreg* using "$outpath/t_regd_count-age-xtreg`data'", html replace
 *STOP
 */
 
-*esttab *`data' using "$outpath/t_regd_count-age-combined`data'", tex replace stats(N r2 regtype)
-*esttab *`data' using "$outpath/t_regd_count-age-combined`data'", html replace stats(N r2 regtype)
+esttab *`data' using "$outpath/t_regd_count-age-combined`data'", tex replace stats(N r2 regtype)
+esttab *`data' using "$outpath/t_regd_count-age-combined`data'", html replace stats(N r2 regtype)
 
 
 
@@ -229,6 +229,7 @@ timer	list `t' // timers have to be listed sequentially
 di 						"Loop with `data' completed." 
 estimates dir
 log close iterationlog
+restore
 }
 
 STOP
