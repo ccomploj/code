@@ -5,11 +5,11 @@ clear all		/*clears all data in memory*/
 
 
 ***choose data***
-loc data 		"SHARE"
+loc data 		"HRS"
 
 *loc append_iterationlog "replace" /*short iteration log at the end of the loop*/ 
 loc datalist 	"SHARE ELSA HRS"
-foreach data of local datalist {
+*foreach data of local datalist {
 
 ***define folder locations***
 if "`c(username)'" == "P307344" { // UWP server
@@ -30,16 +30,16 @@ use 			"./`data'data/harmon/H_`data'_panel2-MM.dta", clear
 if "`data'"=="CHARLS" {
 loc agethreshold 	"45"
 loc upperthreshold	"75"
-loc ptestname 		"cesdr"
-loc pthreshold		"3"
+// loc ptestname 	"cesdr"
+// loc pthreshold	"3"
 *loc t 				"ruralh" // /*categorical variable to split by*/ 	
 }
 if "`data'"=="SHARE" {
 loc agethreshold 	"50" // select survey-specific lower age threshold
 loc upperthreshold	"85" // select survey-specific upper age threshold	
 loc wavelast 		"8" 	// select survey-specific last wave
-loc ptestname 		"eurod"
-loc pthreshold		"4"
+// loc ptestname 	"eurod"
+// loc pthreshold	"4"
 	drop if wave==3 // is not really a time period, there are no regular variables for this wave
 	keep 	if hacohort==1 | hacohort==2 
 	drop 	if countryID=="GR" /*relatively imprecise survey*/
@@ -48,24 +48,25 @@ if "`data'"=="ELSA" {
 loc agethreshold 	"50" // select survey-specific lower age threshold
 loc upperthreshold	"85" // select survey-specific upper age threshold	
 loc wavelast 		"9" 	// select survey-specific last wave
-loc ptestname 		"cesdr"
-loc pthreshold		"3"
+// loc ptestname 	"cesdr"
+// loc pthreshold	"4"
 }
 if "`data'"=="HRS" {
 loc agethreshold 	"51" // select survey-specific lower age threshold
 loc upperthreshold	"85" // select survey-specific upper age threshold	
 loc wavelast 		"14" 	// select survey-specific last wave
-loc ptestname 		"cesdr"
-loc pthreshold		"3"
+// loc ptestname 	"cesdr"
+// loc pthreshold	"4"
 	keep 	if hacohort<=5 	
-	keep if wave>=3 & wave<=13 // cognitive measures not consistently available
+	keep if wave>=3 & wave<=13 // cognitive measures not consistently available 		
 }	
 if "`data'"=="SHAREELSA" {
 loc agethreshold 	"50" // select survey-specific lower age threshold
 loc upperthreshold	"85" // select survey-specific upper age threshold	
 loc wavelast 		"9" 	// select survey-specific last wave
-loc ptestname 		"cesdr"
-loc pthreshold		"3"
+// loc ptestname 	"cesdr"
+// need to do correct this accordingly
+// loc pthreshold	"3"
 	drop if agemin<50  & dataset=="SHARE"
 	drop if agemin<50  & dataset=="ELSA"
 	*drop if wave==3    & dataset=="SHARE" // already dropped
@@ -80,16 +81,24 @@ drop if agemin<`agethreshold'
 ****************************************************************************************************
 *Part 7*: Regression (general)
 ****************************************************************************************************	
+cd  	"$outpath/tab"
+	sample 5
+	*keep if d_count<4
+
 *** additional variables *** 
-tab raeducl, gen(raeduclcat)
+tab raeducl, gen(raeduclcat) // separate variables needed for regoprob2
 drop 	raeduclcat1
 rename 	raeduclcat2 educ_vocational
 rename  raeduclcat3 educ_university
+	gen age_male = age*male
+	gen age_educ_voc = age*educ_vocational
+	gen age_educ_uni = age*educ_university	
 
 *** definition of global vars ***
 loc sample "sfull"
+loc samplelabel: variable label `sample'
 set scheme s1color	
-	
+
 /*** packages needed for regression ***
 ssc install gologit2 // search and install gologit2
 rnethelp "http://fmwww.bc.edu/RePEc/bocode/o/oparallel.sthlp" // for brant test
@@ -100,51 +109,61 @@ search st0359 // DH model (xtdhreg)
 findit mdraws // DH model required package
 */
 
-/*** descriptions of new methods ***
+/*** descriptions/ guides ***
 *brant test (only for ologit): https://www.statalist.org/forums/forum/general-stata-discussion/general/1335252-ologit-and-brant-test
 */
 	
-
-/*** +++ Table: what predicts having any disease? (logit by wave) +++ ***
+*** +++ a) what predicts having any disease? (logit by wave just to check consistency (not for paper)), then (xt)logit using pooled sample +++ ***
+/** logit by wave **
 levelsof time, local(levels)
 foreach l of local levels{
-eststo d_any`l': qui logit d_any 		c.age c.age#c.age male married i.raeducl*  if time==`l', or //  
-eststo d_mm`l' : qui logit d_count_geq2 c.age c.age#c.age male married i.raeducl*  if time==`l', or 
-estadd loc time  "`l'" : d_any`l' d_mm`l'
+eststo logit`l': qui logit d_any 		c.age c.age#c.age male married i.raeducl*  if time==`l', or 
+estadd loc time  "`l'" // : d_any`l' d_mm`l'
 }
-loc esttab_opt "la stats(N time) replace nobase"
-esttab d_any*, `esttab_opt'
-esttab d_any* using "$outpath/reg/o_logitbywaved_any" , `esttab_opt' tex nocons
-esttab d_mm* , `esttab_opt'
-esttab d_mm* using "$outpath/reg/o_logitbywaved_mm" , `esttab_opt' tex nocons
-++
-*/
-*keep if wave==1 & d_count<4
-*** +++ Table: what predicts the count? (ordered model) +++ ***
+loc esttab_opt "la stats(N r2 time) replace nobase nocons "
+esttab logit*, `esttab_opt' // using "$outpath/reg/o_logitbywaved_any" , `esttab_opt' tex nocons
 
+** xtlogit using all data **
+eststo xtlogitre: qui xtlogit d_any 		c.age male married i.raeducl* , or re vce(cl ID)  // c.age#c.age
+eststo xtlogitfe: qui xtlogit d_any 		c.age male married i.raeducl* , or fe 			  // c.age#c.age
+esttab xtlogit*, `esttab_opt' 
+esttab xtlogit* using "$outpath/reg/o_xtlogit_d_any" , `esttab_opt' 
+*/
+
+	/*** plot each outcome by groups (could do in Viz next to xtreg - only this is ologit - then, finally, repeat this with regoprob or gologit2) ***
+	loc x 		"cohort5"
+	loc reg 	ologit 	 d_count i.cohort5 if `sample'==1
+	`reg'
+	margins, dydx(`x')	
+	marginsplot, note("Notes: This marginsplot uses the following sample: `samplelabel'" "and the following controls: `ctrls' (none)" "The underlying regression is: `reg'") 
+	gr export 	"$outpath/fig/main/g_ologit_by`x'_`y'.jpg", replace 
+	loc reg 	xtologit d_count i.cohort5 if `sample'==1, nolog vce(cl ID)  // c.age#c.age  male married i.raeducl*, 
+	margins, dydx(`x')	
+	marginsplot, note("Notes: This marginsplot uses the following sample: `samplelabel'" "and the following controls: `ctrls' (none)" "The underlying regression is: `reg'") 
+	gr export 	"$outpath/fig/main/g_xtologit_by`x'_`y'.jpg", replace 
+	STOP
+	*margins cohort5
+	*mtable	
+	*/
+
+*** +++ b) what predicts the count? (ordered model) +++ ***
 loc y 			"d_count"
-	gen age_male = age*male
-	gen age_educ_voc = age*educ_vocational
-	gen age_educ_uni = age*educ_university	
-loc ctrlsextra "age_male age_educ_voc age_educ_uni"
-loc ctrls 		"educ_* male `ctrlsextra' pretreat_workr pretreat_marriedr"
-		preserve 
-		*sample 20
-		*keep if d_count<4
-		timer clear 	1 		
-		timer on 		1 
-		loc timerlist  "1"
-	
+	*loc interactions "age_male age_educ_voc age_educ_uni" // i.cohortmin5 as dummies
+loc ctrls 		"educ_* male  pretreat_workr pretreat_marriedr `interactions'" 
+	preserve 
+	timer clear 	1 		
+	timer on 		1 
+	loc timerlist  "1"
 *** Ordinal model with PANEL data: this is NOT considering the panel dimension ***	
-/** regoprob2 **
+** regoprob2 **
 timer clear 2 		
 timer on 	2 
 log using 		"$outpath/logs/log-t-regd_count-age-regoprob2`data'.txt", text replace name(regoprob2) 
 eststo regoprob2`data': regoprob2 `y' age `ctrls' if `sample'==1 & dataset=="`data'", i(ID) npl(age) // autofit   
 estadd local regtype "regoprob2"
-	loc append_estimates "replace" /*replace only at first iteration (only works when same file name and run through full loop)*/ 
+	*loc append_estimates "replace" /*replace only at first iteration (only works when same file name and run through full loop)*/ 
 estimates save "$outpath/logs/t-regd_count-age-`data'estimates" , replace // `append_estimates'
-	loc append_estimates "append" /*after this, append estimates to same file (for each dataset)*/
+	*loc append_estimates "append" /*after this, append estimates to same file (for each dataset)*/
 timer off  	2
 timer list  2
 loc timerlist "`timerlist' 2"
@@ -177,13 +196,13 @@ estadd local regtype "ologit"
 estimates save "$outpath/logs/t-regd_count-age-`data'estimates" , append //  `append_estimates'
 *brant, detail // brant only works on ologit; not xtologit. xtologit and ologit are not identical when only 1 time period is used; brant does not work with d_count>=8 because of perfect prediction 
 qui log close 	ologit 
-esttab ologit`data' 	    		using "$outpath/t_regd_count-age-ologit`data'", tex replace
+esttab ologit`data' 	    	using "$outpath/t_regd_count-age-ologit`data'", tex replace
 esttab ologit`data'				using "$outpath/t_regd_count-age-ologit`data'", html replace
 *STOP
 */
 
 
-*** xt-ordered logit ***
+*** xt-ordered logit (again considering panel dimension) ***
 log using 		"$outpath/logs/log-t-regd_count-age-ologit`data'.txt", text replace name(xtologit) 
 eststo xtologit`data': xtologit 	`y' age `ctrls'	if `sample'==1 & dataset=="`data'", vce(cluster ID)  // -vce(cl ID)- is equivalent to -robust-
 estadd local regtype "xtologit"
@@ -200,10 +219,10 @@ esttab xtologit`data'				using "$outpath/t_regd_count-age-xtologit`data'", html 
 *mtable, dydx(raeducl) //  at(male = (0 1) raeducl = (1 2 3)) // at(male = (0 1) ) // raeducl = (0 1 2 ))	
 */
 
-*** ols (suitable only if assuming count approximates unobserved health reasonably well) ***	
+*** xtols *** (suitable if assuming count approximates unobserved health reasonably well)
 log using 	"$outpath/logs/log-t-regd_count-age-xtologit`data'.txt", text replace name(xtreg) 
-eststo xtreg`data': xtreg `y' age				 `ctrls'  if `sample'==1 & data=="`data'", re
-eststo xtreg`data': xtreg `y' c.age##i.cohortmin5 `ctrls'  if `sample'==1 & data=="`data'", re
+eststo xtreg`data': xtreg  `y' age				 	`ctrls'  if `sample'==1 & data=="`data'", re
+eststo xtreg`data'2: xtreg `y' age##cohortmin5 	`ctrls'  if `sample'==1 & data=="`data'", re // (not sure if it makes sense above also to interact with cohortmin5)
 estadd local regtype "xtreg"
 estimates save "$outpath/logs/t-regd_count-age-`data'estimates" , append // `append_estimates'
 qui log close xtreg
@@ -236,40 +255,44 @@ STOP
 
 ++
 
-/*** multinomial logit ***
-log using 	"$outpath/logs/log-t-regd_count-age-mlogit`data'.txt", text replace name(mlogit) 
-eststo mlog1: mlogit d_count age `ctrls' if `sample'==1 & d_count<7, vce(cluster ID)
-log close mlogit
-esttab mlog1 using "$outpath/t-regd_count-cohort-mlogit.tex", b se nobase nogaps replace
-esttab mlog1 using "$outpath/t-regd_count-cohort-mlogit.html", b se nobase nogaps replace
-*STOP
-*/
-
-set seed 500
-*** +++ Table: transitions +++ ***
-*** sequential logit ***
-log using 	"$outpath/logs/log-t-regd_count-age-seqlogit`data'.txt", text replace name(seqlogit) 
-// tab d_count, gen(d_count)
-preserve
-keep if d_count<7
-	sample 10
-eststo seqlogit: seqlogit d_count age male i.raeducl if `sample'==1, vce(cluster ID) tree(0:1 2 3 4 5 6, 1:2 3 4 5 6, 2: 3 4 5 6, 3: 4 5 6, 4: 5 6, 5:6) ofinterest(raeducl) over(c.age) or 
-*seqlogitdecomp age, table // at(coh 1.5 south 0 paeduc 12) table
-seqlogitdecomp, area // at(male 0 educ_vocational 0 educ_university 0)
-log close seqlogit
-timer 		off  1
-timer 		list 1	
-STOP
-*/
 
 
-/*** combine results to a single table ***
-esttab m1 m2 panel1 using "$outpath/t_regd_count-age`data'", tex replace
-esttab m1 m2 panel1 using "$outpath/t_regd_count-age`data'", html replace
-*/
 
-* Display the results
-//	estat ic		
+
+	/*** multinomial logit ***
+	log using 	"$outpath/logs/log-t-regd_count-age-mlogit`data'.txt", text replace name(mlogit) 
+	eststo mlog1: mlogit d_count age `ctrls' if `sample'==1 & d_count<7, vce(cluster ID)
+	log close mlogit
+	esttab mlog1 using "$outpath/t-regd_count-cohort-mlogit.tex", b se nobase nogaps replace
+	esttab mlog1 using "$outpath/t-regd_count-cohort-mlogit.html", b se nobase nogaps replace
+	*STOP
+	*/
+
+	set seed 500
+	*** +++ Table: transitions +++ ***
+	*** sequential logit ***
+	log using 	"$outpath/logs/log-t-regd_count-age-seqlogit`data'.txt", text replace name(seqlogit) 
+	// tab d_count, gen(d_count)
+	preserve
+	keep if d_count<7
+		sample 10
+	eststo seqlogit: seqlogit d_count age male i.raeducl if `sample'==1, vce(cluster ID) tree(0:1 2 3 4 5 6, 1:2 3 4 5 6, 2: 3 4 5 6, 3: 4 5 6, 4: 5 6, 5:6) ofinterest(raeducl) over(c.age) or 
+	*seqlogitdecomp age, table // at(coh 1.5 south 0 paeduc 12) table
+	seqlogitdecomp, area // at(male 0 educ_vocational 0 educ_university 0)
+	log close seqlogit
+	timer 		off  1
+	timer 		list 1	
+	STOP
+	*/
+
+
+	/*** combine results to a single table ***
+	esttab m1 m2 panel1 using "$outpath/t_regd_count-age`data'", tex replace
+	esttab m1 m2 panel1 using "$outpath/t_regd_count-age`data'", html replace
+	*/
+
+	* Display the results
+	//	estat ic		
 
 
 

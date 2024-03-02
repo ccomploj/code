@@ -6,7 +6,7 @@ clear all		/*clears all data in memory*/
 
 
 ***choose data***
-loc data "SHARE"
+loc data "HRS"
 loc datalist 	"SHARE HRS ELSA"
 foreach data of local datalist{
 
@@ -30,16 +30,16 @@ use 			"./`data'data/harmon/H_`data'_panel2-MM.dta", clear
 if "`data'"=="CHARLS" {
 loc agethreshold 	"45"
 loc upperthreshold	"75"
-loc ptestname 		"cesdr"
-loc pthreshold		"3"
+// loc ptestname 		"cesdr"
+// loc pthreshold		"3"
 *loc t 				"ruralh" // /*categorical variable to split by*/ 	
 }
 if "`data'"=="SHARE" {
 loc agethreshold 	"50" // select survey-specific lower age threshold
 loc upperthreshold	"85" // select survey-specific upper age threshold	
 loc wavelast 		"8" 	// select survey-specific last wave
-loc ptestname 		"eurod"
-loc pthreshold		"4"
+// loc ptestname 		"eurod"
+// loc pthreshold		"4"
 	drop if wave==3 // is not really a time period, there are no regular variables for this wave
 	keep 	if hacohort==1 | hacohort==2 
 	drop 	if countryID=="GR" /*relatively imprecise survey*/
@@ -48,15 +48,15 @@ if "`data'"=="ELSA" {
 loc agethreshold 	"50" // select survey-specific lower age threshold
 loc upperthreshold	"85" // select survey-specific upper age threshold	
 loc wavelast 		"9" 	// select survey-specific last wave
-loc ptestname 		"cesdr"
-loc pthreshold		"3"
+// loc ptestname 		"cesdr"
+// loc pthreshold		"4"
 }
 if "`data'"=="HRS" {
 loc agethreshold 	"51" // select survey-specific lower age threshold
 loc upperthreshold	"85" // select survey-specific upper age threshold	
 loc wavelast 		"14" 	// select survey-specific last wave
-loc ptestname 		"cesdr"
-loc pthreshold		"3"
+// loc ptestname 		"cesdr"
+// loc pthreshold		"4"
 	keep 	if hacohort<=5 	
 	keep if wave>=3 & wave<=13 // cognitive measures not consistently available 		
 }	
@@ -64,8 +64,9 @@ if "`data'"=="SHAREELSA" {
 loc agethreshold 	"50" // select survey-specific lower age threshold
 loc upperthreshold	"85" // select survey-specific upper age threshold	
 loc wavelast 		"9" 	// select survey-specific last wave
-loc ptestname 		"cesdr"
-loc pthreshold		"3"
+// loc ptestname 		"cesdr"
+// need to do correct this accordingly
+// loc pthreshold		"3"
 	drop if agemin<50  & dataset=="SHARE"
 	drop if agemin<50  & dataset=="ELSA"
 	*drop if wave==3    & dataset=="SHARE" // already dropped
@@ -84,17 +85,19 @@ set graphics on
 
 
 ****************************************************************************************************
-*Part 7*: Vizualization (general)
+*Part 7a*: Vizualization (general)
 ****************************************************************************************************	
 cd  	"$outpath/fig"
-	*sample 5
-	
+	*sample 5	
 	
 *** define additional variables ***
 gen 	agegrp 	= age
 replace agegrp 	= `upperthreshold' if agegrp>`upperthreshold' & agegrp<. /*group few very old*/
 la var  agegrp 	"age"
 *tabstat age, by(agegrp) stats(min max)
+
+clonevar radyear2 = radyear 
+recode 	 radyear2 (. = 0)
 
 *** define locals to apply to entire file ***
 set scheme s1color
@@ -103,7 +106,7 @@ loc sample 		"sfull" // sbalanced
 loc samplelabel: variable label `sample'
 
 
-/*** +++++++++++++++++++ histograms of dependent variable +++++++++++++++++++ ***
+*** +++++++++++++++++++ histograms of dependent variable +++++++++++++++++++ ***
 loc 	y "d_count"
 foreach y in "d_count" "diff_d_count" "cognitionstd" {
 hist `y'	if `sample'==1, `opt_global' 
@@ -112,7 +115,7 @@ gr export 	"$outpath/fig/`saveloc'/g_hist_`sample'_`y'.jpg", replace
 *STOP
 */
 
-/*** +++++++++++++++++++ raw mean and se by age-group +++++++++++++++++++ ***
+*** +++++++++++++++++++ raw mean and se by age-group +++++++++++++++++++ ***
 loc y 		"d_any"
 loc ylist	"pubpenr d_any d_count d_count_index" // 
 loc x 		"agegrp" // age | agegrp |  time
@@ -170,24 +173,25 @@ pause
 */	
 
 
-*** +++++++++++++++++++ scatterplot by age (c.f. Fig 1 in De Nardi) +++++++++++++++++++ ***
-gen tempvar = d_count if inw_first==wave // count at baseline
+
+**# Bookmark #3 (is this not identical to the one above?)
+*** +++++++++++++++++++ scatterplot by age (c.f. Fig 1 in De Nardi) +++++++++++++++++++ *** 
+loc y "d_count"
+loc x "age"
+
+** (crude) scatter count over AGE by BASELINE COUNT or ONSET COUNT**
+gen tempvar = d_count if inw_first==wave 		// count at baseline
 bys ID: egen countatfirstobs = max(tempvar) 
 recode countatfirstobs (0 = 0 "0 diseases at baseline") (1 = 1 "1 diseases at baseline") (2 = 2 "2 diseases at baseline") (3 = 3 "3 diseases at baseline") (4/10 = 4 "4+ diseases at baseline"), gen(countatfirstobs2)
 drop tempvar countatfirstobs
 rename countatfirstobs2 countatfirstobs 
-
 gen tempvar = d_count if timesincefirstonset==0 // count at onset
 bys ID: egen countatonset = max(tempvar) 
-replace countatonset =. if age<firstage // if first onset not experienced yet, should not include
+replace countatonset =. if age<firstage 		// if first onset not experienced yet, should not include
 recode countatonset (1/2 = 1 "1 or 2 diseases at onset") (3/4 = 2 "3 or 4 diseases at onset") (5/15 = 3 "5 or more at onset"), gen(countatonset2)
 drop tempvar countatonset
 rename countatonset2 countatonset 
 
-loc y "d_count"
-loc x "age"
-loc ylabel: variable label `y'
-	** scatter count by age by baseline count OR onset count **
 loc z 	  "countatfirstobs" // countatonset | countatfirstobs
 loc zlist "countatfirstobs countatonset"
 foreach z of local zlist{
@@ -211,103 +215,125 @@ twoway `connectedlist', legend(order (`labellist')) // ytitle(`ylabel')
 gr export 	"$outpath/fig/main/g_crude_byage-`z'_`sample'_`y'.jpg", replace			
 restore
 } 
-*STOP
+STOP
 */
 
 
-
-
-*** ++++++++++++ xtline by age group +++++++++ ***
-*** +++ graph by TIME: crude plotting and xtreg with and without covariates+++ ***
-preserve 
-log using "$outpath/logs/log-g_bytime-cohortmin5.txt", text replace name(log)	
+*** ++++++++++++ graph over TIME/age  +++++++++ ***
+	*log using "$outpath/logs/log-g_bytime-cohortmin5.txt", text replace name(log)	
 loc 	 y 		"d_count"
 loc 	 ylabel: var label `y'
-** graph: xtline by age group **
-loc 	 timevar "timesincefirstobs" // timesincefirstobs_yr | time | timesincefirstobs
-collapse (mean) `y' = `y' 	(count) `y'_freq = `y' if `sample'==1, by(cohortmin5 `timevar') // & inw1==1 & everdead==0
-xtset 	 cohortmin5 `timevar'
-loc 	 y2 	"`y'"	
-	di "`y'"
-	sum `y'
-xtline 	 `y', overlay i(cohortmin5) t(`timevar') ytitle("mean `ylabel'") `opt_global'
-*	loc x "timesincefirstobs"
-*	twoway (connected `y' `x' if cohortmin5==`agethreshold') (connected `y' `x' if cohortmin5==55) (connected `y' `x' if cohortmin5==60) (connected `y' `x' if cohortmin5==65) , ytitle("mean `ylabel'") legend(order(1 "baseline age 50-54" 2 "baseline age 55-59" 3 "baseline age 60-64" 4 "baseline age 65-69")) // if age>50; only plot 5 
-gr export 	"$outpath/fig/main/g_crude_bytime-cohortmin5_`sample'_d_count.jpg", replace
-qui log close log
+
+**# Bookmark #9 age plot (is more comparable to the one above above)
+**# Bookmark #8 using controls does not make sense, except controlling for mortality (unless controls are dropped anyway)
+**# Bookmark #6 if i want to show that time of entry does not matter, i can show that accumulation is parallel for different inw_first groups. However, do this in a separate graph
+**# Bookmark #10 if i additionally control for age in time graph, should not see an increase over time if accumulation is linear (maybe future plot, not now)
+
+*** a) using AGE/TIME by MALE/EDUC (ageing is controlled for by cohorts and passing of time) *** 
+loc 	 timevar "age" // timesincefirstobs_yr | time | timesincefirstobs
+foreach  timevar in "age" "timesincefirstobs" { // "time"
+	** control for cohort if time on x axis ** 
+	**# Bookmark #5 i want the same for both age and timesincefirstobs, but in timesincefirstobs i need to control for cohorts (these are already caputured when using age) (though I want to see how ageing affects predictions, I have to control for differences in age of entry, could also use agemin otherwise)
+	**# Bookmark #4 i.`timevar'#i.male i.`timevar'#i.raeducl (no interactions as control, i want to see how the lines diverge), or do i want interactions?	
+	if `timevar'==time {
+	loc agectrl "i.cohortmin5"
+	loc rotatenotes "xla(, ang(45))"
+	}
+	if `timevar'==timesincefirstobs {
+	loc agectrl "i.cohortmin5"
+	}
+loc 	 group 	 "male"
+*loc 	 group2  "raeducl"
+foreach  group in "male" "raeducl"  {
+** xtline **
+preserve 
+collapse (mean) `y' = `y' 	(count) `y'_freq = `y' if `sample'==1, by(`group' `timevar') 
+xtset 	 `group' `timevar'
+xtline 	 `y', overlay i(`group') t(`timevar') ytitle("mean `ylabel'") `opt_global' name(g0, replace)
+gr export 	"$outpath/fig/main/g_crude_by`timevar'-`group'_`sample'_d_count.jpg", replace
 pause	
 restore 	
-	** plot using margins **
-	clonevar radyear2 = radyear 
-	recode 	 radyear2 (. = 0)
-	loc reg "xtreg `y' i.timesincefirstobs#i.cohortmin5"
-	`reg'
-	margins i.timesincefirstobs#i.cohortmin5
-	marginsplot, ytitle("predicted `ylabel'") note("Notes: This marginsplot uses the following sample: `samplelabel'" "and no controls" "The underlying regression is: `reg'") title("Adjusted Predictions") // noci
-	gr export 	"$outpath/fig/main/g_reg_bytime-cohortmin5_`sample'_d_count.jpg", replace
-	** plot using margins with controls **
-	loc ctrls "male marriedr raeducl i.timesincefirstobs#i.male i.timesincefirstobs#i.raeducl"
-	loc reg 	xtreg `y' i.timesincefirstobs#i.cohortmin5 `ctrls'
-	`reg' 
-	margins i.timesincefirstobs#i.cohortmin5 
-	marginsplot, ytitle("predicted `ylabel'") note("Notes: This marginsplot uses the following sample: `samplelabel'" "and the following controls: `ctrls'." "The underlying regression is: `reg'") title("Adjusted Predictions") // noci
-	gr export 	"$outpath/fig/main/g_reg_bytime-cohortmin5_`sample'_d_count_adj.jpg", replace
-	** plot using margins with controls, adj. for mortality**
-	loc ctrls "male marriedr raeducl i.timesincefirstobs#i.male i.timesincefirstobs#i.raeducl i.radyear2"
-	loc reg 	xtreg `y' i.timesincefirstobs#i.cohortmin5 `ctrls'
-	`reg' 
-	margins i.timesincefirstobs#i.cohortmin5 
-	marginsplot, ytitle("predicted `ylabel'") note("Notes: This marginsplot uses the following sample: `samplelabel'" "and the following controls: `ctrls'." "The underlying regression is: `reg'") title("Adjusted Predictions") // noci
-	gr export 	"$outpath/fig/main/g_reg_bytime-cohortmin5_`sample'_d_count_adj_mortality.jpg", replace
+** plot using margins **
+loc 	 opt_marginsplot "ytitle("predicted `ylabel'") title("Adjusted Predictions")"  // noci
+loc 	 ctrls "`agectrl'"
+loc 	 reg 	xtreg `y' `timevar'##`group' `ctrls'			if `sample'==1 // ##`group2' 	
+`reg'
+margins `timevar'#`group' // #`group2' , 
+marginsplot, `opt_marginsplot'  name(g1, replace)       note("Notes: This marginsplot uses the following sample: `samplelabel'" "and the following controls: `ctrls' (none)" "The underlying regression is: `reg'") `rotatenotes'
+gr export 	"$outpath/fig/main/g_reg_by`timevar'-`group'_`sample'_d_count.jpg", replace
+** plot using margins with controls, adj. for mortality**
+loc 	 ctrls "`agectrl' i.radyear2"
+loc 	 reg 	xtreg `y' `timevar'##`group' 	`ctrls'			 if `sample'==1 // ##`group2'	
+`reg' 
+margins `timevar'#`group' // #`group2', 
+marginsplot, `opt_marginsplot'  title("Adjusted Predictions (mortality adjusted)") name(g2, replace)    note("Notes: This marginsplot uses the following sample: `samplelabel'" "and the following controls: `ctrls' (none)." "The underlying regression is: `reg'") `rotatenotes'
+gr export 	"$outpath/fig/main/g_reg_by`timevar'-`group'_`sample'_d_count_mortalityadj.jpg", replace
+gr combine g1 g2, ycommon cols(2)
+*gr export 	"$outpath/fig/main/g_reg_by`timevar'-`group'comb_`sample'_d_count_mortalityadj.jpg", replace
+}
+}
 pause
 *STOP
-*/
+*/		
 
+*** b) using TIME by BASELINE AGE COHORT (age is controlled for by cohorts and passing of time) ***
+**# Bookmark #12 could add age as control here (then should see no increase over time)
+**# Bookmark #14 add `rotatenotes' to this version when time is included
+	**# Bookmark #4 i.`timevar'#i.male i.`timevar'#i.raeducl (no interactions as control, i want to see how the lines diverge), or do i want interactions?
+loc 	 timevar 	"time" // timesincefirstobs_yr | time | timesincefirstobs
+foreach  timevar in "timesincefirstobs" "time" "timesincefirstobs_yr" { 
+	if `timevar'==time {
+	loc rotatenotes "xla(, ang(45))"
+	}
+loc 	 group 	 	"cohortmin5"
+	*foreach  group in 	"male" "raeducl"  { (could maybe do some triple interaction here instead)
+preserve 
+collapse (mean) `y' = `y' 	(count) `y'_freq = `y' if `sample'==1, by(`group' `timevar') 
+xtset 	 `group' `timevar'
+xtline 	 `y', overlay i(`group') t(`timevar') ytitle("mean `ylabel'") `opt_global' name(g0, replace)
+gr export 	"$outpath/fig/main/g_crude_by`timevar'-`group'_`sample'_d_count.jpg", replace
+pause	
+restore 	
+** plot using margins **
+loc 	 opt_marginsplot "ytitle("predicted `ylabel'") title("Adjusted Predictions")"  // noci
+loc 	 ctrls ""
+loc 	 reg 	xtreg `y' i.`timevar'##i.`group' 						if `sample'==1
+`reg'
+margins i.`timevar'#i.`group' 
+marginsplot, `opt_marginsplot' note("Notes: This marginsplot uses the following sample: `samplelabel'" "and the following controls: `ctrls' (none)" "The underlying regression is: `reg'")  name(g1, replace) `rotatenotes'
+gr export 	"$outpath/fig/main/g_reg_by`timevar'-`group'_`sample'_d_count.jpg", replace
+** plot using margins with controls** 
+loc 	 ctrls "male i.raeducl" // age
+loc 	 reg 	xtreg `y' i.`timevar'##i.`group' 		`ctrls'			if `sample'==1
+`reg' 
+margins i.`timevar'#i.`group'  
+marginsplot, `opt_marginsplot' note("Notes: This marginsplot uses the following sample: `samplelabel'" "and the following controls: `ctrls' (none)." "The underlying regression is: `reg'") title("Adjusted Predictions (mortality adjusted)") name(g2, replace) `rotatenotes'
+gr export 	"$outpath/fig/main/g_reg_by`timevar'-`group'_`sample'_d_count_ctrls.jpg", replace
 
-*** +++ graph by TIME: vars (with and without controlling for covariates) +++ ***
-log using "$outpath/logs/log-g_bytime.txt", text replace name(log)
-**# Bookmark #1 Can I do this here with xtologit?
-loc 	timevar 	"timesincefirstobs"
-loc 	ctrls 		"age male"
-loc 	y			"d_count"
-loc 	ylist 		"d_count d_count_index timetonextdisease2" //
-loc 	reg 		"xtreg" // xtreg | xtologit is very slow; choice may depend on distribution of dependent variable; using index may indeed be the most appropriate.
-*foreach sample in 	"sfull" "sneverdead" "shealthyatfirstobs"  { /*first sample defined at top of file*/
-	di "Sample is: `sample' and variables are:"
-	loc samplelabel: variable label `sample'
-	sum `ylist' `timevar' `ctrls' if `sample'	
-	*foreach y of local ylist { /*repeat graph for each selected variable*/
-loc 	ylabel : variable label `y'		/*uses variable label of y*/	
-qui {
-**without controls**
-	*qui log using "$outpath/logs/log-g_bytime.txt", text replace name(log) // put here if want to close it everytime regardless of running loop
-	*di 	"timevar: `timevar' | ctrls `ctrls' | y: `y' | ylist `ylist' | sample `sample'"
-	sum `y' `timevar'
-`reg' 	`y' i.`timevar'  		if `sample' // without controls
-margins 	`timevar', noestimcheck // atmeans
-marginsplot, xdimension(`timevar') ytitle("`ylabel'") note("Notes: This marginsplot uses the following sample: `samplelabel' and no controls." "The underlying regression is: `reg'")  // xla(, ang(45))  ytitle("`ylabel'")
-gr export 	"$outpath/fig/`saveloc'/g_reg_bytime_`sample'_`y'.jpg", replace
-*/
-	**with controls (male)**
-	`reg'	`y' i.`timevar'##male `ctrls' if `sample' // with controls
-	margins 	`timevar'#male, noestimcheck 
-	marginsplot, xdimension(`timevar') ytitle("`ylabel'") note("Notes: This marginsplot uses the following sample: `samplelabel'" "and no controls." "The underlying regression is: `reg'") // xla(, ang(45))
-	gr export 	"$outpath/fig/`saveloc'/g_reg_bytime-male_`sample'_`y'.jpg", replace
-**with controls (educ)**
-`reg'	`y' i.`timevar'##raeducl `ctrls' if `sample' // with controls
-margins 	`timevar'#raeducl, noestimcheck 
-marginsplot, xdimension(`timevar') ytitle("`ylabel'") note("Notes: This marginsplot uses the following sample: `samplelabel'" "and the following controls: `ctrls'." "The underlying regression is: `reg'") // xla(, ang(45))
-gr export 	"$outpath/fig/`saveloc'/g_reg_bytime-educ_`sample'_`y'.jpg", replace
-*/	
-}
-qui log close log
-}
+** plot using margins with controls, adj. for mortality** 
+loc 	 ctrls "male i.raeducl i.radyear2" // // age (cohortmin already controlled for my estimating different lines)
+loc 	 reg 	xtreg `y' i.`timevar'##i.`group' 		`ctrls'			if `sample'==1
+`reg' 
+margins i.`timevar'#i.`group'  
+marginsplot, `opt_marginsplot' note("Notes: This marginsplot uses the following sample: `samplelabel'" "and the following controls: `ctrls' (none)." "The underlying regression is: `reg'") title("Adjusted Predictions (mortality adjusted)") name(g3, replace) `rotatenotes'
+gr export 	"$outpath/fig/main/g_reg_by`timevar'-`group'_`sample'_d_count_mortalityadj.jpg", replace
+gr combine g0 g1 g2 g3, ycommon cols(2)
+*gr export 	"$outpath/fig/main/g_reg_by`timevar'-`group'comb_`sample'_d_count_mortalityadj.jpg", replace
 }
 pause
 STOP
-*/
+*/				
+		
+		
+
+***
+		
+		
+
 	
 	
+	
+++++
 
 ***Single-record-per-subject survival data (time until first disease)***	
 // stset timevar [if] [weight] , id(idvar) failure(failvar[==numlist]) [multiple_options]
@@ -349,31 +375,87 @@ stcox `ctrl'
 */
 
 
-
-*** archive ***
-	/*** +++ graph by DISEASE COUNT: timetonextdisease2  (with and without covariates) +++  ***
-	loc timevar  	"d_count"
-	loc ctrls 		"age male"
-	loc y 		 	"timetonextdisease2"
-	loc 	reg 	"xtreg"
-	loc 	sample 	"shealthyatfirstobs"
-	foreach sample in "sfull" "shealthyatfirstobs" "sneverdead"  { 
-	loc 	ylabel : variable label `y'		/*uses variable label of y*/	
-		di "Sample is: `sample'"
-		sum `y' `ctrls' if `sample'
-	qui {
-	**without controls**
-	`reg' 		 `y' i.`timevar'  			if `sample'
-	margins 	 `timevar', noestimcheck
-	marginsplot, xdimension(`timevar') ytitle("`y'") note("Notes: This marginsplot uses the sample: `sample' and no controls." "The underlying regression is: `reg'")  // xla(, ang(45)) ytitle("`ylabel'")
-	*gr export 	"$outpath/fig/`saveloc'/g_by`timevar'_`sample'_`y'.jpg", replace
-	**with controls**
-	`reg' 		 `y' i.`timevar' `ctrls'  	if `sample'
-	margins 	 `timevar', noestimcheck
-	marginsplot, xdimension(`timevar') ytitle("`y'") note("Notes: This marginsplot uses the sample: `sample' and the controls: `ctrls'." "The underlying regression is: `reg'")  // xla(, ang(45)) ytitle("`ylabel'")
-	*gr export 	"$outpath/fig/`saveloc'/g_byd_count_`sample'_`y'_withctrls.jpg", replace
-	}
-	}
-	STOP
+	/*** ++++++++++++ graph over TIME b) using time, by E+++++++++ ***
+		*** +++ graph by TIME: vars (with and without controlling for covariates) +++ ***
+		log using "$outpath/logs/log-g_bytime.txt", text replace name(log)
+		**# Bookmark #1 Can I do this here with xtologit?
+		loc 	timevar 	"timesincefirstobs"
+		loc 	ctrls 		"age male"
+		loc 	y			"d_count"
+		loc 	ylist 		"d_count d_count_index timetonextdisease2" //
+		loc 	reg 		"xtreg" // xtreg | xtologit is very slow; choice may depend on distribution of dependent variable; using index may indeed be the most appropriate.
+		*foreach sample in 	"sfull" "sneverdead" "shealthyatfirstobs"  { /*first sample defined at top of file*/
+			di "Sample is: `sample' and variables are:"
+			loc samplelabel: variable label `sample'
+			sum `ylist' `timevar' `ctrls' if `sample'	
+			*foreach y of local ylist { /*repeat graph for each selected variable*/
+		loc 	ylabel : variable label `y'		/*uses variable label of y*/	
+		qui {
+		**without controls**
+			*qui log using "$outpath/logs/log-g_bytime.txt", text replace name(log) // put here if want to close it everytime regardless of running loop
+			*di 	"timevar: `timevar' | ctrls `ctrls' | y: `y' | ylist `ylist' | sample `sample'"
+			sum `y' `timevar'
+		`reg' 	`y' i.`timevar'  		if `sample' // without controls
+		margins 	`timevar', noestimcheck // atmeans
+		marginsplot, xdimension(`timevar') ytitle("`ylabel'") note("Notes: This marginsplot uses the following sample: `samplelabel' and no controls." "The underlying regression is: `reg'")  // xla(, ang(45))  ytitle("`ylabel'")
+		gr export 	"$outpath/fig/`saveloc'/g_reg_bytime_`sample'_`y'.jpg", replace
+		/
+			/**with controls (male)**
+			`reg'	`y' i.`timevar'##male `ctrls' if `sample' // with controls
+			margins 	`timevar'#male, noestimcheck 
+			marginsplot, xdimension(`timevar') ytitle("`ylabel'") note("Notes: This marginsplot uses the following sample: `samplelabel'" "and no controls." "The underlying regression is: `reg'") // xla(, ang(45))
+			gr export 	"$outpath/fig/`saveloc'/g_reg_bytime-male_`sample'_`y'.jpg", replace
+			**with controls (educ)**
+			`reg'	`y' i.`timevar'##raeducl `ctrls' if `sample' // with controls
+			margins 	`timevar'#raeducl, noestimcheck 
+			marginsplot, xdimension(`timevar') ytitle("`ylabel'") note("Notes: This marginsplot uses the following sample: `samplelabel'" "and the following controls: `ctrls'." "The underlying regression is: `reg'") // xla(, ang(45))
+			gr export 	"$outpath/fig/`saveloc'/g_reg_bytime-educ_`sample'_`y'.jpg", replace
+			*/	
+		}
+		qui log close log
+		}
+		}
+		pause
+		STOP
+		*/
+		
+		
+		/*** old version
+		loc 	 timevar "timesincefirstobs" // timesincefirstobs_yr | time | timesincefirstobs
+		loc 	 group 	 "cohortmin5"
+			** graph: xtline by age group **
+		preserve 
+		collapse (mean) `y' = `y' 	(count) `y'_freq = `y' if `sample'==1, by(`group' `timevar') 
+		xtset 	 `group' `timevar'
+		xtline 	 `y', overlay i(`group') t(`timevar') ytitle("mean `ylabel'") `opt_global' name(g0)
+		gr export 	"$outpath/fig/main/g_crude_by`timevar'-`group'_`sample'_d_count.jpg", replace
+			*qui log close log
+		pause	
+		restore 	
+			** plot using margins **
+			loc 	 ctrls 			 "male marriedr raeducl i.`timevar'#i.male i.`timevar'#i.raeducl age"	
+			loc 	 opt_marginsplot "ytitle("predicted `ylabel'") title("Adjusted Predictions")"  // noci
+			loc 	 reg 	xtreg `y' i.`timevar'#i.`group' 							if `sample'==1
+			`reg'
+			margins i.`timevar'#i.`group' 
+			marginsplot, `opt_marginsplot' note("Notes: This marginsplot uses the following sample: `samplelabel'" "and no controls" "The underlying regression is: `reg'")  name(g1)
+			gr export 	"$outpath/fig/main/g_reg_by`timevar'-`group'_`sample'_d_count.jpg", replace
+			** plot using margins with controls **
+			loc 	 reg 	xtreg `y' i.`timevar'#i.`group' `ctrls' 					if `sample'==1
+			`reg' 
+			margins i.`timevar'#i.`group'  
+			marginsplot, `opt_marginsplot'  note("Notes: This marginsplot uses the following sample: `samplelabel'" "and the following controls: `ctrls'." "The underlying regression is: `reg' `ctrls'") name(g2) 
+			gr export 	"$outpath/fig/main/g_reg_by`timevar'-`group'_`sample'_d_count_adj.jpg", replace
+			** plot using margins with controls, adj. for mortality**
+			loc 	 reg 	xtreg `y' i.`timevar'#i.`group' `ctrls' i.radyear2			if `sample'==1
+			`reg' 
+			margins i.`timevar'#i.`group'  
+			marginsplot, `opt_marginsplot' note("Notes: This marginsplot uses the following sample: `samplelabel'" "and the following controls: `ctrls'." "The underlying regression is: `reg' `ctrls' i.radyear2") name(g3) 
+			gr export 	"$outpath/fig/main/g_reg_by`timevar'-`group'_`sample'_d_count_adj_mortality.jpg", replace
+			gr combine g1 g2 g3, ycommon cols(3)
+			gr export 	"$outpath/fig/main/g_reg_by`timevar'-`group'comb_`sample'_d_count_adj_mortality.jpg", replace
+		pause
+		STOP
+		*/
 
 		

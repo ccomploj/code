@@ -8,9 +8,9 @@ log close _all 	/*closes all open log files*/
 clear all		/*clears all data in memory*/
 
 ***define folder locations***
-loc data 		"SHARE" // SHARE | ELSA (note for ELSA: part5-subDiseases may be incorrect because other diseases are included in measure)
+loc data 		"HRS" // SHARE | ELSA (note for ELSA: part5-subDiseases may be incorrect because other diseases are included in measure)
 loc datalist 	"SHARE HRS ELSA"
-foreach data of local datalist{
+*foreach data of local datalist{
 
 loc github_p5subdiseases "https://raw.githubusercontent.com/ccomploj/code/main/doFiles/personal/projectMM/projectMM-part5-subDiseases.do" // on all devices use github link
 
@@ -32,54 +32,55 @@ pwd
 use 			"`h_data'/H_`data'_panel.dta", replace
 
 
+**define country-specific locals**
+if "`data'"=="CHARLS" {
+loc agethreshold 	"45"
+loc upperthreshold	"75"
+// loc ptestname 		"cesdr"
+// loc pthreshold		"3"
+*loc t 				"ruralh" // /*categorical variable to split by*/ 	
+}
+if "`data'"=="SHARE" {
+loc agethreshold 	"50" // select survey-specific lower age threshold
+loc upperthreshold	"85" // select survey-specific upper age threshold	
+loc wavelast 		"8" 	// select survey-specific last wave
+loc ptestname 		"eurod"
+loc pthreshold		"4"
+	drop if wave==3 // is not really a time period, there are no regular variables for this wave
+	keep 	if hacohort==1 | hacohort==2 
+	drop 	if countryID=="GR" /*relatively imprecise survey*/
+}
+if "`data'"=="ELSA" {
+loc agethreshold 	"50" // select survey-specific lower age threshold
+loc upperthreshold	"85" // select survey-specific upper age threshold	
+loc wavelast 		"9" 	// select survey-specific last wave
+loc ptestname 	"cesdr"
+**# Bookmark #1 choose threshold wisely
+loc pthreshold	"4"
+}
+if "`data'"=="HRS" {
+loc agethreshold 	"51" // select survey-specific lower age threshold
+loc upperthreshold	"85" // select survey-specific upper age threshold	
+loc wavelast 		"14" 	// select survey-specific last wave
+loc ptestname 		"cesdr"
+loc pthreshold		"4"
+	keep 	if hacohort<=5 	
+	keep if wave>=3 & wave<=13 // cognitive measures not consistently available 		
+}	
+loc t "male"
+**********************	
+**# Bookmark #2 dropping individuals is already for MM project. Ideally would move this below after saving intermediate dataset (can also move entire loop)
 
 	***log entire file***
 	*log using 	"`h_data'logdo`data'-2-harmonPart5.txt", text replace name(logDofile) // ends w/ -log close logDofile- || in folder location  
 	log using 	"`out'/logdo`data'-2-harmonPart5.txt", text replace name(logDofile) // ends w/ -log close logDofile- || in dataoutput location
 	*log using 	"G:/My Drive/projects/projectMultimorbidity/outfiles/logs/logdo`data'-2-harmonPart5.txt", text replace name(logDofile) // ends w/ -log close logDofile- || in specific location 
 	
-	**flexible to dataset**
-	if "`data'"=="CHARLS" {
-	loc agethreshold 	"45"
-	loc upperthreshold	"75"
-	loc ptestname 		"cesdr"
-	loc pthreshold		"3"
-	*loc t 				"ruralh" // /*categorical variable to split by*/ 	
-	}
-	if "`data'"=="SHARE" {
-	loc agethreshold 	"50" // select survey-specific lower age threshold
-	loc upperthreshold	"85" // select survey-specific upper age threshold	
-	loc wavelast 		"8" 	// select survey-specific last wave
-	loc ptestname 		"eurod"
-	loc pthreshold		"4"
-**# Bookmark #2 dropping this is already for MM project. Ideally would move this below after saving intermediate dataset (can also move entire loop)
-		drop if wave==3 // is not really a time period, there are no regular variables for this wave
-		keep 	if hacohort==1 | hacohort==2 
-		drop 	if countryID=="GR" /*relatively imprecise survey*/
-	}
-	if "`data'"=="ELSA" {
-	loc agethreshold 	"50" // select survey-specific lower age threshold
-	loc upperthreshold	"85" // select survey-specific upper age threshold	
-	loc wavelast 		"9" 	// select survey-specific last wave
-	loc ptestname 		"cesdr"
-	loc pthreshold		"3"
-	}
-	if "`data'"=="HRS" {
-	loc agethreshold 	"51" // select survey-specific lower age threshold
-	loc upperthreshold	"85" // select survey-specific upper age threshold	
-	loc wavelast 		"14" 	// select survey-specific last wave
-	loc ptestname 		"cesdr"
-	loc pthreshold		"3"
-		keep 	if hacohort<=5 
-	}	
-	
 	
 ****************************************************************************************************
 *Part 5*: Generate study-specific variables while in 'long' format 
 **note: recode/relabel/rename variables from dataset and generate new variables**
 ****************************************************************************************************
-
-
 ***rename key variables ***
 rename  ageyr age 
 
@@ -228,8 +229,8 @@ rename 	psycher depress_selfrep /*self reported/doctor diagnosis depression*/
 
 gen 	psycher = (`ptestname'>=`pthreshold') if `ptestname'<.  /*validated test as indicator for depression*/
 
-tab	 	depress_selfrep psycher if wave==2 // depress_selfrep may be strictly increasing in time
-corr 	depress_selfrep psycher if wave==2 /*about 0.25 in SHARE in the second wave*/
+*tab	depress_selfrep psycher if wave==2 // depress_selfrep may be strictly increasing in time
+*corr 	depress_selfrep psycher if wave==2 /*about 0.25 in SHARE in the second wave*/
 
 // Y: Other relevant variables (e.g. from other datasets)
 *gen	ageatdeath // construct ageatdeath from end-of-life version of harmonized dataset (see here https://g2aging.org/downloads) (if this is available and informative);  
@@ -375,8 +376,6 @@ log close logDofile /*logs file to specified folder if log active*/
 ****************************************************************************************************
 *Full variable descriptions*
 ****************************************************************************************************
-*RADIAGPSYCH indicates the age at which the respondent was first diagnosed with emotional, nervous, or psychiatric problems. Respondents who have never been diagnosed with emotional, nervous, or psychiatric problems are not asked this question and are assigned a special missing code .x. If the age first diagnosed with emotional, nervous, or psychiatric problems is provided in multiple waves, the first provided age is used. Don't know, refused, or other missing responses of RADIAGPSYCH are assigned special missing codes .d, .r, and .m, respectively. RADIAGPSYCH is set to special missing .q in Waves 1, 2, and 4, when this question is not asked.
-*RADIAGXXXX: For all variables, if the respondent reports a new diagnosis after their first interview, they are not asked the age at which they were diagnosed, and the variable is assigned special missing .s. All variables are assigned special missing .c in Wave 7 if the respondent has been diagnosed with the condition but is not asked the age at which they were diagnosed because they were given the condensed core interview and the life history interview in this wave. For all variables, if the given age is greater than the respondent's age in the current interview year, then the variable is assigned special missing value .i. Please note that there may be extreme values for some of these variables, which have been left to the discretion of the user.
 
 
 ***Archive Code***
@@ -388,15 +387,6 @@ computes the count *only* for
 		|if kidney is always available, "if d_missing==0" should be used
 		|if another key variable is only available for few periods, the same coding applies.| 
 	(",missing" tells sets d_count to . instead of 0 when all variables are .) */
-	
-/**age at first onset (of Multimorbidity)**
-gen 	first_age 		= age if d_count>=2 /*age, if any disease is present*/
-bys ID: egen d_firstage_mm = min(first_age)
-drop 	first_age
-sort 	ID wave
-li 		ID wave age d_any d_count d_count_geq2 d_firstage_mm in 1/16 /*check correct generation*/
-la var 	d_firstage_mm 	"age of first onset (of multimorbidity)"	
-*/
 	
 	/*check why inap**
 	tab iwstatr wave

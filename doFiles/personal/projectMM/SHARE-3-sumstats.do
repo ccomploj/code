@@ -30,16 +30,16 @@ use 			"./`data'data/harmon/H_`data'_panel2-MM.dta", clear
 if "`data'"=="CHARLS" {
 loc agethreshold 	"45"
 loc upperthreshold	"75"
-loc ptestname 		"cesdr"
-loc pthreshold		"3"
+// loc ptestname 		"cesdr"
+// loc pthreshold		"3"
 *loc t 				"ruralh" // /*categorical variable to split by*/ 	
 }
 if "`data'"=="SHARE" {
 loc agethreshold 	"50" // select survey-specific lower age threshold
 loc upperthreshold	"85" // select survey-specific upper age threshold	
 loc wavelast 		"8" 	// select survey-specific last wave
-loc ptestname 		"eurod"
-loc pthreshold		"4"
+// loc ptestname 		"eurod"
+// loc pthreshold		"4"
 	drop if wave==3 // is not really a time period, there are no regular variables for this wave
 	keep 	if hacohort==1 | hacohort==2 
 	drop 	if countryID=="GR" /*relatively imprecise survey*/
@@ -48,24 +48,25 @@ if "`data'"=="ELSA" {
 loc agethreshold 	"50" // select survey-specific lower age threshold
 loc upperthreshold	"85" // select survey-specific upper age threshold	
 loc wavelast 		"9" 	// select survey-specific last wave
-loc ptestname 		"cesdr"
-loc pthreshold		"3"
+// loc ptestname 		"cesdr"
+// loc pthreshold		"4"
 }
 if "`data'"=="HRS" {
 loc agethreshold 	"51" // select survey-specific lower age threshold
 loc upperthreshold	"85" // select survey-specific upper age threshold	
 loc wavelast 		"14" 	// select survey-specific last wave
-loc ptestname 		"cesdr"
-loc pthreshold		"3"
+// loc ptestname 		"cesdr"
+// loc pthreshold		"4"
 	keep 	if hacohort<=5 	
-	keep if wave>=3 & wave<=13 // cognitive measures not consistently available
+	keep if wave>=3 & wave<=13 // cognitive measures not consistently available 		
 }	
 if "`data'"=="SHAREELSA" {
 loc agethreshold 	"50" // select survey-specific lower age threshold
 loc upperthreshold	"85" // select survey-specific upper age threshold	
 loc wavelast 		"9" 	// select survey-specific last wave
-loc ptestname 		"cesdr"
-loc pthreshold		"3"
+// loc ptestname 		"cesdr"
+// need to do correct this accordingly
+// loc pthreshold		"3"
 	drop if agemin<50  & dataset=="SHARE"
 	drop if agemin<50  & dataset=="ELSA"
 	*drop if wave==3    & dataset=="SHARE" // already dropped
