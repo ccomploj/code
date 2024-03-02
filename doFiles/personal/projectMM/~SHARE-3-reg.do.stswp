@@ -82,7 +82,7 @@ drop if agemin<`agethreshold'
 *Part 7*: Regression (general)
 ****************************************************************************************************	
 cd  	"$outpath/tab"
-	*sample 5
+	sample 5
 	*keep if d_count<4
 
 *** additional variables *** 
