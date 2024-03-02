@@ -8,7 +8,7 @@ clear all		/*clears all data in memory*/
 ***choose data***
 loc data "HRS"
 loc datalist 	"SHARE HRS ELSA"
-foreach data of local datalist{
+*foreach data of local datalist{
 
 
 ***define folder locations***
@@ -76,7 +76,7 @@ loc t "male"
 drop if agemin<`agethreshold'	
 **********************
 set graphics on 
-*set graphics off /*disables graphics*/
+set graphics off /*disables graphics*/
 
 
 
@@ -215,7 +215,7 @@ twoway `connectedlist', legend(order (`labellist')) // ytitle(`ylabel')
 gr export 	"$outpath/fig/main/g_crude_byage-`z'_`sample'_`y'.jpg", replace			
 restore
 } 
-STOP
+*STOP
 */
 
 
@@ -321,6 +321,7 @@ gr combine g0 g1 g2 g3, ycommon cols(2)
 *gr export 	"$outpath/fig/main/g_reg_by`timevar'-`group'comb_`sample'_d_count_mortalityadj.jpg", replace
 }
 pause
+}
 STOP
 */				
 		
