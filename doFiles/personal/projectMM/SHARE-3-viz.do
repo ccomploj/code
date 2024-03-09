@@ -6,9 +6,9 @@ clear all		/*clears all data in memory*/
 
 
 ***choose data***
-loc data "HRS"
-loc datalist 	"SHARE HRS ELSA"
-foreach data of local datalist{
+loc data "SHARE"
+loc datalist 	"SHARE ELSA HRS"
+*foreach data of local datalist{
 
 
 ***define folder locations***
@@ -80,7 +80,8 @@ set graphics on
 
 
 
-			
+**# Bookmark #1
+			drop if timesincefirstobs==22 // for HRS
 
 
 ****************************************************************************************************
@@ -90,15 +91,18 @@ cd  	"$outpath/fig"
 	*sample 10	
 	
 *** define additional variables ***
+** age groups **
 gen 	agegrp 	= age
 replace agegrp 	= `upperthreshold' if agegrp>`upperthreshold' & agegrp<. /*group few very old*/
 la var  agegrp 	"age"
 *tabstat age, by(agegrp) stats(min max)
 
+** death year **
 clonevar radyear2 = radyear 
-recode 	 radyear2 (. = 0)
+**# Bookmark #1 check if this is correct for all datasets
+replace  radyear2=0 if mi(radyear2) // not dead people will have 
 
-*** countatfirstobs and countatonset ***
+** countatfirstobs and countatonset ** 
 gen tempvar = d_count if inw_first==wave 		// count at baseline
 bys ID: egen countatfirstobs = max(tempvar) 
 recode countatfirstobs (0 = 0 "0 diseases at baseline") (1 = 1 "1 diseases at baseline") (2 = 2 "2 diseases at baseline") (3 = 3 "3 diseases at baseline") (4/10 = 4 "4+ diseases at baseline"), gen(countatfirstobs2)
@@ -111,6 +115,9 @@ recode countatonset (1/2 = 1 "1 or 2 diseases at onset") (3/4 = 2 "3 or 4 diseas
 drop tempvar countatonset
 rename countatonset2 countatonset 
 
+** income groups **
+*xtile incomegroups = hhinc, nq(3)
+
 
 *** define locals to apply to entire file ***
 set scheme s1color
@@ -119,7 +126,7 @@ loc sample 		"sfull" // sbalanced
 loc samplelabel: variable label `sample'
 
 
-*** +++++++++++++++++++ histograms of dependent variable +++++++++++++++++++ ***
+/*** +++++++++++++++++++ histograms of dependent variable +++++++++++++++++++ ***
 loc 	y "d_count"
 foreach y in "d_count" "diff_d_count" "cognitionstd" {
 hist `y'	if `sample'==1, `opt_global' 
@@ -128,7 +135,7 @@ gr export 	"$outpath/fig/`saveloc'/g_hist_`sample'_`y'.jpg", replace
 *STOP
 */
 
-*** +++++++++++++++++++ raw mean and se by age-group (by category t) +++++++++++++++++++ ***
+/*** +++++++++++++++++++ raw mean and se by age-group (by category t) +++++++++++++++++++ ***
 loc y 		"d_count"
 loc ylist	"pubpenr d_any d_count d_count_index" // 
 loc t 		"male"
@@ -178,67 +185,77 @@ gr export 	"$outpath/fig/main/g_crude_byagegrp-male_`y'.jpg", replace
 restore	
 }
 pause
-STOP 
+*STOP 
 */	
 
 *(below graph is essentially equivalent in essence to above graph)
-*** +++++++++++++++++++ scatterplot by age by categories (c.f. Fig 1 in De Nardi) +++++++++++++++++++ *** 
-loc y "d_count"
-loc x "agegrp"
-** (crude) scatter count over AGE by BASELINE COUNT or ONSET COUNT**
-loc z 	  "male" // countatonset | countatfirstobs
-loc zlist "countatfirstobs countatonset"
-foreach z of local zlist{
-	**define labels**
-	loc counter   "1"
-	loc connectedlist "" /*clear content of connectedlist*/
-	loc labellist "" /*need to delete local if in loop*/		
-	levelsof `z', local(levels)
-	foreach l of local levels{
-	loc 	valuel : label (`z') `l'				
-	di "`y'"
-	local connectedlist "`connectedlist'  (connected `y' `x' if `z'==`l')"
-	local labellist  `labellist' `counter' `"`valuel'"'   
-	loc counter = `counter'+1	
-	}
-	di "`connectedlist' "
-	mac list _labellist	 // should not display, but mac list 
-preserve
-collapse (mean) `y'=`y' if `sample'==1, by(`z' `x')  
-twoway `connectedlist', legend(order (`labellist'))  // ytitle(`ylabel')
-gr export 	"$outpath/fig/main/g_crude_byagegrp-`z'_`sample'_`y'.jpg", replace			
-restore
-} 
-STOP
-*/
+	*** +++++++++++++++++++ scatterplot by age by categories (c.f. Fig 1 in De Nardi) +++++++++++++++++++ /*** (this is the same as xtline below)
+	loc y "d_count"
+	loc x "agegrp"
+	** (crude) scatter count over AGE by BASELINE COUNT or ONSET COUNT**
+	loc z 	  "male" // countatonset | countatfirstobs
+	loc zlist "countatfirstobs countatonset"
+	foreach z of local zlist{
+		**define labels**
+		loc counter   "1"
+		loc connectedlist "" /*clear content of connectedlist*/
+		loc labellist "" /*need to delete local if in loop*/		
+		levelsof `z', local(levels)
+		foreach l of local levels{
+		loc 	valuel : label (`z') `l'				
+		di "`y'"
+		local connectedlist "`connectedlist'  (connected `y' `x' if `z'==`l')"
+		local labellist  `labellist' `counter' `"`valuel'"'   
+		loc counter = `counter'+1	
+		}
+		di "`connectedlist' "
+		mac list _labellist	 // should not display, but mac list 
+	preserve
+	collapse (mean) `y'=`y' if `sample'==1, by(`z' `x')  
+	twoway `connectedlist', legend(order (`labellist'))  // ytitle(`ylabel')
+	gr export 	"$outpath/fig/main/g_crude_byagegrp-`z'_`sample'_`y'.jpg", replace			
+	restore
+	} 
+	*STOP
+	*/
 
 
-*** ++++++++++++ graph over TIME/age  +++++++++ ***
+***********************************
+*** ++ graph over TIME/age  +++ ***
+***********************************
 loc 	 y 		"d_count"
 loc 	 ylabel: var label `y'
-
 **# Bookmark #6 if i want to show that time of entry does not matter, i can show that accumulation is parallel for different inw_first groups. However, do this in a separate graph
 **# Bookmark #10 if i additionally control for age in time graph, should not see an increase over time if accumulation is linear (maybe future plot, not now)
 	**# Bookmark #4 i.`timevar'#i.male i.`timevar'#i.raeducl (no interactions as control, i want to see how the lines diverge), or do i want interactions?	
-	
-*** a) using AGE/TIME by MALE/EDUC (ageing is controlled for by cohorts and passing of time) *** 
+
+/*** a) using AGE/TIME by MALE/EDUC (ageing is controlled for by cohorts and passing of time) *** 
+loc agectrl 	""
+loc rotatenotes ""
 loc 	 timevar 	"agegrp" // timesincefirstobs_yr | time | timesincefirstobs
 foreach  timevar in "agegrp" "timesincefirstobs" { // "time"
 	** control for cohort if time on x axis (need to control for cohort if time) ** 
 	if `timevar'==time {
-	loc agectrl "i.cohortmin5"
-	loc rotatenotes "xla(, ang(45))"
+	loc agectrl 	"i.cohortmin5"
+	loc rotatenotes "xla(, ang(20))"
 	}
 	if `timevar'==timesincefirstobs {
-	loc agectrl "i.cohortmin5"
+	loc agectrl 	"i.cohortmin5"
+	loc rotatenotes ""
 	}
-loc 	 group 	  "male"
-foreach  group in "male" "raeducl"  {
+loc 	 group 	  	"countatfirstobs" // male, raeducl, countatfirstobs
+foreach  group in 	"male" "raeducl" "countatfirstobs"  {
+**# Bookmark #1 need to add else statement for the above, should rename agectrl
+	if `group'==countatfirstobs{
+	*loc agectrl 	"i.cohortmin5"
+	*loc rotatenotes ""
+	loc agectrl "male i.raeducl"
+	}
 ** xtline **
 preserve 
 collapse (mean) `y' = `y' 	(count) `y'_freq = `y' if `sample'==1, by(`group' `timevar') 
 xtset 	 `group' `timevar'
-xtline 	 `y', overlay i(`group') t(`timevar') ytitle("mean `ylabel'") `opt_global' name(g0, replace)
+xtline 	 `y', overlay i(`group') t(`timevar') ytitle("mean `ylabel'") `opt_global' name(g0, replace) title("Collapsed Means") note("Notes: The plot shows trends of the collapsed means")
 gr export 	"$outpath/fig/main/g_crude_by`timevar'-`group'_`sample'_d_count.jpg", replace
 pause	
 restore 	
@@ -248,37 +265,40 @@ loc 	 ctrls "`agectrl'"
 loc 	 reg 	xtreg `y' `timevar'##`group' `ctrls'			if `sample'==1 	
 `reg'
 margins `timevar'#`group'  
-marginsplot, `opt_marginsplot'  name(g1, replace)       note("Notes: This marginsplot uses the following sample: `samplelabel'" "and the following controls: `ctrls' (none)" "The underlying regression is: `reg'") `rotatenotes'
+marginsplot, `opt_marginsplot'  name(g1, replace)      note("Notes: Sample: `samplelabel'" "Controls: `ctrls' (none)" "Command: `reg'") `rotatenotes'
 gr export 	"$outpath/fig/main/g_reg_by`timevar'-`group'_`sample'_d_count.jpg", replace
-** plot using margins with controls, adj. for mortality**
+** plot using margins with controls, adj. for mortality **
 loc 	 ctrls "`agectrl' i.radyear2"
 loc 	 reg 	xtreg `y' `timevar'##`group' 	`ctrls'			 if `sample'==1 
 `reg' 
 margins `timevar'#`group'  
-marginsplot, `opt_marginsplot'  title("Adjusted Predictions (mortality adjusted)") name(g2, replace)    note("Notes: This marginsplot uses the following sample: `samplelabel'" "and the following controls: `ctrls' (none)." "The underlying regression is: `reg'") `rotatenotes'
+marginsplot, `opt_marginsplot'  title("Adjusted Predictions (mortality adjusted)") name(g2, replace)    note("Notes: Sample: `samplelabel'" "Controls: `ctrls' (none)" "Command: `reg'") `rotatenotes'
 gr export 	"$outpath/fig/main/g_reg_by`timevar'-`group'_`sample'_d_count_mortalityadj.jpg", replace
-gr combine g1 g2, ycommon cols(2)
-*gr export 	"$outpath/fig/main/g_reg_by`timevar'-`group'comb_`sample'_d_count_mortalityadj.jpg", replace
+*gr combine g1 g2, ycommon cols(2)
+gr export 	"$outpath/fig/main/g_reg_by`timevar'-`group'comb_`sample'_d_count_mortalityadj.jpg", replace
 }
 }
 pause
 *STOP
 */		
 
-	*** b) using TIME by BASELINE AGE COHORT (age is controlled for by cohorts and passing of time) ***
+	/*** b) using TIME by BASELINE AGE COHORT (age is controlled for by cohorts and passing of time) ***
 	**# Bookmark #12 could add age as control here (then should see no increase over time)
-	**# Bookmark #14 add `rotatenotes' to this version when time is included
-		**# Bookmark #4 i.`timevar'#i.male i.`timevar'#i.raeducl (no interactions as control, i want to see how the lines diverge), or do i want interactions?
-	loc 	 timevar 	"timesincefirstobs" // timesincefirstobs_yr | time | timesincefirstobs
-	foreach  timevar in "timesincefirstobs" "time" { // "timesincefirstobs_yr"  
+	**# Bookmark #4 i.`timevar'#i.male i.`timevar'#i.raeducl (no interactions as control, i want to see how the lines diverge), or do i want interactions?
+	loc 	 rotatenotes "" 				 // set to empty
+	loc 	 timevar 	 "timesincefirstobs" // timesincefirstobs_yr | time | timesincefirstobs
+	foreach  timevar in  "timesincefirstobs" "time" { // "timesincefirstobs_yr"  
 		if `timevar'==time {
-		loc rotatenotes "xla(, ang(45))"
+		loc rotatenotes "xla(, ang(20))"
+		}
+		if `timevar'==timesincefirstobs {
+		loc rotatenotes ""
 		}
 	loc 	 group 	 	"cohortmin5"
 	preserve 
 	collapse (mean) `y' = `y' 	(count) `y'_freq = `y' if `sample'==1, by(`group' `timevar') 
 	xtset 	 `group' `timevar'
-	xtline 	 `y', overlay i(`group') t(`timevar') ytitle("mean `ylabel'") `opt_global' name(g0, replace)
+	xtline 	 `y', overlay i(`group') t(`timevar') ytitle("mean `ylabel'") `opt_global' name(g0, replace) title("Collapsed Means") note("Notes: The plot shows trends of the collapsed means")
 	gr export 	"$outpath/fig/main/g_crude_by`timevar'-`group'_`sample'_d_count.jpg", replace
 	pause	
 	restore 
@@ -287,34 +307,208 @@ pause
 	loc 	 ctrls ""
 	loc 	 reg 	xtreg `y' i.`timevar'##i.`group' 						if `sample'==1
 	`reg'
-	margins i.`timevar'#i.`group' 
+	margins 	`timevar'#`group' 
 	marginsplot, `opt_marginsplot' note("Notes: This marginsplot uses the following sample: `samplelabel'" "and the following controls: `ctrls' (none)" "The underlying regression is: `reg'")  name(g1, replace) `rotatenotes'
 	gr export 	"$outpath/fig/main/g_reg_by`timevar'-`group'_`sample'_d_count.jpg", replace
 	** plot using margins with controls** 
 	loc 	 ctrls "male i.raeducl" // age
 	loc 	 reg 	xtreg `y' i.`timevar'##i.`group' 		`ctrls'			if `sample'==1
-	`reg' 
-	margins i.`timevar'#i.`group'  
-	marginsplot, `opt_marginsplot' note("Notes: This marginsplot uses the following sample: `samplelabel'" "and the following controls: `ctrls' (none)." "The underlying regression is: `reg'") title("Adjusted Predictions (mortality adjusted)") name(g2, replace) `rotatenotes'
+	qui `reg' 
+	margins 	`timevar'#`group'  
+	marginsplot, `opt_marginsplot' note("Notes: Sample: `samplelabel'" "Controls: `ctrls' (none)" "Command: `reg'") title("Adjusted Predictions") name(g2, replace) `rotatenotes'
 	gr export 	"$outpath/fig/main/g_reg_by`timevar'-`group'_`sample'_d_count_ctrls.jpg", replace
 
 	** plot using margins with controls, adj. for mortality** 
 	loc 	 ctrls "male i.raeducl i.radyear2" // // age (cohortmin already controlled for my estimating different lines)
 	loc 	 reg 	xtreg `y' i.`timevar'##i.`group' 		`ctrls'			if `sample'==1
 	`reg' 
-	margins i.`timevar'#i.`group'  
-	marginsplot, `opt_marginsplot' note("Notes: This marginsplot uses the following sample: `samplelabel'" "and the following controls: `ctrls' (none)." "The underlying regression is: `reg'") title("Adjusted Predictions (mortality adjusted)") name(g3, replace) `rotatenotes'
+	margins 	 `timevar'#`group'  
+	marginsplot, `opt_marginsplot' note("Notes: Sample: `samplelabel'" "Controls: `ctrls' (none)" "Command: `reg'") title("Adjusted Predictions (mortality adjusted)") name(g3, replace) `rotatenotes'
 	gr export 	"$outpath/fig/main/g_reg_by`timevar'-`group'_`sample'_d_count_mortalityadj.jpg", replace
 	}
 	pause
-	}
-	STOP
+	*}
+	*STOP
 	*/				
 		
-			
+
+*** plot each outcome by groups (could do in Viz next to xtreg - only this is ologit - then, finally, repeat this with regoprob or gologit2) ***
+** plot sth similar with prob of exiting to another state **
+preserve 
+rename d_count d_count2
+recode d_count2 (2/3=3 "2 or 3") (4/20=5 "4 or more"), gen(d_count)
+tab d_count 
+**define labels**
+loc z "d_count"
+loc counter   "1"
+loc labellist "" /*need to delete local if in loop*/		
+levelsof `z', local(levels)
+foreach l of local levels{
+loc 	valuel : label (`z') `l'				
+local labellist  `labellist' `counter' `"d_count=`valuel'"'   
+loc counter = `counter'+1	
+}
+*di "`connectedlist' "
+mac list _labellist	 // should not display, but mac list 
+loc x 		"cohort5"
+loc y 		"d_count"
+loc reg 	ologit 	 `y' i.cohort5 if `sample'==1, vce(cl ID) 
+eststo m1: qui `reg'
+margins `x'	// no dydx
+marginsplot, note("Notes: Sample: `samplelabel'" "Controls: `ctrls' (none)" "Command: `reg'") legend(order(`labellist')) 
+gr export 	"$outpath/fig/main/g_ologit_by`x'_`y'.jpg", replace 
+// 	loc ctrls "male i.raeducl"
+// 	loc reg 	ologit 	 `y' i.cohort5 `ctrls' if `sample'==1, vce(cl ID) 
+// 	eststo m1: qui `reg'
+// 	margins `x'	// no dydx
+// 	marginsplot, note("Notes: Sample: `samplelabel'" "Controls: `ctrls' (none)" "Command: `reg'") legend(order(`labellist')) 
+// 	gr export 	"$outpath/fig/main/g_ologit_by`x'_`y'_adj.jpg", replace 
+//	
+// loc reg 	xtologit `y' i.cohort5 if `sample'==1, nolog vce(cl ID)  // c.age#c.age  male married i.raeducl*, 
+// eststo m2: qui `reg'
+// margins `x' // , dydx(`x')	
+// marginsplot, note("Notes: Sample: `samplelabel'" "Controls: `ctrls' (none)" "Command: `reg'") legend(order(`labellist')) name(c2)
+// gr export 	"$outpath/fig/main/g_xtologit_by`x'_`y'.jpg", replace 
+// 	loc ctrls "male i.raeducl"
+// 	loc reg 	xtologit `y' i.cohort5 `ctrls' if `sample'==1, nolog vce(cl ID)  // c.age#c.age  male married i.raeducl*, 
+// 	eststo m2: qui `reg'
+// 	margins `x' // , dydx(`x')	
+// 	marginsplot, note("Notes: Sample: `samplelabel'" "Controls: `ctrls' (none)" "Command: `reg'") legend(order(`labellist')) 
+// 	gr export 	"$outpath/fig/main/g_xtologit_by`x'_`y'_adj.jpg", replace 
+//
+// loc reg 	gologit2 `y' i.cohort5	if `sample'==1, vce(cluster ID) gamma autofit
+// *gologit2 	`y' 		age `ctrls'	if `sample'==1, vce(cluster ID) gamma npl(age) 
+// eststo m3: qui `reg' 
+// margins `x' // , dydx(`x')	
+// marginsplot, note("Notes: Sample: `samplelabel'" "Controls: `ctrls' (none)" "Command: `reg'") legend(order(`labellist')) 
+// gr export 	"$outpath/fig/main/g_gologit2_by`x'_`y'.jpg", replace 
+// 	loc ctrls "male i.raeducl"
+// 	loc reg 	gologit2 `y' i.cohort5	if `sample'==1, vce(cluster ID) gamma autofit
+// 	*gologit2 	`y' 		age `ctrls'	if `sample'==1, vce(cluster ID) gamma npl(age) 
+// 	eststo m3: qui `reg' 
+// 	margins `x' // , dydx(`x')	
+// 	marginsplot, note("Notes: Sample: `samplelabel'" "Controls: `ctrls' (none)" "Command: `reg'") legend(order(`labellist')) 
+// 	gr export 	"$outpath/fig/main/g_gologit2_by`x'_`y'_adj.jpg", replace 
+*gr combine c1 c2 c3
+*esttab m1 m2
+restore
+*STOP
+*margins `x'
+*mtable	
+*/
+	
+
+	*** show if there is any duration dependence ***
+	*xtset ID time
+	*sample 20 // gives not sorted error, need to sample below each other
+	bys ID: gen  	d_count_lead = f.d_count 
+	bys ID: replace d_count_lead = f2.d_count if d_count_lead ==.
+		// it jumps basically here bc 1 gap is allowed
+	la var d_count_lead "count in next period (gaps are ignored)"
+	sort ID time 
+	*bro ID time d_count*
+	*bys ID: gen periodswithcount1 = 
+	*gen duration = 0
+	gen duration = 0 // only generate for cases when count is 1
+	*			bys ID (time): replace duration = cond(ind==1,cond(_n>1,duration[_n-1]+1,1),0)
+	bys ID (time): replace duration = cond(d_count==1,cond(diff_d_count==0, duration[_n-1]+1,1),0)
+	bys ID (time): replace duration = cond(d_count==2,cond(diff_d_count==0, duration[_n-1]+1,1),duration)
+	bys ID (time): replace duration = cond(d_count==3,cond(diff_d_count==0, duration[_n-1]+1,1),duration)
+	bys ID (time): replace duration = cond(d_count==4,cond(diff_d_count==0, duration[_n-1]+1,1),duration)
+	bys ID (time): replace duration = cond(d_count==5,cond(diff_d_count==0, duration[_n-1]+1,1),duration)
+	bys ID (time): replace duration = cond(d_count==6,cond(diff_d_count==0, duration[_n-1]+1,1),duration)
+	bys ID (time): replace duration = cond(d_count==7,cond(diff_d_count==0, duration[_n-1]+1,1),duration)
+	bys ID (time): replace duration = cond(d_count==8,cond(diff_d_count==0, duration[_n-1]+1,1),duration)
+	bys ID (time): replace duration = cond(d_count==9,cond(diff_d_count==0, duration[_n-1]+1,1),duration)
+	bys ID (time): replace duration = cond(d_count==10,cond(diff_d_count==0, duration[_n-1]+1,1),duration)
+	// currently people might jump back to earlier count and duration drops again
+
+	*			bys ID (time): replace duration = cond(d_count==3,cond(diff_d_count==0, duration[_n-1]+1,1),0)
+	replace duration = . if mi(d_count)
+		** use only observations with highest duration within count (last time period) ** 
+		bys ID (duration): egen durationmax = max(duration)
+		replace duration = . if duration!= durationmax		
+		tab d_count_lead, gen(d_count_lead_) // for stacked bar chart
+
+	*bro ID time d_count duration 
+	*++
+// 		// ?? not working with gaps when a period missing but present in dataset (e.g. in SHARE), but this is not a problem if the missing time period is dropped
+loc y "d_count_lead"
+loc x "d_count" // d_count
+loc ctrls ""
+	*** ologit by count before jump ***
+	*loc reg 	xtologit `y' i.`x' if `sample'==1, nolog vce(cl ID)  // c.age#c.age  male married i.raeducl*, 
+	loc reg 	ologit `y' i.`x'  if `sample'==1 & d_count<9, nolog vce(cl ID) // c.age#c.age  male married i.raeducl*
+	`reg'
+	margins `x' // , dydx(`x')	
+	*margins `x', dydx(`x')	
+	marginsplot, note("Notes: Sample: `samplelabel'" "Controls: `ctrls' (none)" "Command: `reg'") name(c3, replace) 
+	gr export 	"$outpath/fig/main/g_ologit_by`x'_`y'.jpg", replace 
+		loc ctrls "male married i.raeducl*"
+		loc reg 	ologit `y' i.`x' `ctrls' if `sample'==1, nolog vce(cl ID) // c.age#c.age  male married i.raeducl*
+		`reg'
+		margins `x' // , dydx(`x')	
+		marginsplot, note("Notes: Sample: `samplelabel'" "Controls: `ctrls' (none)" "Command: `reg'") name(c4, replace) 
+		gr export 	"$outpath/fig/main/g_ologit_by`x'_`y'_adj.jpg", replace 			
+		++
+		*/
+
+*** do the same now with duration ***		
+loc y "d_count_lead"
+loc x "duration" // d_count
+loc ctrls ""
+forval startcount = 1/4 { // no 0 bc there is no duration with 0 conditions
+
+/**ologit**
+*loc reg 	xtologit `y' i.`x' if `sample'==1, nolog vce(cl ID)  // c.age#c.age  male married i.raeducl*, 
+loc reg 	ologit `y' i.`x'  if `sample'==1 & d_count==`startcount', nolog vce(cl ID) // c.age#c.age  male married i.raeducl*
+`reg'
+margins i.`x' // , dydx(`x')	
+*margins , dydx(`x')	
+marginsplot, note("Notes: Sample: `samplelabel'" "Controls: `ctrls' (none)" "Command: `reg'") name(mh1, replace) 
+gr export 	"$outpath/fig/main/g_ologit_by`x'_`y'_`startcount'.jpg", replace 
+	loc ctrls "male married i.raeducl*"
+	loc reg 	ologit `y' i.`x' `ctrls' if `sample'==1  & d_count==`startcount', nolog vce(cl ID) // c.age#c.age  male married i.raeducl*
+	`reg'
+	margins `x' // , dydx(`x')	
+	marginsplot, note("Notes: Sample: `samplelabel'" "Controls: `ctrls' (none)" "Command: `reg'") name(mh2, replace) 
+	gr export 	"$outpath/fig/main/g_ologit_by`x'_`y'_`startcount'_adj.jpg", replace 			
+*/
+
+**bar graph**
+graph bar (mean) d_count_lead_* if `sample'==1 & d_count==`startcount', over(`x') name(g1, replace) stack title("Disease Count before count transition: `startcount'") // xla(,label("Number of Periods with `startcount' conditions")) // over(d_count)	
+gr export 	"$outpath/fig/main/g_barby`x'_`sample'_`y'_`startcount'.jpg", replace		
+}
+*/				
+
+
+
++++++++++++++
+	** plot the same using crude data now **
+	*scatter d_count_lead d_count if `sample'==1
+	
+	*preserve
+	loc y "d_count_lead"
+	loc z ""
+	loc x "duration"
+	
+		egen freq = count(d_count_lead), by(d_count_lead)
+		egen total = total(freq), by(d_count_lead)
+		gen prob = freq / total		
+	*graph bar (mean) d_count_lead if `sample'==1 & d_count==1, over(duration) name(g1, replace) stack // over(d_count)
+
+	++
+	collapse (mean) `y'=`y' if `sample'==1 & d_count==1, by(`z' `x')  
+	tab `y' `x' 
+	graph bar d_count_lead, over(duration)
+	*twoway `connectedlist', legend(order (`labellist'))  // ytitle(`ylabel')
+		ologit d_count_lead i.d_count##i.duration if d_count==1
+		margins i.d_count#i.duration
+		marginsplot 
+	restore	
+	
 	
 ++++
-
 ***Single-record-per-subject survival data (time until first disease)***	
 // stset timevar [if] [weight] , id(idvar) failure(failvar[==numlist]) [multiple_options]
 // streset [if] [weight] [, multiple_options]
@@ -355,87 +549,5 @@ stcox `ctrl'
 */
 
 
-	/*** ++++++++++++ graph over TIME b) using time, by E+++++++++ ***
-		*** +++ graph by TIME: vars (with and without controlling for covariates) +++ ***
-		log using "$outpath/logs/log-g_bytime.txt", text replace name(log)
-		**# Bookmark #1 Can I do this here with xtologit?
-		loc 	timevar 	"timesincefirstobs"
-		loc 	ctrls 		"age male"
-		loc 	y			"d_count"
-		loc 	ylist 		"d_count d_count_index timetonextdisease2" //
-		loc 	reg 		"xtreg" // xtreg | xtologit is very slow; choice may depend on distribution of dependent variable; using index may indeed be the most appropriate.
-		*foreach sample in 	"sfull" "sneverdead" "shealthyatfirstobs"  { /*first sample defined at top of file*/
-			di "Sample is: `sample' and variables are:"
-			loc samplelabel: variable label `sample'
-			sum `ylist' `timevar' `ctrls' if `sample'	
-			*foreach y of local ylist { /*repeat graph for each selected variable*/
-		loc 	ylabel : variable label `y'		/*uses variable label of y*/	
-		qui {
-		**without controls**
-			*qui log using "$outpath/logs/log-g_bytime.txt", text replace name(log) // put here if want to close it everytime regardless of running loop
-			*di 	"timevar: `timevar' | ctrls `ctrls' | y: `y' | ylist `ylist' | sample `sample'"
-			sum `y' `timevar'
-		`reg' 	`y' i.`timevar'  		if `sample' // without controls
-		margins 	`timevar', noestimcheck // atmeans
-		marginsplot, xdimension(`timevar') ytitle("`ylabel'") note("Notes: This marginsplot uses the following sample: `samplelabel' and no controls." "The underlying regression is: `reg'")  // xla(, ang(45))  ytitle("`ylabel'")
-		gr export 	"$outpath/fig/`saveloc'/g_reg_bytime_`sample'_`y'.jpg", replace
-		/
-			/**with controls (male)**
-			`reg'	`y' i.`timevar'##male `ctrls' if `sample' // with controls
-			margins 	`timevar'#male, noestimcheck 
-			marginsplot, xdimension(`timevar') ytitle("`ylabel'") note("Notes: This marginsplot uses the following sample: `samplelabel'" "and no controls." "The underlying regression is: `reg'") // xla(, ang(45))
-			gr export 	"$outpath/fig/`saveloc'/g_reg_bytime-male_`sample'_`y'.jpg", replace
-			**with controls (educ)**
-			`reg'	`y' i.`timevar'##raeducl `ctrls' if `sample' // with controls
-			margins 	`timevar'#raeducl, noestimcheck 
-			marginsplot, xdimension(`timevar') ytitle("`ylabel'") note("Notes: This marginsplot uses the following sample: `samplelabel'" "and the following controls: `ctrls'." "The underlying regression is: `reg'") // xla(, ang(45))
-			gr export 	"$outpath/fig/`saveloc'/g_reg_bytime-educ_`sample'_`y'.jpg", replace
-			*/	
-		}
-		qui log close log
-		}
-		}
-		pause
-		STOP
-		*/
-		
-		
-		/*** old version
-		loc 	 timevar "timesincefirstobs" // timesincefirstobs_yr | time | timesincefirstobs
-		loc 	 group 	 "cohortmin5"
-			** graph: xtline by age group **
-		preserve 
-		collapse (mean) `y' = `y' 	(count) `y'_freq = `y' if `sample'==1, by(`group' `timevar') 
-		xtset 	 `group' `timevar'
-		xtline 	 `y', overlay i(`group') t(`timevar') ytitle("mean `ylabel'") `opt_global' name(g0)
-		gr export 	"$outpath/fig/main/g_crude_by`timevar'-`group'_`sample'_d_count.jpg", replace
-			*qui log close log
-		pause	
-		restore 	
-			** plot using margins **
-			loc 	 ctrls 			 "male marriedr raeducl i.`timevar'#i.male i.`timevar'#i.raeducl age"	
-			loc 	 opt_marginsplot "ytitle("predicted `ylabel'") title("Adjusted Predictions")"  // noci
-			loc 	 reg 	xtreg `y' i.`timevar'#i.`group' 							if `sample'==1
-			`reg'
-			margins i.`timevar'#i.`group' 
-			marginsplot, `opt_marginsplot' note("Notes: This marginsplot uses the following sample: `samplelabel'" "and no controls" "The underlying regression is: `reg'")  name(g1)
-			gr export 	"$outpath/fig/main/g_reg_by`timevar'-`group'_`sample'_d_count.jpg", replace
-			** plot using margins with controls **
-			loc 	 reg 	xtreg `y' i.`timevar'#i.`group' `ctrls' 					if `sample'==1
-			`reg' 
-			margins i.`timevar'#i.`group'  
-			marginsplot, `opt_marginsplot'  note("Notes: This marginsplot uses the following sample: `samplelabel'" "and the following controls: `ctrls'." "The underlying regression is: `reg' `ctrls'") name(g2) 
-			gr export 	"$outpath/fig/main/g_reg_by`timevar'-`group'_`sample'_d_count_adj.jpg", replace
-			** plot using margins with controls, adj. for mortality**
-			loc 	 reg 	xtreg `y' i.`timevar'#i.`group' `ctrls' i.radyear2			if `sample'==1
-			`reg' 
-			margins i.`timevar'#i.`group'  
-			marginsplot, `opt_marginsplot' note("Notes: This marginsplot uses the following sample: `samplelabel'" "and the following controls: `ctrls'." "The underlying regression is: `reg' `ctrls' i.radyear2") name(g3) 
-			gr export 	"$outpath/fig/main/g_reg_by`timevar'-`group'_`sample'_d_count_adj_mortality.jpg", replace
-			gr combine g1 g2 g3, ycommon cols(3)
-			gr export 	"$outpath/fig/main/g_reg_by`timevar'-`group'comb_`sample'_d_count_adj_mortality.jpg", replace
-		pause
-		STOP
-		*/
 
 		

@@ -5,11 +5,11 @@ clear all		/*clears all data in memory*/
 
 
 ***choose data***
-loc data 		"HRS"
+loc data 		"SHARE"
 
 *loc append_iterationlog "replace" /*short iteration log at the end of the loop*/ 
 loc datalist 	"SHARE ELSA HRS"
-foreach data of local datalist {
+*foreach data of local datalist {
 
 ***define folder locations***
 if "`c(username)'" == "P307344" { // UWP server
@@ -120,36 +120,26 @@ foreach l of local levels{
 eststo logit`l': qui logit d_any 		c.age c.age#c.age male married i.raeducl*  if time==`l', or 
 estadd loc time  "`l'" // : d_any`l' d_mm`l'
 }
-loc esttab_opt "la stats(N r2 time) replace nobase nocons "
-esttab logit*, `esttab_opt' // using "$outpath/reg/o_logitbywaved_any" , `esttab_opt' tex nocons
-
+esttab logit*, `esttab_opt' stats(N r2 time) // using "$outpath/reg/o_logitbywaved_any" , `esttab_opt' tex nocons
+*/
 ** xtlogit using all data **
-eststo xtlogitre: qui xtlogit d_any 		c.age male married i.raeducl* , or re vce(cl ID)  // c.age#c.age
-eststo xtlogitfe: qui xtlogit d_any 		c.age male married i.raeducl* , or fe 			  // c.age#c.age
+eststo xtlogitre: qui xtlogit d_any 		c.age male married i.raeducl* if `sample'==1, or re vce(cl ID)  // c.age#c.age
+qui estadd loc model2 "RE"
+eststo xtlogitfe: qui xtlogit d_any 		c.age male married i.raeducl* if `sample'==1, or fe 			  // c.age#c.age
+qui estadd loc model2 "FE"
+loc esttab_opt "la  replace nobase nocons tex stats(N model2)"
 esttab xtlogit*, `esttab_opt' 
-esttab xtlogit* using "$outpath/reg/o_xtlogit_d_any" , `esttab_opt' 
+esttab xtlogit* using "$outpath/reg/t_xtlogit_d_any" , `esttab_opt'   
+STOP
 */
 
-	/*** plot each outcome by groups (could do in Viz next to xtreg - only this is ologit - then, finally, repeat this with regoprob or gologit2) ***
-	loc x 		"cohort5"
-	loc reg 	ologit 	 d_count i.cohort5 if `sample'==1
-	`reg'
-	margins, dydx(`x')	
-	marginsplot, note("Notes: This marginsplot uses the following sample: `samplelabel'" "and the following controls: `ctrls' (none)" "The underlying regression is: `reg'") 
-	gr export 	"$outpath/fig/main/g_ologit_by`x'_`y'.jpg", replace 
-	loc reg 	xtologit d_count i.cohort5 if `sample'==1, nolog vce(cl ID)  // c.age#c.age  male married i.raeducl*, 
-	margins, dydx(`x')	
-	marginsplot, note("Notes: This marginsplot uses the following sample: `samplelabel'" "and the following controls: `ctrls' (none)" "The underlying regression is: `reg'") 
-	gr export 	"$outpath/fig/main/g_xtologit_by`x'_`y'.jpg", replace 
-	STOP
-	*margins cohort5
-	*mtable	
+
 	*/
 
 *** +++ b) what predicts the count? (ordered model) +++ ***
 loc y 			"d_count"
-	*loc interactions "age_male age_educ_voc age_educ_uni" // i.cohortmin5 as dummies
-loc ctrls 		"educ_* male  pretreat_workr pretreat_marriedr `interactions'" 
+	loc extra "pretreat_workr pretreat_marriedr age_male age_educ_voc age_educ_uni" // i.cohortmin5 as dummies
+loc ctrls 		"educ_* male   `extra'" 
 	preserve 
 	timer clear 	1 		
 	timer on 		1 

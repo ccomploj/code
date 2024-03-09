@@ -166,6 +166,9 @@ sum 	d_count_index, de
 la var 	d_count_index 		"disease index (=count/total diseases)"
 
 **First difference in d_count: if one has c diseases, does he keep the disease or does it disappear again? **	
+**# Bookmark #1
+	bys ID: gen diff_d_count_forward = d_count[_n+1] - d_count 
+	la var 	diff_d_count_forward 	"1st diff (forward) of # of diseases"
 bys ID: gen 	diff_d_count 	  = d_count - L.d_count
 bys ID: gen 	diff_miss_d_count = d_count - L.d_count // accounts for gaps, e.g. if not responded in some wave
 bys ID: replace	diff_miss_d_count = d_count - L2.d_count if L.d_count>=. & mi(diff_miss_d_count) /*L2 necessary if missing t (e.g. w3 in SHARE)*/  

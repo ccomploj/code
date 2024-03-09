@@ -256,12 +256,8 @@ tab wave
 
 	***generate alternative for "wave", as survey year***
 	**generate time**
-	recode	wave (1 = 2002 "2002? wave") (2 = 2004 "2004? wave") (3 = 2006 "2006? wave") (4 = 2008 "2008? wave") (5 = 2010 "2010? wave") (6 = 2012 "2012? wave") (7 = 2014 "2014? wave") (8 = 2016 "2016? wave") (9 = 2018 "2018? wave") , gen(time)
+	recode	wave (1 = 2002 "2002/03 wave") (2 = 2004 "2004/05 wave") (3 = 2006 "2006/07 wave") (4 = 2008 "2008/09 wave") (5 = 2010 "2010/11 wave") (6 = 2012 "2012/13 wave") (7 = 2014 "2014/15 wave") (8 = 2016 "2016/17 wave") (9 = 2018 "2018/19 wave") , gen(time)
 	la var 	time "Survey Year (Wave)"
-	**relabel wave to survey-specific value-labels**
-	*la de 	wavel 1 "2004 wave" 2 "2006/07 wave" 3 "2008/09 wave" 4 "2011/12 wave" 5 "2013 wave" 6 "2015 wave" 7 "2017 wave" 8 "2019/20 wave" , replace
-	*la val 	wave wavel	
-
 
 	
 **format interview time as single variable**
