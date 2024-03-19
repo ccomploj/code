@@ -151,7 +151,7 @@ tab 	iwstatr wave  		// full sample
 	
 ***overview of data***
 **final sample**
-qui log using 	"$outpath/logs/log-samplefinal.txt", text replace name(log) // exported onto github project directly
+qui log using 	"$outpath/logs/log-samplefinal.txt", text replace name(log) 
 tab hacohort wave 	if sfull,m
 tab iwstatr wave 	if sfull,m
 sum agemin 			if sfull, 

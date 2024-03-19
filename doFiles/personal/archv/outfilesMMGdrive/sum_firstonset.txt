@@ -1,0 +1,73 @@
+--------------------------------------------------------------------------------------
+      name:  log
+       log:  X:\My Documents\XdrvData\SHARE\SHAREoutput\sum_firstonset.txt
+  log type:  text
+ opened on:   3 Sep 2023, 12:31:07
+
+.                         de radiag* 
+
+Variable      Storage   Display    Value
+    name         type    format    label      Variable label
+--------------------------------------------------------------------------------------
+radiaghibp      byte    %9.0g                 radiaghibp: R age first diagnosed with
+                                                high BP
+radiagdiab      byte    %9.0g                 radiagdiab: R age first diagnosed with
+                                                diabetes
+radiagcancr     int     %9.0g                 radiagcancr: R age first diagnosed with
+                                                cancer
+radiaglung      byte    %9.0g                 radiaglung: R age first diagnosed with
+                                                lung disease
+radiagheart     byte    %9.0g                 radiagheart: R age first diagnosed with
+                                                heart problem
+radiagstrok     byte    %9.0g                 radiagstrok: R age first diagnosed with
+                                                stroke
+radiagarthr     byte    %9.0g                 radiagarthr: R age first diagnosed with
+                                                arthritis
+radiagparkin    byte    %9.0g                 radiagparkin: R age first diagnosed with
+                                                Parkinsons
+radiaghip       byte    %9.0g                 radiaghip: R age first diagnosed with
+                                                hip fracture
+radiagosteo     byte    %9.0g                 radiagosteo: R age first diagnosed with
+                                                osteoporosis
+radiagpsych     byte    %9.0g                 radiagpsych: R age first diagnosed with
+                                                psych disorder
+radiagkidney    byte    %9.0g                 radiagkidney: R age first diagnosed with
+                                                kidney disease
+radiagalzdem    byte    %9.0g                 radiagalzdem: R age first diagnosed with
+                                                Alzheimer's/dementia
+
+.                         sum radiag* // this is self-reported age of first onset, per
+>  disease (from g2aging)
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+  radiaghibp |    366,040    53.04153    12.78939          0         94
+  radiagdiab |    114,256     55.8022    12.76982          0         97
+ radiagcancr |     60,728    57.90304    13.40544          0        101
+  radiaglung |     56,176    46.87924    20.14729          0         92
+ radiagheart |    126,456    56.50952    15.13659          0         96
+-------------+---------------------------------------------------------
+ radiagstrok |     41,704    61.16075    13.99055          0         99
+ radiagarthr |    208,856    51.31118    15.12005          0         93
+radiagparkin |      6,544    64.86675    15.21458          0         92
+   radiaghip |     22,296    57.32329    20.75757          0         98
+ radiagosteo |     30,704    57.86165     12.2275          0         90
+-------------+---------------------------------------------------------
+ radiagpsych |     19,360    45.87975    18.13894          0         91
+radiagkidney |      3,624     53.4415    17.42367          0         88
+radiagalzdem |      9,584    67.55509    18.38573          0         96
+
+.                         sum d_first* // d_firstageg2 is the self-reported first onset 
+> of any of radiag* (only for the same variables chosen in d_firstage: hibp diab heart lung psych)
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+  d_firstage |    729,976    66.79781     10.1531         22        103
+d_firstage~2 |    491,912    51.50316     14.8748          0         97
+
+.                         log close log
+      name:  log
+       log:  X:\My Documents\XdrvData\SHARE\SHAREoutput\sum_firstonset.txt
+  log type:  text
+ closed on:   3 Sep 2023, 12:31:08
+--------------------------------------------------------------------------------------

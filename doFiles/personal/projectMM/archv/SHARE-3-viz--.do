@@ -1,5 +1,5 @@
 pause on
-pause off
+*pause off
 log close _all 	/*closes all open log files*/
 clear all		/*clears all data in memory*/
 
@@ -230,20 +230,20 @@ loc 	 ylabel: var label `y'
 **# Bookmark #6 if i want to show that time of entry does not matter, i can show that accumulation is parallel for different inw_first groups. However, do this in a separate graph
 
 *** a) using AGE/TIME by MALE/EDUC (ageing is controlled for by cohorts and passing of time) *** 
-	loc timevar 	"age" // age | time | timesincefirstobs_yr | time | timesincefirstobs
+loc 	timevar 	"age" // age | time | timesincefirstobs_yr | time | timesincefirstobs
 	loc ctrl 		""	
 	*loc catlist 	""	/*activate if time on xaxis*/
 	if `timevar'== age {
 	loc xla 		"xla(50(5)90)"
 	loc xlarotate	""	
-	loc cat  	  	"male" // male, raeducl, countatfirstobs
+	loc cat  	  	"countatfirstobs" // male, raeducl, countatfirstobs
 	loc catlist 	"male raeducl countatfirstobs"
 	loc sampleaddition "& cohortmin5==`cohort'"
 	}
 	if `timevar'== time {
 *	if `timevar'== timesincefirstobs {		
 		clonevar 	cohortmin5b = cohortmin5
-		replace 	cohortmin5b = . if cohortmin5!=cohort5 /*if age is larger than entry cohort age*/	
+		replace 	cohortmin5b = . if cohortmin5!=cohort5 /*if age is larger than entry cohort*/	
 		*	replace cohortmin5b = . if inw_first!=3
 		la de 		cohortmin5bl 50 "ageatfirstobs & age: `agethreshold'-54" 55 "ageatfirstobs & age: 55-59" 60 "ageatfirstobs & age: 60-64" 65 "ageatfirstobs & age: 65-69" 
 		la val 		cohortmin5b cohortmin5bl
@@ -258,11 +258,8 @@ loc 	 ylabel: var label `y'
 	
 
 
-	
-	
-
 ** plot for each category ** 
-*foreach cat of local catlist {	
+foreach cat of local catlist {	
 	
 	** plot separately for each age-cohort (comment out when time on x-axis (cannot include this using locals)) **
 	levelsof cohortmin5, local(levels)
@@ -272,36 +269,34 @@ loc 	 ylabel: var label `y'
 	loc sampleaddition "& cohortmin5==`cohort'" /*needs to be located here*/
 	*/
 
-/** xtline (crude data: identical to adjusted predictions (profile plots) from "Reg", but without CI) **
-*preserve // cannot preserve data twice in stata
+** xtline **
+preserve 
 collapse (mean) `y' = `y' 	(count) `y'_freq = `y' if `sample'==1 `sampleaddition' , by(`cat' `timevar') 
 xtset 	 `cat' `timevar'
 xtline 	 `y', overlay i(`cat') t(`timevar') ytitle("mean `ylabel'") `opt_global'  title("Collapsed Means `cohortlabel'") note("Notes: The plot shows trends of the collapsed means") name(g0_`cohort', replace) `xla'
-*gr export 	"$outpath/fig/main/g_crude_by`timevar'-`cat'_`sample'_d_count_`cohort'.jpg", replace
-*restore
-*/
+gr export 	"$outpath/fig/main/g_crude_by`timevar'-`cat'_`sample'_d_count_`cohort'.jpg", replace
+restore
 ** plot using margins **
-preserve
-qui 	sum time, meanonly 
-loc 	timerange = r(max)-r(min) /*maximum time an id is observed*/
-replace age = `cohort'+`timerange' if age >`cohort'+`timerange' & age<. `sampleaddition' // set a maximum agemax for that cohort (otherwise very large SE for that group)
-loc 	 opt_marginsplot "title("Crude Data `cohortlabel'") ytitle("linear prediction (`ylabel')")" // noci  
+loc 	 opt_marginsplot "ytitle("predicted `ylabel'") title("Adjusted Predictions `cohortlabel'")" // noci
 loc 	 ctrls  "`ctrl'"
 loc 	 reg  	reg `y' `timevar'##`cat' `ctrls'	if `sample'==1 `sampleaddition'
-qui `reg'
-qui margins `timevar'#`cat'  
-marginsplot, `opt_marginsplot'  name(g1_`cohort', replace) note("Sample: `samplelabel' | Controls: `ctrls' (none)" "Underlying Regression: `reg'") `xla' `xlarotate'
+`reg'
+margins `timevar'#`cat'  
+marginsplot, `opt_marginsplot'  name(g1_`cohort', replace) note("Notes: Sample: `samplelabel'" "Controls: `ctrls' (none)" "Command: `reg'") `xla' `xlarotate'
 gr export 	"$outpath/fig/main/g_reg_by`timevar'-`cat'_`sample'_d_count_`cohort'.jpg", replace
-restore
-	** combine plots **
+** combine plots ** 
+*gr combine g0_`cohort' g1_`cohort', ycommon // cols(1)
+*gr export 	"$outpath/fig/main/g_crude_by`timevar'-`cat'comb_`sample'_d_count_`cohort'.jpg", replace
 }
 ** plot using margins with controls, adj. for mortality (needs to be outside subplots loop) **
 * combine plots ** 
-*gr combine g1_50 g1_55 g1_60 g1_65, ycommon // cols(1)
+gr combine g0_50 g0_55 g0_60 g0_65, ycommon // cols(1)
+gr export 	"$outpath/fig/main/g_crude_by`timevar'-`cat'comb_`sample'_d_count.jpg", replace
+gr combine g1_50 g1_55 g1_60 g1_65, ycommon // cols(1)
 gr export 	"$outpath/fig/main/g_reg_by`timevar'-`cat'comb_`sample'_d_count.jpg", replace
 }
 pause
-STOP
+*STOP
 */		
 
 	*** b) using TIME by BASELINE AGE COHORT ***
@@ -373,11 +368,6 @@ restore
 	bys ID (time): replace duration = cond(d_count==8,cond(diff_d_count==0, duration[_n-1]+1,1),duration)
 	bys ID (time): replace duration = cond(d_count==9,cond(diff_d_count==0, duration[_n-1]+1,1),duration)
 	bys ID (time): replace duration = cond(d_count==10,cond(diff_d_count==0, duration[_n-1]+1,1),duration)
-	
-	gen duration2 = duration
-	
-	
-	
 	// currently people might jump back to earlier count and duration drops again
 
 	*			bys ID (time): replace duration = cond(d_count==3,cond(diff_d_count==0, duration[_n-1]+1,1),0)

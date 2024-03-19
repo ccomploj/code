@@ -1,0 +1,70 @@
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+      name:  xtologit
+       log:  X:/My Documents/XdrvData/ELSA//files/logs/log-t-regd_count-age-ologitELSA.txt
+  log type:  text
+ opened on:   2 Mar 2024, 14:46:34
+
+Fitting comparison model:
+
+Iteration 0:  Log likelihood = -80824.147  
+Iteration 1:  Log likelihood = -76296.975  
+Iteration 2:  Log likelihood = -76237.217  
+Iteration 3:  Log likelihood = -76237.121  
+Iteration 4:  Log likelihood = -76237.121  
+
+Refining starting values:
+
+Grid node 0:  Log likelihood =  -65663.72
+
+Fitting full model:
+
+Iteration 0:  Log pseudolikelihood =  -65663.72  
+Iteration 1:  Log pseudolikelihood =  -54835.37  
+Iteration 2:  Log pseudolikelihood =   -52629.2  
+Iteration 3:  Log pseudolikelihood = -51544.297  
+Iteration 4:  Log pseudolikelihood = -51332.236  
+Iteration 5:  Log pseudolikelihood = -51311.567  
+Iteration 6:  Log pseudolikelihood = -51311.438  
+Iteration 7:  Log pseudolikelihood = -51311.437  
+
+Random-effects ordered logistic regression          Number of obs    =  48,254
+Group variable: ID                                  Number of groups =   7,152
+
+Random effects u_i ~ Gaussian                       Obs per group:
+                                                                 min =       1
+                                                                 avg =     6.7
+                                                                 max =       9
+
+Integration method: mvaghermite                     Integration pts. =      12
+
+                                                    Wald chi2(6)     = 7949.07
+Log pseudolikelihood = -51311.437                   Prob > chi2      =  0.0000
+
+                                      (Std. err. adjusted for 7,152 clusters in ID)
+-----------------------------------------------------------------------------------
+                  |               Robust
+          d_count | Coefficient  std. err.      z    P>|z|     [95% conf. interval]
+------------------+----------------------------------------------------------------
+              age |   .3110585   .0036523    85.17   0.000     .3039001    .3182169
+  educ_vocational |  -1.378765   .1275964   -10.81   0.000     -1.62885   -1.128681
+  educ_university |  -2.338331    .161957   -14.44   0.000    -2.655761   -2.020901
+             male |   .0291257   .1103928     0.26   0.792    -.1872403    .2454917
+   pretreat_workr |  -1.109719   .1172343    -9.47   0.000    -1.339494    -.879944
+pretreat_marriedr |  -.8339608   .1326321    -6.29   0.000    -1.093915   -.5740066
+------------------+----------------------------------------------------------------
+            /cut1 |   13.83461   .2771319                      13.29145    14.37778
+            /cut2 |   17.89261   .2807397                      17.34237    18.44285
+            /cut3 |   20.99204   .2855758                      20.43232    21.55176
+            /cut4 |   23.55618    .290637                      22.98654    24.12582
+            /cut5 |   25.99135   .2982815                      25.40673    26.57597
+            /cut6 |   28.33957   .3082169                      27.73548    28.94367
+            /cut7 |    30.6848   .3328501                      30.03242    31.33717
+            /cut8 |   33.35061   .4065307                      32.55382     34.1474
+            /cut9 |    37.0856   1.209285                      34.71544    39.45575
+------------------+----------------------------------------------------------------
+        /sigma2_u |   19.21624   .4609938                      18.33362    20.14135
+-----------------------------------------------------------------------------------
+
+added macro:
+            e(regtype) : "xtologit"
+file X:/My Documents/XdrvData/ELSA//files/logs/t-regd_count-age-ELSAestimates.ster saved

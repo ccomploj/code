@@ -1,0 +1,306 @@
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+      name:  xtreg
+       log:  X:/My Documents/XdrvData/SHARE//files/logs/log-t-regd_count-age-xtologitSHARE.txt
+  log type:  text
+ opened on:   2 Mar 2024, 13:17:35
+
+Random-effects GLS regression                   Number of obs     =     84,391
+Group variable: ID                              Number of groups  =     17,263
+
+R-squared:                                      Obs per group:
+     Within  = 0.3708                                         min =          1
+     Between = 0.1110                                         avg =        4.9
+     Overall = 0.1799                                         max =          7
+
+                                                Wald chi2(6)      =   40024.65
+corr(u_i, X) = 0 (assumed)                      Prob > chi2       =     0.0000
+
+-----------------------------------------------------------------------------------
+          d_count | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
+------------------+----------------------------------------------------------------
+              age |     .11104   .0005742   193.40   0.000     .1099147    .1121653
+  educ_vocational |  -.3111035   .0231273   -13.45   0.000    -.3564322   -.2657748
+  educ_university |  -.5942979   .0278337   -21.35   0.000     -.648851   -.5397449
+             male |  -.2335203   .0204919   -11.40   0.000    -.2736836    -.193357
+   pretreat_workr |   -.269706   .0213631   -12.62   0.000     -.311577    -.227835
+pretreat_marriedr |  -.1302493   .0252464    -5.16   0.000    -.1797313   -.0807673
+            _cons |  -4.647528   .0469189   -99.05   0.000    -4.739487   -4.555569
+------------------+----------------------------------------------------------------
+          sigma_u |   1.255109
+          sigma_e |  .73953908
+              rho |  .74228925   (fraction of variance due to u_i)
+-----------------------------------------------------------------------------------
+note: 50.age#55.cohortmin5 identifies no observations in the sample.
+note: 50.age#60.cohortmin5 identifies no observations in the sample.
+note: 50.age#65.cohortmin5 identifies no observations in the sample.
+note: 51.age#55.cohortmin5 identifies no observations in the sample.
+note: 51.age#60.cohortmin5 identifies no observations in the sample.
+note: 51.age#65.cohortmin5 identifies no observations in the sample.
+note: 52.age#55.cohortmin5 identifies no observations in the sample.
+note: 52.age#60.cohortmin5 identifies no observations in the sample.
+note: 52.age#65.cohortmin5 identifies no observations in the sample.
+note: 53.age#55.cohortmin5 identifies no observations in the sample.
+note: 53.age#60.cohortmin5 identifies no observations in the sample.
+note: 53.age#65.cohortmin5 identifies no observations in the sample.
+note: 54.age#55.cohortmin5 identifies no observations in the sample.
+note: 54.age#60.cohortmin5 identifies no observations in the sample.
+note: 54.age#65.cohortmin5 identifies no observations in the sample.
+note: 55.age#60.cohortmin5 identifies no observations in the sample.
+note: 55.age#65.cohortmin5 identifies no observations in the sample.
+note: 56.age#60.cohortmin5 identifies no observations in the sample.
+note: 56.age#65.cohortmin5 identifies no observations in the sample.
+note: 57.age#60.cohortmin5 identifies no observations in the sample.
+note: 57.age#65.cohortmin5 identifies no observations in the sample.
+note: 58.age#60.cohortmin5 identifies no observations in the sample.
+note: 58.age#65.cohortmin5 identifies no observations in the sample.
+note: 59.age#60.cohortmin5 identifies no observations in the sample.
+note: 59.age#65.cohortmin5 identifies no observations in the sample.
+note: 60.age#65.cohortmin5 identifies no observations in the sample.
+note: 61.age#65.cohortmin5 identifies no observations in the sample.
+note: 62.age#65.cohortmin5 identifies no observations in the sample.
+note: 63.age#65.cohortmin5 identifies no observations in the sample.
+note: 64.age#65.cohortmin5 identifies no observations in the sample.
+note: 70.age#65.cohortmin5 omitted because of collinearity.
+note: 71.age#50.cohortmin5 identifies no observations in the sample.
+note: 71.age#65.cohortmin5 omitted because of collinearity.
+note: 72.age#50.cohortmin5 identifies no observations in the sample.
+note: 72.age#65.cohortmin5 omitted because of collinearity.
+note: 73.age#50.cohortmin5 identifies no observations in the sample.
+note: 73.age#65.cohortmin5 omitted because of collinearity.
+note: 74.age#50.cohortmin5 identifies no observations in the sample.
+note: 74.age#65.cohortmin5 omitted because of collinearity.
+note: 75.age#50.cohortmin5 identifies no observations in the sample.
+note: 75.age#65.cohortmin5 omitted because of collinearity.
+note: 76.age#50.cohortmin5 identifies no observations in the sample.
+note: 76.age#55.cohortmin5 omitted because of collinearity.
+note: 76.age#65.cohortmin5 omitted because of collinearity.
+note: 77.age#50.cohortmin5 identifies no observations in the sample.
+note: 77.age#55.cohortmin5 identifies no observations in the sample.
+note: 77.age#65.cohortmin5 omitted because of collinearity.
+note: 78.age#50.cohortmin5 identifies no observations in the sample.
+note: 78.age#55.cohortmin5 identifies no observations in the sample.
+note: 78.age#65.cohortmin5 omitted because of collinearity.
+note: 79.age#50.cohortmin5 identifies no observations in the sample.
+note: 79.age#55.cohortmin5 identifies no observations in the sample.
+note: 79.age#65.cohortmin5 omitted because of collinearity.
+note: 80.age#50.cohortmin5 identifies no observations in the sample.
+note: 80.age#55.cohortmin5 identifies no observations in the sample.
+note: 80.age#60.cohortmin5 omitted because of collinearity.
+note: 80.age#65.cohortmin5 omitted because of collinearity.
+note: 81.age#50.cohortmin5 identifies no observations in the sample.
+note: 81.age#55.cohortmin5 identifies no observations in the sample.
+note: 81.age#60.cohortmin5 identifies no observations in the sample.
+note: 81.age#65.cohortmin5 omitted because of collinearity.
+note: 82.age#50.cohortmin5 identifies no observations in the sample.
+note: 82.age#55.cohortmin5 identifies no observations in the sample.
+note: 82.age#60.cohortmin5 identifies no observations in the sample.
+note: 82.age#65.cohortmin5 omitted because of collinearity.
+note: 83.age#50.cohortmin5 identifies no observations in the sample.
+note: 83.age#55.cohortmin5 identifies no observations in the sample.
+note: 83.age#60.cohortmin5 identifies no observations in the sample.
+note: 83.age#65.cohortmin5 omitted because of collinearity.
+note: 84.age#50.cohortmin5 identifies no observations in the sample.
+note: 84.age#55.cohortmin5 identifies no observations in the sample.
+note: 84.age#60.cohortmin5 identifies no observations in the sample.
+note: 84.age#65.cohortmin5 omitted because of collinearity.
+note: 85.age#50.cohortmin5 identifies no observations in the sample.
+note: 85.age#55.cohortmin5 identifies no observations in the sample.
+note: 85.age#60.cohortmin5 identifies no observations in the sample.
+note: 85.age#65.cohortmin5 omitted because of collinearity.
+
+Random-effects GLS regression                   Number of obs     =     84,391
+Group variable: ID                              Number of groups  =     17,263
+
+R-squared:                                      Obs per group:
+     Within  = 0.3864                                         min =          1
+     Between = 0.1227                                         avg =        4.9
+     Overall = 0.2040                                         max =          7
+
+                                                Wald chi2(89)     =   44232.74
+corr(u_i, X) = 0 (assumed)                      Prob > chi2       =     0.0000
+
+------------------------------------------------------------------------------------------
+                 d_count | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
+-------------------------+----------------------------------------------------------------
+                     age |
+                     51  |   .0965181   .0414451     2.33   0.020     .0152872     .177749
+                     52  |   .1761263   .0387241     4.55   0.000     .1002285    .2520241
+                     53  |   .2490461   .0382697     6.51   0.000     .1740389    .3240532
+                     54  |   .3135474   .0369444     8.49   0.000     .2411378    .3859571
+                     55  |   .4804233   .0408159    11.77   0.000     .4004256     .560421
+                     56  |   .5346918   .0375002    14.26   0.000     .4611927    .6081909
+                     57  |   .6423369   .0381204    16.85   0.000     .5676222    .7170515
+                     58  |    .719484   .0374009    19.24   0.000     .6461796    .7927884
+                     59  |   .7805545   .0365991    21.33   0.000     .7088215    .8522874
+                     60  |   .8840355   .0359778    24.57   0.000     .8135203    .9545507
+                     61  |   .9373739   .0365217    25.67   0.000     .8657927    1.008955
+                     62  |   1.102674   .0373779    29.50   0.000     1.029414    1.175933
+                     63  |    1.13718   .0370338    30.71   0.000     1.064595    1.209765
+                     64  |   1.264724    .039088    32.36   0.000     1.188113    1.341335
+                     65  |   1.291614     .04048    31.91   0.000     1.212275    1.370953
+                     66  |   1.428697   .0426031    33.54   0.000     1.345197    1.512198
+                     67  |   1.499549   .0463585    32.35   0.000     1.408688     1.59041
+                     68  |   1.574902   .0576155    27.33   0.000     1.461978    1.687827
+                     69  |   1.766842   .0597577    29.57   0.000     1.649719    1.883965
+                     70  |   1.843819   .1028478    17.93   0.000     1.642241    2.045397
+                     71  |   1.918736   .1097306    17.49   0.000     1.703668    2.133804
+                     72  |   2.042743   .1093134    18.69   0.000     1.828492    2.256993
+                     73  |   2.245226   .1094402    20.52   0.000     2.030727    2.459724
+                     74  |   2.360358    .108682    21.72   0.000     2.147345     2.57337
+                     75  |   2.516567   .1090403    23.08   0.000     2.302852    2.730282
+                     76  |   2.691767   .1090063    24.69   0.000     2.478119    2.905416
+                     77  |   2.876208   .1095202    26.26   0.000     2.661553    3.090864
+                     78  |   2.986821   .1095864    27.26   0.000     2.772036    3.201607
+                     79  |   3.140688   .1108525    28.33   0.000     2.923421    3.357954
+                     80  |   3.245897   .1115259    29.10   0.000      3.02731    3.464484
+                     81  |   3.428725   .1125951    30.45   0.000     3.208042    3.649407
+                     82  |   3.511666   .1152757    30.46   0.000      3.28573    3.737602
+                     83  |   3.639505   .1234283    29.49   0.000     3.397589     3.88142
+                     84  |   3.659834   .1293143    28.30   0.000     3.406383    3.913285
+                     85  |   3.992129   .1747648    22.84   0.000     3.649596    4.334661
+                         |
+              cohortmin5 |
+   ageatfirstobs: 55-59  |  -.3240357   .5766873    -0.56   0.574    -1.454322    .8062506
+   ageatfirstobs: 60-64  |  -.9111723   .1471188    -6.19   0.000     -1.19952   -.6228248
+   ageatfirstobs: 65-69  |  -.8284696   .1068822    -7.75   0.000    -1.037955   -.6189843
+                         |
+          age#cohortmin5 |
+50#ageatfirstobs: 55-59  |          0  (empty)
+50#ageatfirstobs: 60-64  |          0  (empty)
+50#ageatfirstobs: 65-69  |          0  (empty)
+51#ageatfirstobs: 55-59  |          0  (empty)
+51#ageatfirstobs: 60-64  |          0  (empty)
+51#ageatfirstobs: 65-69  |          0  (empty)
+52#ageatfirstobs: 55-59  |          0  (empty)
+52#ageatfirstobs: 60-64  |          0  (empty)
+52#ageatfirstobs: 65-69  |          0  (empty)
+53#ageatfirstobs: 55-59  |          0  (empty)
+53#ageatfirstobs: 60-64  |          0  (empty)
+53#ageatfirstobs: 65-69  |          0  (empty)
+54#ageatfirstobs: 55-59  |          0  (empty)
+54#ageatfirstobs: 60-64  |          0  (empty)
+54#ageatfirstobs: 65-69  |          0  (empty)
+55#ageatfirstobs: 55-59  |  -.0206213   .5774116    -0.04   0.972    -1.152327    1.111085
+55#ageatfirstobs: 60-64  |          0  (empty)
+55#ageatfirstobs: 65-69  |          0  (empty)
+56#ageatfirstobs: 55-59  |  -.0012345   .5771556    -0.00   0.998    -1.132439     1.12997
+56#ageatfirstobs: 60-64  |          0  (empty)
+56#ageatfirstobs: 65-69  |          0  (empty)
+57#ageatfirstobs: 55-59  |  -.0007705   .5768682    -0.00   0.999    -1.131411     1.12987
+57#ageatfirstobs: 60-64  |          0  (empty)
+57#ageatfirstobs: 65-69  |          0  (empty)
+58#ageatfirstobs: 55-59  |   .0033029    .576914     0.01   0.995    -1.127428    1.134034
+58#ageatfirstobs: 60-64  |          0  (empty)
+58#ageatfirstobs: 65-69  |          0  (empty)
+59#ageatfirstobs: 55-59  |   .0444348   .5766711     0.08   0.939     -1.08582    1.174689
+59#ageatfirstobs: 60-64  |          0  (empty)
+59#ageatfirstobs: 65-69  |          0  (empty)
+60#ageatfirstobs: 55-59  |   .1033214   .5769984     0.18   0.858    -1.027575    1.234217
+60#ageatfirstobs: 60-64  |   .2092067   .1483309     1.41   0.158    -.0815165      .49993
+60#ageatfirstobs: 65-69  |          0  (empty)
+61#ageatfirstobs: 55-59  |   .1051054   .5767694     0.18   0.855    -1.025342    1.235553
+61#ageatfirstobs: 60-64  |   .1597602   .1478618     1.08   0.280    -.1300436     .449564
+61#ageatfirstobs: 65-69  |          0  (empty)
+62#ageatfirstobs: 55-59  |   .0188552    .576838     0.03   0.974    -1.111726    1.149437
+62#ageatfirstobs: 60-64  |    .168135   .1477766     1.14   0.255    -.1215019    .4577718
+62#ageatfirstobs: 65-69  |          0  (empty)
+63#ageatfirstobs: 55-59  |   .0848697   .5766693     0.15   0.883    -1.045381    1.215121
+63#ageatfirstobs: 60-64  |    .264929   .1470383     1.80   0.072    -.0232607    .5531187
+63#ageatfirstobs: 65-69  |          0  (empty)
+64#ageatfirstobs: 55-59  |   .0664955   .5769187     0.12   0.908    -1.064244    1.197235
+64#ageatfirstobs: 60-64  |   .2093878   .1472189     1.42   0.155    -.0791559    .4979315
+64#ageatfirstobs: 65-69  |          0  (empty)
+65#ageatfirstobs: 55-59  |   .1265495   .5768406     0.22   0.826    -1.004037    1.257136
+65#ageatfirstobs: 60-64  |    .387947   .1486076     2.61   0.009     .0966815    .6792126
+65#ageatfirstobs: 65-69  |  -.2844564   .1087587    -2.62   0.009    -.4976196   -.0712932
+66#ageatfirstobs: 55-59  |   .1276396   .5770941     0.22   0.825    -1.003444    1.258723
+66#ageatfirstobs: 60-64  |   .3675622   .1491146     2.46   0.014      .075303    .6598214
+66#ageatfirstobs: 65-69  |  -.2748347   .1099978    -2.50   0.012    -.4904266   -.0592429
+67#ageatfirstobs: 55-59  |   .1888431   .5771353     0.33   0.744    -.9423212    1.320007
+67#ageatfirstobs: 60-64  |   .3952589   .1485301     2.66   0.008     .1041454    .6863725
+67#ageatfirstobs: 65-69  |  -.1785319   .1091079    -1.64   0.102    -.3923794    .0353157
+68#ageatfirstobs: 55-59  |    .191842   .5783705     0.33   0.740    -.9417434    1.325427
+68#ageatfirstobs: 60-64  |   .4680835   .1537442     3.04   0.002     .1667504    .7694167
+68#ageatfirstobs: 65-69  |  -.1288164   .1150126    -1.12   0.263    -.3542368    .0966041
+69#ageatfirstobs: 55-59  |   .1406612   .5787303     0.24   0.808    -.9936293    1.274952
+69#ageatfirstobs: 60-64  |   .4093993   .1544211     2.65   0.008     .1067395    .7120591
+69#ageatfirstobs: 65-69  |   -.160511   .1163667    -1.38   0.168    -.3885855    .0675636
+70#ageatfirstobs: 55-59  |   .1542846   .5682646     0.27   0.786    -.9594936    1.268063
+70#ageatfirstobs: 60-64  |   .4742523   .1077696     4.40   0.000     .2630278    .6854767
+70#ageatfirstobs: 65-69  |          0  (omitted)
+71#ageatfirstobs: 50-54  |          0  (empty)
+71#ageatfirstobs: 55-59  |   .2174586   .5681097     0.38   0.702    -.8960159    1.330933
+71#ageatfirstobs: 60-64  |   .5269079   .1061141     4.97   0.000     .3189282    .7348876
+71#ageatfirstobs: 65-69  |          0  (omitted)
+72#ageatfirstobs: 50-54  |          0  (empty)
+72#ageatfirstobs: 55-59  |   .1696673   .5684186     0.30   0.765    -.9444126    1.283747
+72#ageatfirstobs: 60-64  |   .5453215   .1072951     5.08   0.000      .335027    .7556161
+72#ageatfirstobs: 65-69  |          0  (omitted)
+73#ageatfirstobs: 50-54  |          0  (empty)
+73#ageatfirstobs: 55-59  |    .067693   .5691548     0.12   0.905     -1.04783    1.183216
+73#ageatfirstobs: 60-64  |   .4517792   .1061464     4.26   0.000      .243736    .6598224
+73#ageatfirstobs: 65-69  |          0  (omitted)
+74#ageatfirstobs: 50-54  |          0  (empty)
+74#ageatfirstobs: 55-59  |   .1174946   .5699404     0.21   0.837     -.999568    1.234557
+74#ageatfirstobs: 60-64  |   .4533786   .1075041     4.22   0.000     .2426745    .6640827
+74#ageatfirstobs: 65-69  |          0  (omitted)
+75#ageatfirstobs: 50-54  |          0  (empty)
+75#ageatfirstobs: 55-59  |  -.0054549   .5768162    -0.01   0.992    -1.135994    1.125084
+75#ageatfirstobs: 60-64  |   .4290795   .1067689     4.02   0.000     .2198163    .6383428
+75#ageatfirstobs: 65-69  |          0  (omitted)
+76#ageatfirstobs: 50-54  |          0  (empty)
+76#ageatfirstobs: 55-59  |          0  (omitted)
+76#ageatfirstobs: 60-64  |   .4254961   .1091138     3.90   0.000      .211637    .6393552
+76#ageatfirstobs: 65-69  |          0  (omitted)
+77#ageatfirstobs: 50-54  |          0  (empty)
+77#ageatfirstobs: 55-59  |          0  (empty)
+77#ageatfirstobs: 60-64  |   .3309182   .1091486     3.03   0.002     .1169909    .5448455
+77#ageatfirstobs: 65-69  |          0  (omitted)
+78#ageatfirstobs: 50-54  |          0  (empty)
+78#ageatfirstobs: 55-59  |          0  (empty)
+78#ageatfirstobs: 60-64  |   .3179879   .1179869     2.70   0.007     .0867377     .549238
+78#ageatfirstobs: 65-69  |          0  (omitted)
+79#ageatfirstobs: 50-54  |          0  (empty)
+79#ageatfirstobs: 55-59  |          0  (empty)
+79#ageatfirstobs: 60-64  |   .3206045    .120126     2.67   0.008     .0851619    .5560471
+79#ageatfirstobs: 65-69  |          0  (omitted)
+80#ageatfirstobs: 50-54  |          0  (empty)
+80#ageatfirstobs: 55-59  |          0  (empty)
+80#ageatfirstobs: 60-64  |          0  (omitted)
+80#ageatfirstobs: 65-69  |          0  (omitted)
+81#ageatfirstobs: 50-54  |          0  (empty)
+81#ageatfirstobs: 55-59  |          0  (empty)
+81#ageatfirstobs: 60-64  |          0  (empty)
+81#ageatfirstobs: 65-69  |          0  (omitted)
+82#ageatfirstobs: 50-54  |          0  (empty)
+82#ageatfirstobs: 55-59  |          0  (empty)
+82#ageatfirstobs: 60-64  |          0  (empty)
+82#ageatfirstobs: 65-69  |          0  (omitted)
+83#ageatfirstobs: 50-54  |          0  (empty)
+83#ageatfirstobs: 55-59  |          0  (empty)
+83#ageatfirstobs: 60-64  |          0  (empty)
+83#ageatfirstobs: 65-69  |          0  (omitted)
+84#ageatfirstobs: 50-54  |          0  (empty)
+84#ageatfirstobs: 55-59  |          0  (empty)
+84#ageatfirstobs: 60-64  |          0  (empty)
+84#ageatfirstobs: 65-69  |          0  (omitted)
+85#ageatfirstobs: 50-54  |          0  (empty)
+85#ageatfirstobs: 55-59  |          0  (empty)
+85#ageatfirstobs: 60-64  |          0  (empty)
+85#ageatfirstobs: 65-69  |          0  (omitted)
+                         |
+         educ_vocational |  -.3388695   .0230007   -14.73   0.000      -.38395    -.293789
+         educ_university |   -.586171   .0276608   -21.19   0.000    -.6403851   -.5319569
+                    male |    -.15669   .0204734    -7.65   0.000    -.1968171   -.1165629
+          pretreat_workr |  -.6243547   .0237129   -26.33   0.000    -.6708312   -.5778782
+       pretreat_marriedr |  -.1565924   .0251024    -6.24   0.000    -.2057922   -.1073926
+                   _cons |   1.746079   .0461506    37.83   0.000     1.655625    1.836532
+-------------------------+----------------------------------------------------------------
+                 sigma_u |  1.2559964
+                 sigma_e |  .73072819
+                     rho |  .74711528   (fraction of variance due to u_i)
+------------------------------------------------------------------------------------------
+
+added macro:
+            e(regtype) : "xtreg"
+file X:/My Documents/XdrvData/SHARE//files/logs/t-regd_count-age-SHAREestimates.ster saved

@@ -1,0 +1,157 @@
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+      name:  regoprob2
+       log:  X:/My Documents/XdrvData/HRS//files/logs/log-t-regd_count-age-regoprob2HRS.txt
+  log type:  text
+ opened on:   2 Mar 2024, 14:47:22
+
+Fitting constant-only model:
+
+Fitting full model:
+
+Iteration 0:  Log likelihood = -176254.17  
+Iteration 1:  Log likelihood = -147090.99  
+Iteration 2:  Log likelihood = -146191.11  
+Iteration 3:  Log likelihood = -144077.98  
+Iteration 4:  Log likelihood = -143715.13  
+Iteration 5:  Log likelihood = -143689.33  
+Iteration 6:  Log likelihood = -143680.01  
+Iteration 7:  Log likelihood = -143679.54  
+Iteration 8:  Log likelihood = -143679.54  
+
+Random Effects Generalized Ordered Probit         Number of obs   =     114863
+                                                  Wald chi2(14)   =   50707.23
+Log likelihood = -143679.54                       Prob > chi2     =     0.0000
+
+ ( 1)  [mleq1]educ_vocational - [mleq2]educ_vocational = 0
+ ( 2)  [mleq1]educ_university - [mleq2]educ_university = 0
+ ( 3)  [mleq1]male - [mleq2]male = 0
+ ( 4)  [mleq1]pretreat_workr - [mleq2]pretreat_workr = 0
+ ( 5)  [mleq1]pretreat_marriedr - [mleq2]pretreat_marriedr = 0
+ ( 6)  [mleq2]educ_vocational - [mleq3]educ_vocational = 0
+ ( 7)  [mleq2]educ_university - [mleq3]educ_university = 0
+ ( 8)  [mleq2]male - [mleq3]male = 0
+ ( 9)  [mleq2]pretreat_workr - [mleq3]pretreat_workr = 0
+ (10)  [mleq2]pretreat_marriedr - [mleq3]pretreat_marriedr = 0
+ (11)  [mleq3]educ_vocational - [mleq4]educ_vocational = 0
+ (12)  [mleq3]educ_university - [mleq4]educ_university = 0
+ (13)  [mleq3]male - [mleq4]male = 0
+ (14)  [mleq3]pretreat_workr - [mleq4]pretreat_workr = 0
+ (15)  [mleq3]pretreat_marriedr - [mleq4]pretreat_marriedr = 0
+ (16)  [mleq4]educ_vocational - [mleq5]educ_vocational = 0
+ (17)  [mleq4]educ_university - [mleq5]educ_university = 0
+ (18)  [mleq4]male - [mleq5]male = 0
+ (19)  [mleq4]pretreat_workr - [mleq5]pretreat_workr = 0
+ (20)  [mleq4]pretreat_marriedr - [mleq5]pretreat_marriedr = 0
+ (21)  [mleq5]educ_vocational - [mleq6]educ_vocational = 0
+ (22)  [mleq5]educ_university - [mleq6]educ_university = 0
+ (23)  [mleq5]male - [mleq6]male = 0
+ (24)  [mleq5]pretreat_workr - [mleq6]pretreat_workr = 0
+ (25)  [mleq5]pretreat_marriedr - [mleq6]pretreat_marriedr = 0
+ (26)  [mleq6]educ_vocational - [mleq7]educ_vocational = 0
+ (27)  [mleq6]educ_university - [mleq7]educ_university = 0
+ (28)  [mleq6]male - [mleq7]male = 0
+ (29)  [mleq6]pretreat_workr - [mleq7]pretreat_workr = 0
+ (30)  [mleq6]pretreat_marriedr - [mleq7]pretreat_marriedr = 0
+ (31)  [mleq7]educ_vocational - [mleq8]educ_vocational = 0
+ (32)  [mleq7]educ_university - [mleq8]educ_university = 0
+ (33)  [mleq7]male - [mleq8]male = 0
+ (34)  [mleq7]pretreat_workr - [mleq8]pretreat_workr = 0
+ (35)  [mleq7]pretreat_marriedr - [mleq8]pretreat_marriedr = 0
+ (36)  [mleq8]educ_vocational - [mleq9]educ_vocational = 0
+ (37)  [mleq8]educ_university - [mleq9]educ_university = 0
+ (38)  [mleq8]male - [mleq9]male = 0
+ (39)  [mleq8]pretreat_workr - [mleq9]pretreat_workr = 0
+ (40)  [mleq8]pretreat_marriedr - [mleq9]pretreat_marriedr = 0
+-----------------------------------------------------------------------------------
+          d_count | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
+------------------+----------------------------------------------------------------
+mleq1             |
+              age |    .176036   .0014969   117.60   0.000     .1731021    .1789699
+  educ_vocational |  -.8466304   .0397802   -21.28   0.000    -.9245981   -.7686627
+  educ_university |  -1.490276   .0422828   -35.25   0.000    -1.573149   -1.407403
+             male |   .2093188   .0415987     5.03   0.000     .1277868    .2908508
+   pretreat_workr |  -.5549858   .0419512   -13.23   0.000    -.6372086    -.472763
+pretreat_marriedr |  -.5930665   .0387559   -15.30   0.000    -.6690267   -.5171064
+            _cons |  -7.119593   .0977675   -72.82   0.000    -7.311214   -6.927972
+------------------+----------------------------------------------------------------
+mleq2             |
+              age |   .1723656   .0010626   162.20   0.000     .1702828    .1744483
+  educ_vocational |  -.8466304   .0397802   -21.28   0.000    -.9245981   -.7686627
+  educ_university |  -1.490276   .0422828   -35.25   0.000    -1.573149   -1.407403
+             male |   .2093188   .0415987     5.03   0.000     .1277868    .2908508
+   pretreat_workr |  -.5549858   .0419512   -13.23   0.000    -.6372086    -.472763
+pretreat_marriedr |  -.5930665   .0387559   -15.30   0.000    -.6690267   -.5171064
+            _cons |  -8.749989   .0753614  -116.11   0.000    -8.897695   -8.602284
+------------------+----------------------------------------------------------------
+mleq3             |
+              age |    .171801   .0009779   175.68   0.000     .1698844    .1737177
+  educ_vocational |  -.8466304   .0397802   -21.28   0.000    -.9245981   -.7686627
+  educ_university |  -1.490276   .0422828   -35.25   0.000    -1.573149   -1.407403
+             male |   .2093188   .0415987     5.03   0.000     .1277868    .2908508
+   pretreat_workr |  -.5549858   .0419512   -13.23   0.000    -.6372086    -.472763
+pretreat_marriedr |  -.5930665   .0387559   -15.30   0.000    -.6690267   -.5171064
+            _cons |  -10.23032   .0737417  -138.73   0.000    -10.37486   -10.08579
+------------------+----------------------------------------------------------------
+mleq4             |
+              age |   .1713309   .0010607   161.53   0.000      .169252    .1734099
+  educ_vocational |  -.8466304   .0397802   -21.28   0.000    -.9245981   -.7686627
+  educ_university |  -1.490276   .0422828   -35.25   0.000    -1.573149   -1.407403
+             male |   .2093188   .0415987     5.03   0.000     .1277868    .2908508
+   pretreat_workr |  -.5549858   .0419512   -13.23   0.000    -.6372086    -.472763
+pretreat_marriedr |  -.5930665   .0387559   -15.30   0.000    -.6690267   -.5171064
+            _cons |  -11.51906   .0821252  -140.26   0.000    -11.68002    -11.3581
+------------------+----------------------------------------------------------------
+mleq5             |
+              age |   .1670552   .0012945   129.05   0.000     .1645181    .1695924
+  educ_vocational |  -.8466304   .0397802   -21.28   0.000    -.9245981   -.7686627
+  educ_university |  -1.490276   .0422828   -35.25   0.000    -1.573149   -1.407403
+             male |   .2093188   .0415987     5.03   0.000     .1277868    .2908508
+   pretreat_workr |  -.5549858   .0419512   -13.23   0.000    -.6372086    -.472763
+pretreat_marriedr |  -.5930665   .0387559   -15.30   0.000    -.6690267   -.5171064
+            _cons |  -12.45734   .0988049  -126.08   0.000    -12.65099   -12.26369
+------------------+----------------------------------------------------------------
+mleq6             |
+              age |   .1684761   .0017649    95.46   0.000      .165017    .1719352
+  educ_vocational |  -.8466304   .0397802   -21.28   0.000    -.9245981   -.7686627
+  educ_university |  -1.490276   .0422828   -35.25   0.000    -1.573149   -1.407403
+             male |   .2093188   .0415987     5.03   0.000     .1277868    .2908508
+   pretreat_workr |  -.5549858   .0419512   -13.23   0.000    -.6372086    -.472763
+pretreat_marriedr |  -.5930665   .0387559   -15.30   0.000    -.6690267   -.5171064
+            _cons |  -13.71904   .1320322  -103.91   0.000    -13.97782   -13.46026
+------------------+----------------------------------------------------------------
+mleq7             |
+              age |   .1695113   .0027136    62.47   0.000     .1641926    .1748299
+  educ_vocational |  -.8466304   .0397802   -21.28   0.000    -.9245981   -.7686627
+  educ_university |  -1.490276   .0422828   -35.25   0.000    -1.573149   -1.407403
+             male |   .2093188   .0415987     5.03   0.000     .1277868    .2908508
+   pretreat_workr |  -.5549858   .0419512   -13.23   0.000    -.6372086    -.472763
+pretreat_marriedr |  -.5930665   .0387559   -15.30   0.000    -.6690267   -.5171064
+            _cons |  -14.98238    .201321   -74.42   0.000    -15.37696    -14.5878
+------------------+----------------------------------------------------------------
+mleq8             |
+              age |   .1708166   .0050974    33.51   0.000     .1608259    .1808074
+  educ_vocational |  -.8466304   .0397802   -21.28   0.000    -.9245981   -.7686627
+  educ_university |  -1.490276   .0422828   -35.25   0.000    -1.573149   -1.407403
+             male |   .2093188   .0415987     5.03   0.000     .1277868    .2908508
+   pretreat_workr |  -.5549858   .0419512   -13.23   0.000    -.6372086    -.472763
+pretreat_marriedr |  -.5930665   .0387559   -15.30   0.000    -.6690267   -.5171064
+            _cons |  -16.37812    .375612   -43.60   0.000    -17.11431   -15.64193
+------------------+----------------------------------------------------------------
+mleq9             |
+              age |    .170394   .0149184    11.42   0.000     .1411545    .1996335
+  educ_vocational |  -.8466304   .0397802   -21.28   0.000    -.9245981   -.7686627
+  educ_university |  -1.490276   .0422828   -35.25   0.000    -1.573149   -1.407403
+             male |   .2093188   .0415987     5.03   0.000     .1277868    .2908508
+   pretreat_workr |  -.5549858   .0419512   -13.23   0.000    -.6372086    -.472763
+pretreat_marriedr |  -.5930665   .0387559   -15.30   0.000    -.6690267   -.5171064
+            _cons |  -18.10366   1.076599   -16.82   0.000    -20.21375   -15.99356
+------------------+----------------------------------------------------------------
+rho               |
+            _cons |   .7442277   .0017594   423.01   0.000     .7407794     .747676
+-----------------------------------------------------------------------------------
+
+added macro:
+            e(regtype) : "regoprob2"
+(note: file X:/My Documents/XdrvData/HRS//files/logs/t-regd_count-age-HRSestimates.ster not found)
+file X:/My Documents/XdrvData/HRS//files/logs/t-regd_count-age-HRSestimates.ster saved
+   2:  13404.38 /        1 =   13404.3820

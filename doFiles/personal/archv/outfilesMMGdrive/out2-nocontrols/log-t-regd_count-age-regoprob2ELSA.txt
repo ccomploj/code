@@ -1,0 +1,125 @@
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+      name:  regoprob2
+       log:  X:/My Documents/XdrvData/ELSA//files/logs/log-t-regd_count-age-regoprob2ELSA.txt
+  log type:  text
+ opened on:   3 Mar 2024, 08:29:31
+
+Fitting constant-only model:
+
+Fitting full model:
+
+Iteration 0:  Log likelihood = -65634.197  
+Iteration 1:  Log likelihood = -55096.376  (not concave)
+Iteration 2:  Log likelihood = -54869.886  (not concave)
+Iteration 3:  Log likelihood = -53198.345  
+Iteration 4:  Log likelihood = -53129.118  (not concave)
+Iteration 5:  Log likelihood =  -52988.29  
+Iteration 6:  Log likelihood = -52762.172  
+Iteration 7:  Log likelihood = -52725.633  
+Iteration 8:  Log likelihood = -52709.783  
+Iteration 9:  Log likelihood = -52709.263  
+Iteration 10: Log likelihood = -52709.258  
+
+Random Effects Generalized Ordered Probit         Number of obs   =      48277
+                                                  Wald chi2(12)   =   15256.03
+Log likelihood = -52709.258                       Prob > chi2     =     0.0000
+
+ ( 1)  [mleq1]educ_vocational - [mleq2]educ_vocational = 0
+ ( 2)  [mleq1]educ_university - [mleq2]educ_university = 0
+ ( 3)  [mleq1]male - [mleq2]male = 0
+ ( 4)  [mleq2]educ_vocational - [mleq3]educ_vocational = 0
+ ( 5)  [mleq2]educ_university - [mleq3]educ_university = 0
+ ( 6)  [mleq2]male - [mleq3]male = 0
+ ( 7)  [mleq3]educ_vocational - [mleq4]educ_vocational = 0
+ ( 8)  [mleq3]educ_university - [mleq4]educ_university = 0
+ ( 9)  [mleq3]male - [mleq4]male = 0
+ (10)  [mleq4]educ_vocational - [mleq5]educ_vocational = 0
+ (11)  [mleq4]educ_university - [mleq5]educ_university = 0
+ (12)  [mleq4]male - [mleq5]male = 0
+ (13)  [mleq5]educ_vocational - [mleq6]educ_vocational = 0
+ (14)  [mleq5]educ_university - [mleq6]educ_university = 0
+ (15)  [mleq5]male - [mleq6]male = 0
+ (16)  [mleq6]educ_vocational - [mleq7]educ_vocational = 0
+ (17)  [mleq6]educ_university - [mleq7]educ_university = 0
+ (18)  [mleq6]male - [mleq7]male = 0
+ (19)  [mleq7]educ_vocational - [mleq8]educ_vocational = 0
+ (20)  [mleq7]educ_university - [mleq8]educ_university = 0
+ (21)  [mleq7]male - [mleq8]male = 0
+ (22)  [mleq8]educ_vocational - [mleq9]educ_vocational = 0
+ (23)  [mleq8]educ_university - [mleq9]educ_university = 0
+ (24)  [mleq8]male - [mleq9]male = 0
+---------------------------------------------------------------------------------
+        d_count | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
+----------------+----------------------------------------------------------------
+mleq1           |
+            age |   .1527422    .001996    76.52   0.000     .1488302    .1566543
+educ_vocational |  -.8871418   .0483601   -18.34   0.000    -.9819258   -.7923578
+educ_university |  -1.377984   .0545319   -25.27   0.000    -1.484864   -1.271103
+           male |   .1180744   .0425242     2.78   0.005     .0347285    .2014203
+          _cons |  -7.260484   .1326227   -54.75   0.000     -7.52042   -7.000548
+----------------+----------------------------------------------------------------
+mleq2           |
+            age |   .1627024   .0017048    95.44   0.000     .1593611    .1660437
+educ_vocational |  -.8871418   .0483601   -18.34   0.000    -.9819258   -.7923578
+educ_university |  -1.377984   .0545319   -25.27   0.000    -1.484864   -1.271103
+           male |   .1180744   .0425242     2.78   0.005     .0347285    .2014203
+          _cons |  -9.972272   .1197734   -83.26   0.000    -10.20702    -9.73752
+----------------+----------------------------------------------------------------
+mleq3           |
+            age |   .1647447   .0018099    91.03   0.000     .1611974     .168292
+educ_vocational |  -.8871418   .0483601   -18.34   0.000    -.9819258   -.7923578
+educ_university |  -1.377984   .0545319   -25.27   0.000    -1.484864   -1.271103
+           male |   .1180744   .0425242     2.78   0.005     .0347285    .2014203
+          _cons |  -11.71291   .1317795   -88.88   0.000    -11.97119   -11.45462
+----------------+----------------------------------------------------------------
+mleq4           |
+            age |   .1680732   .0021531    78.06   0.000     .1638531    .1722932
+educ_vocational |  -.8871418   .0483601   -18.34   0.000    -.9819258   -.7923578
+educ_university |  -1.377984   .0545319   -25.27   0.000    -1.484864   -1.271103
+           male |   .1180744   .0425242     2.78   0.005     .0347285    .2014203
+          _cons |  -13.26702   .1568689   -84.57   0.000    -13.57448   -12.95957
+----------------+----------------------------------------------------------------
+mleq5           |
+            age |    .169479   .0028382    59.71   0.000     .1639161    .1750418
+educ_vocational |  -.8871418   .0483601   -18.34   0.000    -.9819258   -.7923578
+educ_university |  -1.377984   .0545319   -25.27   0.000    -1.484864   -1.271103
+           male |   .1180744   .0425242     2.78   0.005     .0347285    .2014203
+          _cons |   -14.6201    .204686   -71.43   0.000    -15.02128   -14.21893
+----------------+----------------------------------------------------------------
+mleq6           |
+            age |   .1718835   .0041111    41.81   0.000     .1638259    .1799412
+educ_vocational |  -.8871418   .0483601   -18.34   0.000    -.9819258   -.7923578
+educ_university |  -1.377984   .0545319   -25.27   0.000    -1.484864   -1.271103
+           male |   .1180744   .0425242     2.78   0.005     .0347285    .2014203
+          _cons |  -15.99083   .2964448   -53.94   0.000    -16.57186   -15.40981
+----------------+----------------------------------------------------------------
+mleq7           |
+            age |   .1762925   .0073296    24.05   0.000     .1619267    .1906582
+educ_vocational |  -.8871418   .0483601   -18.34   0.000    -.9819258   -.7923578
+educ_university |  -1.377984   .0545319   -25.27   0.000    -1.484864   -1.271103
+           male |   .1180744   .0425242     2.78   0.005     .0347285    .2014203
+          _cons |  -17.49989   .5295283   -33.05   0.000    -18.53774   -16.46203
+----------------+----------------------------------------------------------------
+mleq8           |
+            age |   .2409526   .0173859    13.86   0.000     .2068768    .2750283
+educ_vocational |  -.8871418   .0483601   -18.34   0.000    -.9819258   -.7923578
+educ_university |  -1.377984   .0545319   -25.27   0.000    -1.484864   -1.271103
+           male |   .1180744   .0425242     2.78   0.005     .0347285    .2014203
+          _cons |  -23.60819   1.299818   -18.16   0.000    -26.15579   -21.06059
+----------------+----------------------------------------------------------------
+mleq9           |
+            age |   .2974869   .0747848     3.98   0.000     .1509114    .4440623
+educ_vocational |  -.8871418   .0483601   -18.34   0.000    -.9819258   -.7923578
+educ_university |  -1.377984   .0545319   -25.27   0.000    -1.484864   -1.271103
+           male |   .1180744   .0425242     2.78   0.005     .0347285    .2014203
+          _cons |   -29.9422   5.856957    -5.11   0.000    -41.42163   -18.46278
+----------------+----------------------------------------------------------------
+rho             |
+          _cons |   .7701651   .0023367   329.59   0.000     .7655852     .774745
+---------------------------------------------------------------------------------
+
+added macro:
+            e(regtype) : "regoprob2"
+(note: file X:/My Documents/XdrvData/ELSA//files/logs/t-regd_count-age-ELSAestimates.ster not found)
+file X:/My Documents/XdrvData/ELSA//files/logs/t-regd_count-age-ELSAestimates.ster saved
+   2:   4648.72 /        1 =    4648.7220

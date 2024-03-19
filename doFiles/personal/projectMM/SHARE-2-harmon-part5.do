@@ -12,7 +12,7 @@ loc data 		"HRS" // SHARE | ELSA (note for ELSA: part5-subDiseases may be incorr
 loc datalist 	"SHARE HRS ELSA"
 *foreach data of local datalist{
 
-loc github_p5subdiseases "https://raw.githubusercontent.com/ccomploj/code/main/doFiles/personal/projectMM/projectMM-part5-subDiseases.do" // on all devices use github link
+loc github_p5subdiseases "https://raw.githubusercontent.com/ccomploj/code/main/doFiles/personal/projectMM/projectMM-part5-subDiseases.do" // on all devices using github link
 
 **flexible to OS**
 if "`c(username)'" == "P307344" { // UWP server
@@ -20,6 +20,7 @@ loc cv 		"X:/My Documents/XdrvData/`data'/"
 }
 if "`c(username)'" == "User" { // personal PC
 loc	cv 		"G:/My Drive/drvData/`data'/"
+	loc cv 	"C:\Users\User\Documents\RUG/`data'/"
 loc github_p5subdiseases "C:/Users/User/Documents/GitHub/code/doFiles/personal/projectMM/projectMM-part5-subDiseases.do" // on my device use offline file
 }
 
@@ -168,11 +169,15 @@ gen 		 ageatfirstobs = agemin
 egen 		cohort 		= cut(age), at (`agethreshold',60,70,80,120) 	
 egen 		cohort5 	= cut(age), at (`agethreshold',55,60,65,70,75,80,120)
 egen 		cohortmin 	= cut(agemin), at (`agethreshold',60,70,80,120)
-egen 		cohortmin5 	= cut(agemin), at (`agethreshold',55,60,65,70,75,80,120)
+egen 		cohortmin5 	= cut(agemin), at (`agethreshold',55,60,65,70,75,80,120) 
+	recode cohort 	  (`agethreshold' = 50)  // recode threshold to same number for figure file naming
+	recode cohort5 	  (`agethreshold' = 50) 
+	recode cohortmin  (`agethreshold' = 50)  
+	recode cohortmin5 (`agethreshold' = 50) 
 tab 		cohort
-la de 		cohortl `agethreshold'  "ages `agethreshold'-59" 60 "ages 60-69" 70 "ages 70-79" 80 "ages 80+"       
-la de 		cohortminl `agethreshold'  "ageatfirstobs: `agethreshold'-59" 60 "ageatfirstobs: 60-69" 70 "ageatfirstobs: 70-79" 80 "ageatfirstobs: 80+"       
-la de 		cohortmin5l `agethreshold' "ageatfirstobs: `agethreshold'-54" 55 "ageatfirstobs: 55-59" 60 "ageatfirstobs: 60-64" 65 "ageatfirstobs: 65-69" 70 "ageatfirstobs: 70-74" 75 "ageatfirstobs: 75-79" 80 "ageatfirstobs: 80+"       
+la de 		cohortl 	50  "ages `agethreshold'-59" 60 "ages 60-69" 70 "ages 70-79" 80 "ages 80+"       
+la de 		cohortminl  50  "ageatfirstobs: `agethreshold'-59" 60 "ageatfirstobs: 60-69" 70 "ageatfirstobs: 70-79" 80 "ageatfirstobs: 80+"       
+la de 		cohortmin5l 50 "ageatfirstobs: `agethreshold'-54" 55 "ageatfirstobs: 55-59" 60 "ageatfirstobs: 60-64" 65 "ageatfirstobs: 65-69" 70 "ageatfirstobs: 70-74" 75 "ageatfirstobs: 75-79" 80 "ageatfirstobs: 80+"       
 la val 		cohort 		cohortl // labels value labels
 la val 		cohortmin 	cohortminl // labels value labels
 la val 		cohortmin5 	cohortmin5l // labels value labels
@@ -191,7 +196,7 @@ tab iwstatr age_not`agethreshold'
 **label variables from A (if different label desired)**
 la var  age 		"age at interview"
 la var 	raeducl 	"r educ"
-la de 	raeducll 	1 "1.less than upper secondary" 2 "2.upper secondary or vocational" 3 "3.tertiary education"
+la de 	raeducll 	1 "1.less than sec. educ" 2 "2.sec. or voc. educ" 3 "3.tertiary educ"
 la val 	raeducl raeducll
 	
 loc 	droplist 	"ragender" 			// drop variables not needed

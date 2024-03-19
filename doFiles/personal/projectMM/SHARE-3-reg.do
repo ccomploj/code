@@ -135,7 +135,24 @@ STOP
 
 
 	*/
-
+	*** +++ transitions +++ ***
+	*** sequential logit ***
+	*log using 	"$outpath/logs/log-t-regd_count-age-seqlogit`data'.txt", text replace name(seqlogit) 
+	set seed 500
+	// tab d_count, gen(d_count)
+	preserve
+		keep if d_count<7
+		sample 10
+	eststo seqlogit: seqlogit d_count age male i.raeducl if `sample'==1, vce(cluster ID) tree(0:1 2 3 4 5 6, 1:2 3 4 5 6, 2: 3 4 5 6, 3: 4 5 6, 4: 5 6, 5:6) ofinterest(raeducl) over(c.age) or 
+	*seqlogitdecomp age, table // at(coh 1.5 south 0 paeduc 12) table
+	seqlogitdecomp, area // at(male 0 educ_vocational 0 educ_university 0)
+	*log close seqlogit
+	timer 		off  1
+	timer 		list 1	
+	STOP
+	*/
+	
+	
 *** +++ b) what predicts the count? (ordered model) +++ ***
 loc y 			"d_count"
 	loc extra "pretreat_workr pretreat_marriedr age_male age_educ_voc age_educ_uni" // i.cohortmin5 as dummies
@@ -258,22 +275,7 @@ STOP
 	*STOP
 	*/
 
-	set seed 500
-	*** +++ Table: transitions +++ ***
-	*** sequential logit ***
-	log using 	"$outpath/logs/log-t-regd_count-age-seqlogit`data'.txt", text replace name(seqlogit) 
-	// tab d_count, gen(d_count)
-	preserve
-	keep if d_count<7
-		sample 10
-	eststo seqlogit: seqlogit d_count age male i.raeducl if `sample'==1, vce(cluster ID) tree(0:1 2 3 4 5 6, 1:2 3 4 5 6, 2: 3 4 5 6, 3: 4 5 6, 4: 5 6, 5:6) ofinterest(raeducl) over(c.age) or 
-	*seqlogitdecomp age, table // at(coh 1.5 south 0 paeduc 12) table
-	seqlogitdecomp, area // at(male 0 educ_vocational 0 educ_university 0)
-	log close seqlogit
-	timer 		off  1
-	timer 		list 1	
-	STOP
-	*/
+
 
 
 	/*** combine results to a single table ***
