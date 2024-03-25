@@ -18,8 +18,8 @@ loc outloc 	"`cv'" // to save locally
 *loc outloc "\\Client\C$\Users\User\Documents\GitHub\2-projectMM-`data'\" // from UWP save directly to PC (only works with full version of Citrix)
 }
 else {
-*loc	cv 		"G:/My Drive/drvData/`data'/" // own PC
-	loc cv 	"C:\Users\User\Documents\RUG/`data'"
+loc	cv 		"G:/My Drive/drvData/`data'/" // own PC
+	*loc cv 	"C:\Users\User\Documents\RUG/`data'"
 loc	outloc 	"C:/Users/User/Documents/GitHub/2-projectMM-`data'" 	
 }
 gl 	outpath 	"`outloc'/files" /*output folder location*/
@@ -76,12 +76,10 @@ loc wavelast 		"9" 	// select survey-specific last wave
 drop if agemin<`agethreshold'	
 **********************
 set graphics on 
-*set graphics off /*disables graphics*/
+*set graphics off /*disables graphics (but also -graph combine- commands) */
 
 
 **# Bookmark #1
-*drop if timesincefirstobs==22 // for HRS
-	*sample 5
 cd  	"$outpath/fig"
 
 
@@ -102,21 +100,20 @@ clonevar radyear2 = radyear
 replace  radyear2=0 if mi(radyear2) // not dead people will have 
 
 ** countatfirstobs and countatonset ** 
-gen tempvar = d_count if inw_first==wave 		// count at baseline
+gen 	tempvar = d_count if inw_first==wave 		// count at baseline
 bys ID: egen countatfirstobs = max(tempvar) 
-recode countatfirstobs (0 = 0 "0 diseases at baseline") (1 = 1 "1 disease at baseline") (2/3 = 2 "2 or 3 diseases at baseline") (4/10 = 4 "4+ diseases at baseline"), gen(countatfirstobs2)
-drop tempvar countatfirstobs
-rename countatfirstobs2 countatfirstobs 
-gen tempvar = d_count if timesincefirstonset==0 // count at onset
+recode 	countatfirstobs (0 = 0 "0 diseases at baseline") (1 = 1 "1 disease at baseline") (2/3 = 2 "2 or 3 diseases at baseline") (4/10 = 4 "4+ diseases at baseline"), gen(countatfirstobs2)
+drop 	tempvar countatfirstobs
+rename 	countatfirstobs2 countatfirstobs 
+gen 	tempvar = d_count if timesincefirstonset==0 // count at onset
 bys ID: egen countatonset = max(tempvar) 
 replace countatonset =. if age<firstage 		// if first onset not experienced yet, should not include
-recode countatonset (1/2 = 1 "1 or 2 diseases at onset") (3/4 = 2 "3 or 4 diseases at onset") (5/15 = 3 "5 or more at onset"), gen(countatonset2)
-drop tempvar countatonset
-rename countatonset2 countatonset 
+recode 	countatonset (1/2 = 1 "1 or 2 diseases at onset") (3/4 = 2 "3 or 4 diseases at onset") (5/15 = 3 "5 or more at onset"), gen(countatonset2)
+drop 	tempvar countatonset
+rename 	countatonset2 countatonset 
 
 ** income groups **
 *xtile incomegroups = hhinc, nq(3)
-
 
 *** define locals to apply to entire file ***
 set scheme s1color
@@ -125,7 +122,7 @@ loc sample 		"sfull" // sbalanced
 loc samplelabel: variable label `sample'
 
 
-/*** +++++++++++++++++++ histograms of dependent variable +++++++++++++++++++ ***
+*** +++++++++++++++++++ histograms of dependent variable +++++++++++++++++++ ***
 loc 	y "d_count"
 foreach y in "d_count" "diff_d_count" "cognitionstd" {
 hist `y'	if `sample'==1, `opt_global' 
@@ -135,7 +132,7 @@ pause
 *STOP
 */
 
-/*** +++++++++++++++++++ raw mean and se by age-group (by category t) +++++++++++++++++++ ***
+*** +++++++++++++++++++ raw mean and se by age-group (by category t) +++++++++++++++++++ ***
 loc y 		"d_count"
 loc ylist	"pubpenr d_any d_count d_count_index" // 
 loc t 		"male"
@@ -188,108 +185,142 @@ pause
 *STOP 
 */	
 
-*(below graph is essentially equivalent in essence to above graph)
-	*** +++++++++++++++++++ scatterplot by age by categories (c.f. Fig 1 in De Nardi) +++++++++++++++++++ 	
-	/*** (this is the same as xtline below)
-	loc y "d_count"
-	loc x "agegrp"
-	** (crude) scatter count over AGE by BASELINE COUNT or ONSET COUNT**
-	loc z 	  "male" // countatonset | countatfirstobs
-	loc zlist "countatfirstobs countatonset"
-	foreach z of local zlist{
-		**define labels**
-		loc counter   "1"
-		loc connectedlist "" /*clear content of connectedlist*/
-		loc labellist "" /*need to delete local if in loop*/		
-		levelsof `z', local(levels)
-		foreach l of local levels{
-		loc 	valuel : label (`z') `l'				
-		di "`y'"
-		local connectedlist "`connectedlist'  (connected `y' `x' if `z'==`l')"
-		local labellist  `labellist' `counter' `"`valuel'"'   
-		loc counter = `counter'+1	
-		}
-		di "`connectedlist' "
-		mac list _labellist	 // should not display, but mac list 
-	preserve
-	collapse (mean) `y'=`y' if `sample'==1, by(`z' `x')  
-	twoway `connectedlist', legend(order (`labellist'))  // ytitle(`ylabel')
-	gr export 	"$outpath/fig/main/g_crude_byagegrp-`z'_`sample'_`y'.jpg", replace			
-	restore
-	} 
-	pause
-	*STOP
-	*/
 
+
+*** +++++++++++++++++++ graph over cohort groups +++++++++++++++++++ ***
+
+	** recode age if too few observations fall in this category and SEs large **
+	preserve
+	levelsof cohortmin5, local(levels)
+	foreach  cohort of   local levels {
+	*loc cohortlabel : label (cohortmin5) `cohort'
+	*loc cohortlabel "(`cohortlabel')"  /*add parentheses if subplots*/
+	*loc sampleaddition "& cohortmin5==`cohort'" /*needs to be located here*/
+		** group extreme observations (ppl who reach a very high age due to interview timing) **
+		qui 	sum time, meanonly 
+		loc 	timerange = r(max)-r(min)+5 /*maximum time an id is observed (5 added for cohort)*/
+		di 		"`timerange'"
+		replace age = `cohort'+`timerange' if age >`cohort'+`timerange' & age<. & cohortmin5==`cohort' 
+		replace timesincefirstobs = `timerange'-5 if timesincefirstobs<. & timesincefirstobs>`timerange'-5
+						} 
+loc 	y 			"d_count"
+loc 	ylabel: 	var label `y'
+loc 	cat  	  	"cohortmin5" // male, raeducl, countatfirstobs
+loc 	timevar 	"age" 
+*loc 	xla 		"xla(50(5)90)"
+loc 	xlarotate	""	
+
+	** by cohort groups (x=age) **
+/** xtline (crude data: identical to adjusted predictions (profile plots) from "Reg", but without CI) **
+*preserve // cannot preserve data twice in stata
+collapse (mean) `y' = `y' 	(count) `y'_freq = `y' if `sample'==1 `sampleaddition' , by(`cat' `timevar') 
+xtset 	 `cat' `timevar'
+xtline 	 `y', overlay i(`cat') t(`timevar') ytitle("mean `ylabel'") `opt_global'  title("Collapsed Means `cohortlabel'") note("Notes: The plot shows trends of the collapsed means") name(g0_`cohort', replace) `xla'
+*gr export 	"$outpath/fig/main/g_crude_by`timevar'-`cat'_`sample'_d_count_`cohort'.jpg", replace
+*restore
+*/
+** plot using margins **
+loc 	 opt_marginsplot "title("Crude Data `cohortlabel'") ytitle("linear prediction (`ylabel')")" // noci  
+loc 	ctrls  "`ctrl'"
+loc 	reg  		reg `y' `timevar'##`cat' `ctrls' if `sample'==1 
+qui `reg'
+qui margins `timevar'#`cat'
+marginsplot, `opt_marginsplot'  name(g`cat'_`cohort', replace) `xla' `xlarotate'  note("Sample: `samplelabel' | Controls: `ctrls' (none)" "Model: `reg'") // by(cohortmin5) // 
+gr export 	"$outpath/fig/main/g_reg_by`timevar'-`cat'_`sample'_d_count_`cohort'.jpg", replace
+
+	** by covariate value ((a) single plot) ** 
+loc 	 catlist 	"male raeducl countatfirstobs"	
+foreach  cat of local catlist {	
+loc reg  		reg `y' `timevar'##`cat'##cohortmin5 `ctrls' if `sample'==1 
+qui `reg'
+qui margins `timevar'#`cat'#cohortmin5
+marginsplot, `opt_marginsplot'  name(g`cat'_`cohort', replace) `xla' `xlarotate'  by(cohortmin5) // 
+gr export 	"$outpath/fig/main/g_reg_by`timevar'-`cat'_`sample'_d_count_`cohort'.jpg", replace		
+} 
+
+	** by covariate value ((b) separate sub-plots per cohort) **
+loc 	 catlist 	"male raeducl countatfirstobs"	
+foreach  cat of local catlist {	
+foreach  cohort of   local levels {
+loc cohortlabel : label (cohortmin5) `cohort'
+loc cohortlabel "(`cohortlabel')"  /*add parentheses if subplots*/
+loc sampleaddition "& cohortmin5==`cohort'" /*needs to be located here*/
+loc 	 opt_marginsplot "title("Crude Data `cohortlabel'") ytitle("linear prediction (`ylabel')")" // noci  
+loc 	 ctrls  "`ctrl'"
+loc 	 reg  	reg `y' `timevar'##`cat' `ctrls' if `sample'==1 `sampleaddition'
+qui `reg'
+qui margins `timevar'#`cat'
+marginsplot, `opt_marginsplot'  name(g`cat'_`cohort', replace) `xla' `xlarotate'  note("Sample: `samplelabel' | Controls: `ctrls' (none)" "Model: `reg'") // by(cohortmin5) // 
+gr export 	"$outpath/fig/main/g_reg_by`timevar'-`cat'_`sample'_d_count_`cohort'.jpg", replace
+} 
+}
+
+
+
++++
+	** by cohort groups (x=timesincefirstobs) **
+loc 	 opt_marginsplot "title("Crude Data `cohortlabel'") ytitle("linear prediction (`ylabel')")" // noci  
+loc 	 ctrls  "`ctrl'"
+qui `reg'
+qui margins `timevar'#`cat'
+marginsplot, `opt_marginsplot'  name(g`cat'_`cohort', replace) `xla' `xlarotate'  note("Sample: `samplelabel' | Controls: `ctrls' (none)" "Underlying Regression: `reg'") // by(cohortmin5) // 
+gr export 	"$outpath/fig/main/g_reg_by`timevar'-`cat'_`sample'_d_count_`cohort'.jpg", replace
+	
+	
+
+}
+** plot using margins with controls, adj. for mortality (needs to be outside subplots loop) **
+* combine plots ** 
+*gr combine g1_50 g1_55 g1_60 g1_65, ycommon // cols(1)
+*gr export 	"$outpath/fig/main/g_reg_by`timevar'-`cat'comb_`sample'_d_count.jpg", replace
+}	
+
+	restore
+	STOP
+
+	
+	
+*** +++++++++++++++++++ graph over time +++++++++++++++++++ ***
+loc 	y 		"d_count"
+loc 	ylabel: var label `y'
+loc 	timevar "time" // age | time | timesincefirstobs_yr | time | timesincefirstobs
+loc 	xla 		"" /*keep this empty for raw plot*/
+loc 	xlarotate	"xla(, ang(20))" /*only applies to marginsplot*/
+loc 	catlist 	"cohortmin5b"
+
+	preserve
+	clonevar 	cohortmin5b = cohortmin5
+	replace 	cohortmin5b = . if cohortmin5!=cohort5 /*if age is larger than entry cohort age*/	
+	*	replace cohortmin5b = . if inw_first!=3
+	la de 		cohortmin5bl 50 "ageatfirstobs & age: `agethreshold'-54" 55 "ageatfirstobs & age: 55-59" 60 "ageatfirstobs & age: 60-64" 65 "ageatfirstobs & age: 65-69" 
+	la val 		cohortmin5b cohortmin5bl
+	bys cohortmin5b: sum age // check if generation was successful
+	restore 
+	
 
 ***********************************
 *** ++ graph over TIME/age  +++ ***
 ***********************************
-loc 	 y 		"d_count"
-loc 	 ylabel: var label `y'
-**# Bookmark #6 if i want to show that time of entry does not matter, i can show that accumulation is parallel for different inw_first groups. However, do this in a separate graph
 
-*** a) using AGE/TIME by MALE/EDUC (ageing is controlled for by cohorts and passing of time) *** 
-loc 	cat  	  	"countatfirstobs" // male, raeducl, countatfirstobs
-loc 	catlist 	"male raeducl countatfirstobs"
-loc 	timevar 	"agegrp" // timesincefirstobs_yr | time | timesincefirstobs
-	loc ctrl 		""	
-	*loc catlist 	""	/*activate if time on xaxis*/
-	if `timevar'== agegrp {
-	loc xla "xla(50(5)85)"
-	loc rotatenotes ""
-	}
-	if `timevar'== time {
-	loc rotatenotes "xla(, ang(20))"
-	loc catlist 	"cohortmin5"
-	*loc ctrl 		""	
-	}
+	**# Bookmark #6 if i want to show that time of entry does not matter, i can show that accumulation is parallel for different inw_first groups. However, do this in a separate graph
+
 
 ** plot for each category ** 
-foreach cat of local catlist {	
 	
-** plot separately for each agegroup **
-levelsof cohortmin5, local(levels)
-foreach  cohort of   local levels {
-loc cohortlabel : label (cohortmin5) `cohort'
-loc cohortlabel "(`cohortlabel')"  /*add parentheses*/
-*loc sampleaddition "& inrange(age, )"
+	** plot separately for each age-cohort (comment out when time on x-axis (cannot include this using locals)) **
 
-** xtline **
-preserve 
-collapse (mean) `y' = `y' 	(count) `y'_freq = `y' if `sample'==1 & cohortmin5==`cohort', by(`cat' `timevar') 
-xtset 	 `cat' `timevar'
-xtline 	 `y', overlay i(`cat') t(`timevar') ytitle("mean `ylabel'") `opt_global'  title("Collapsed Means `cohortlabel'") note("Notes: The plot shows trends of the collapsed means") name(g0_`cohort', replace) `xla'
-gr export 	"$outpath/fig/main/g_crude_by`timevar'-`cat'_`sample'_d_count_`cohort'.jpg", replace
-restore
-** plot using margins **
-loc 	 opt_marginsplot "ytitle("predicted `ylabel'") title("Adjusted Predictions `cohortlabel'")" // noci
-loc 	 ctrls  "`ctrl'"
-loc 	 reg  	xtreg `y' `timevar'##`cat' `ctrls'	if `sample'==1 	& cohortmin5==`cohort'
-`reg'
-margins `timevar'#`cat'  
-marginsplot, `opt_marginsplot'  name(g1_`cohort', replace) note("Notes: Sample: `samplelabel'" "Controls: `ctrls' (none)" "Command: `reg'") `rotatenotes' `xla'
-gr export 	"$outpath/fig/main/g_reg_by`timevar'-`cat'_`sample'_d_count_`cohort'.jpg", replace
-** combine plots ** 
-*gr combine g0_`cohort' g1_`cohort', ycommon // cols(1)
-*gr export 	"$outpath/fig/main/g_crude_by`timevar'-`cat'comb_`sample'_d_count_`cohort'.jpg", replace
-}
-// ** plot using margins with controls, adj. for mortality (needs to be outside subplots loop) **
+	*/
 
-** combine plots ** 
-// gr combine g0_50 g0_55 g0_60 g0_65, ycommon // cols(1)
-// gr export 	"$outpath/fig/main/g_crude_by`timevar'-`cat'comb_`sample'_d_count.jpg", replace
-// gr combine g1_50 g1_55 g1_60 g1_65, ycommon // cols(1)
-// gr export 	"$outpath/fig/main/g_reg_by`timevar'-`cat'comb_`sample'_d_count.jpg", replace
-}
+
+restore /*restore the actual age*/
 pause
-*STOP
+STOP
 */		
 
 	*** b) using TIME by BASELINE AGE COHORT ***
 	*(age is controlled for by cohorts and passing of time)*
 	*this graph is same as above (need to copy paste after changing something)*
-	*can copy later from above to make fully running file
+	*can copy later from above to make fully running file*
 
 
 *** plot each outcome by groups (could do in Viz next to xtreg - only this is ologit - then, finally, repeat this with regoprob or gologit2) ***
@@ -323,32 +354,6 @@ gr export 	"$outpath/fig/main/g_ologit_by`x'_`y'.jpg", replace
 // 	margins `x'	// no dydx
 // 	marginsplot, note("Notes: Sample: `samplelabel'" "Controls: `ctrls' (none)" "Command: `reg'") legend(order(`labellist')) 
 // 	gr export 	"$outpath/fig/main/g_ologit_by`x'_`y'_adj.jpg", replace 
-//	
-// loc reg 	xtologit `y' i.cohort5 if `sample'==1, nolog vce(cl ID)  // c.age#c.age  male married i.raeducl*, 
-// eststo m2: qui `reg'
-// margins `x' // , dydx(`x')	
-// marginsplot, note("Notes: Sample: `samplelabel'" "Controls: `ctrls' (none)" "Command: `reg'") legend(order(`labellist')) name(c2)
-// gr export 	"$outpath/fig/main/g_xtologit_by`x'_`y'.jpg", replace 
-// 	loc ctrls "male i.raeducl"
-// 	loc reg 	xtologit `y' i.cohort5 `ctrls' if `sample'==1, nolog vce(cl ID)  // c.age#c.age  male married i.raeducl*, 
-// 	eststo m2: qui `reg'
-// 	margins `x' // , dydx(`x')	
-// 	marginsplot, note("Notes: Sample: `samplelabel'" "Controls: `ctrls' (none)" "Command: `reg'") legend(order(`labellist')) 
-// 	gr export 	"$outpath/fig/main/g_xtologit_by`x'_`y'_adj.jpg", replace 
-//
-// loc reg 	gologit2 `y' i.cohort5	if `sample'==1, vce(cluster ID) gamma autofit
-// *gologit2 	`y' 		age `ctrls'	if `sample'==1, vce(cluster ID) gamma npl(age) 
-// eststo m3: qui `reg' 
-// margins `x' // , dydx(`x')	
-// marginsplot, note("Notes: Sample: `samplelabel'" "Controls: `ctrls' (none)" "Command: `reg'") legend(order(`labellist')) 
-// gr export 	"$outpath/fig/main/g_gologit2_by`x'_`y'.jpg", replace 
-// 	loc ctrls "male i.raeducl"
-// 	loc reg 	gologit2 `y' i.cohort5	if `sample'==1, vce(cluster ID) gamma autofit
-// 	*gologit2 	`y' 		age `ctrls'	if `sample'==1, vce(cluster ID) gamma npl(age) 
-// 	eststo m3: qui `reg' 
-// 	margins `x' // , dydx(`x')	
-// 	marginsplot, note("Notes: Sample: `samplelabel'" "Controls: `ctrls' (none)" "Command: `reg'") legend(order(`labellist')) 
-// 	gr export 	"$outpath/fig/main/g_gologit2_by`x'_`y'_adj.jpg", replace 
 *gr combine c1 c2 c3
 *esttab m1 m2
 restore
@@ -381,6 +386,11 @@ restore
 	bys ID (time): replace duration = cond(d_count==8,cond(diff_d_count==0, duration[_n-1]+1,1),duration)
 	bys ID (time): replace duration = cond(d_count==9,cond(diff_d_count==0, duration[_n-1]+1,1),duration)
 	bys ID (time): replace duration = cond(d_count==10,cond(diff_d_count==0, duration[_n-1]+1,1),duration)
+	
+	gen duration2 = duration
+	
+	
+	
 	// currently people might jump back to earlier count and duration drops again
 
 	*			bys ID (time): replace duration = cond(d_count==3,cond(diff_d_count==0, duration[_n-1]+1,1),0)
@@ -508,6 +518,41 @@ stcox `ctrl'
 
 */
 
+
+
+*** ARCHIVE *** 
+	*(below graph is essentially equivalent in essence the same as all the others)
+	*** +++++++++++++++++++ scatterplot by age by categories (c.f. Fig 1 in De Nardi) +++++++++++++++++++ 	
+	/*** (this is the same as xtline below)
+	loc y "d_count"
+	loc x "agegrp"
+	** (crude) scatter count over AGE by BASELINE COUNT or ONSET COUNT**
+	loc z 	  "male" // countatonset | countatfirstobs
+	loc zlist "countatfirstobs countatonset"
+	foreach z of local zlist{
+		**define labels**
+		loc counter   "1"
+		loc connectedlist "" /*clear content of connectedlist*/
+		loc labellist "" /*need to delete local if in loop*/		
+		levelsof `z', local(levels)
+		foreach l of local levels{
+		loc 	valuel : label (`z') `l'				
+		di "`y'"
+		local connectedlist "`connectedlist'  (connected `y' `x' if `z'==`l')"
+		local labellist  `labellist' `counter' `"`valuel'"'   
+		loc counter = `counter'+1	
+		}
+		di "`connectedlist' "
+		mac list _labellist	 // should not display, but mac list 
+	preserve
+	collapse (mean) `y'=`y' if `sample'==1, by(`z' `x')  
+	twoway `connectedlist', legend(order (`labellist'))  // ytitle(`ylabel')
+	gr export 	"$outpath/fig/main/g_crude_byagegrp-`z'_`sample'_`y'.jpg", replace			
+	restore
+	} 
+	pause
+	*STOP
+	*/
 
 
 		

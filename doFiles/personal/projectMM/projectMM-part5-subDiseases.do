@@ -21,18 +21,18 @@ di 	"`agethreshold' `h_data'"
 **# Bookmark #2 (adding dementia reduces sample by about half due to missing responses to both tests)
 	***dementia*** 
 	sum 	tr20r orientr
-		egen tr20rstd = std(tr20r)
-		egen orientrstd = std(orientr)
+	egen 	tr20rstd = std(tr20r)
+	egen 	orientrstd = std(orientr)
 	gen 	tr20r_wtd   = (tr20r +1) / 20 * 100
 	gen  	orientr_wtd = (orientr +1) / 4 * 100
 	egen 	cognition_total = rowtotal(tr20r_wtd orientr_wtd)
 	egen 	cognitionstd1 = std(cognition_total)
 	replace cognitionstd1 = . if mi(tr20r_wtd) | mi(tr20r_wtd)
 
-	egen rowmiss = rowmiss(tr20r_wtd orientr_wtd)
-	egen ts = rowtotal(tr20r_wtd orientr_wtd) // if rowmiss==0
-	egen cognitionstd2 = std(ts) if rowmiss==0
-	drop rowmiss 
+	egen 	rowmiss = rowmiss(tr20r_wtd orientr_wtd)
+	egen 	ts = rowtotal(tr20r_wtd orientr_wtd) // if rowmiss==0
+	egen 	cognitionstd2 = std(ts) if rowmiss==0
+	drop 	rowmiss 
 	
 	
 		gen 	cognitionstd = tr20rstd
@@ -208,12 +208,14 @@ sum 	diff_d_count*
 	}
 	
 	
-	/*** check if any condition is perfectly predicted by age (based on age-eligiblity to the question) ***
-	foreach d of local alldiseases  {
-	tab cohort5 `d'	,m /*if nothing is odd, would seem okay. If we have more people entering later 
-	(e.g. inw1==0 & inw2==1, or based on hacohort), this could lead to a jump in the graphs */
-	} 
-	*/
+*** check if any condition is perfectly predicted by age (based on age-eligiblity to the question) ***
+log using 	"`out'logs/log-diseasebycohort.txt", text replace name(log)
+foreach d of local alldiseases  {
+tab cohort5 `d'	,m /*if nothing is odd, would seem okay. If we have more people entering later 
+(e.g. inw1==0 & inw2==1, or based on hacohort), this could lead to a jump in the graphs */
+} 
+log close log
+*/
 
 **age at first onset (any chronic disease observed)**
 gen 	myvar 		= age if d_any==1 /*age, if any disease is present*/

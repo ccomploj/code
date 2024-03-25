@@ -8,19 +8,20 @@ log close _all 	/*closes all open log files*/
 clear all		/*clears all data in memory*/
 
 ***define folder locations***
-loc data 		"HRS" // SHARE | ELSA (note for ELSA: part5-subDiseases may be incorrect because other diseases are included in measure)
+loc data 		"SHARE" // SHARE | ELSA (note for ELSA: part5-subDiseases may be incorrect because other diseases are included in measure)
 loc datalist 	"SHARE HRS ELSA"
-*foreach data of local datalist{
+foreach data of local datalist{
 
-loc github_p5subdiseases "https://raw.githubusercontent.com/ccomploj/code/main/doFiles/personal/projectMM/projectMM-part5-subDiseases.do" // on all devices using github link
+**basic paths if no user specified
+loc	cv 	"G:/My Drive/drvData/`data'/"
+loc github_p5subdiseases "https://raw.githubusercontent.com/ccomploj/code/main/doFiles/personal/projectMM/projectMM-part5-subDiseases.do" // on all devices use github link
 
-**flexible to OS**
+**flexible to user**
 if "`c(username)'" == "P307344" { // UWP server
 loc cv 		"X:/My Documents/XdrvData/`data'/"
 }
-if "`c(username)'" == "User" { // personal PC
+if "`c(username)'" == "User" { // my personal PC
 loc	cv 		"G:/My Drive/drvData/`data'/"
-	loc cv 	"C:\Users\User\Documents\RUG/`data'/"
 loc github_p5subdiseases "C:/Users/User/Documents/GitHub/code/doFiles/personal/projectMM/projectMM-part5-subDiseases.do" // on my device use offline file
 }
 
@@ -70,13 +71,11 @@ loc pthreshold		"4"
 }	
 loc t "male"
 **********************	
-**# Bookmark #2 dropping individuals is already for MM project. Ideally would move this below after saving intermediate dataset (can also move entire loop)
+**# Bookmark #1 already dropping irrelevant observations from MM-project. Ideally, I would move the above data selection to just before the (project-specific) sample selection below
 
-	***log entire file***
-	*log using 	"`h_data'logdo`data'-2-harmonPart5.txt", text replace name(logDofile) // ends w/ -log close logDofile- || in folder location  
-	log using 	"`out'/logdo`data'-2-harmonPart5.txt", text replace name(logDofile) // ends w/ -log close logDofile- || in dataoutput location
-	*log using 	"G:/My Drive/projects/projectMultimorbidity/outfiles/logs/logdo`data'-2-harmonPart5.txt", text replace name(logDofile) // ends w/ -log close logDofile- || in specific location 
-	
+
+***log entire file***
+log using 	"`out'/logdo`data'-2-harmonPart5.txt", text replace name(logDofile) // ends w/ -log close logDofile- || in dataoutput location	
 	
 ****************************************************************************************************
 *Part 5*: Generate study-specific variables while in 'long' format 
@@ -109,20 +108,21 @@ tab 		 inw_first wave,m
 
 **time since first observed (entry into survey)**
 *note: MUST generate BEFORE gap appears (e.g. before deleting wave 3 (Life-history) from the panel)*
-	/*timesincefirstobs: in waves*
-	bys ID: gen timesincefirstobs = _n -1  				 if wave>=inw_first	
-	replace timesincefirstobs 	= timesincefirstobs - inw_first + 1 /*subtract time first observed*/	
-	*/
-	/*timesincefirstobs: in years*
-	su 		time, meanonly
-	local 	timemin= r(min)
-	gen 	time_sincebaseline = time - `timemin' // use first survey wave	
-		gen 		 myvar 			= time_sincebaseline if inwt==1 
-		bys ID: egen inw_firstyr	= min(myvar) 
-		drop 		 myvar
-		tab inw_first inw_firstyr,m	
-	gen timesincefirstobs = time_sincebaseline - inw_firstyr  if wave>=inw_first
-	*/
+**# Bookmark #4
+/*timesincefirstobs: in waves*
+bys ID: gen timesincefirstobs = _n -1  				 if wave>=inw_first	
+replace timesincefirstobs 	= timesincefirstobs - inw_first + 1 /*subtract time first observed*/	
+*/
+/*timesincefirstobs: in years*
+su 		time, meanonly
+local 	timemin= r(min)
+gen 	time_sincebaseline = time - `timemin' // use first survey wave	
+	gen 		 myvar 			= time_sincebaseline if inwt==1 
+	bys ID: egen inw_firstyr	= min(myvar) 
+	drop 		 myvar
+	tab inw_first inw_firstyr,m	
+gen timesincefirstobs = time_sincebaseline - inw_firstyr  if wave>=inw_first
+*/
 **timesincefirstobs: in years (using interview year as time)** 
 su 		iwyr, meanonly
 loc 	timemin= r(min)	// take first survey year as starting time for 'time' 
@@ -166,14 +166,15 @@ la var 		 agemin "age when first observed"
 gen 		 ageatfirstobs = agemin
 
 **define cohorts (choice of definition depends on survey sampling eligibility)**
-egen 		cohort 		= cut(age), at (`agethreshold',60,70,80,120) 	
-egen 		cohort5 	= cut(age), at (`agethreshold',55,60,65,70,75,80,120)
+egen 		cohort 		= cut(age),    at (`agethreshold',60,70,80,120) 	
+egen 		cohort5 	= cut(age),    at (`agethreshold',55,60,65,70,75,80,120)
 egen 		cohortmin 	= cut(agemin), at (`agethreshold',60,70,80,120)
 egen 		cohortmin5 	= cut(agemin), at (`agethreshold',55,60,65,70,75,80,120) 
-	recode cohort 	  (`agethreshold' = 50)  // recode threshold to same number for figure file naming
-	recode cohort5 	  (`agethreshold' = 50) 
-	recode cohortmin  (`agethreshold' = 50)  
-	recode cohortmin5 (`agethreshold' = 50) 
+**# Bookmark #3
+recode cohort 	  (`agethreshold' = 50)  // recode threshold to same number for figure file naming
+recode cohort5 	  (`agethreshold' = 50) 
+recode cohortmin  (`agethreshold' = 50)  
+recode cohortmin5 (`agethreshold' = 50) 
 tab 		cohort
 la de 		cohortl 	50  "ages `agethreshold'-59" 60 "ages 60-69" 70 "ages 70-79" 80 "ages 80+"       
 la de 		cohortminl  50  "ageatfirstobs: `agethreshold'-59" 60 "ageatfirstobs: 60-69" 70 "ageatfirstobs: 70-79" 80 "ageatfirstobs: 80+"       
@@ -181,6 +182,8 @@ la de 		cohortmin5l 50 "ageatfirstobs: `agethreshold'-54" 55 "ageatfirstobs: 55-
 la val 		cohort 		cohortl // labels value labels
 la val 		cohortmin 	cohortminl // labels value labels
 la val 		cohortmin5 	cohortmin5l // labels value labels
+la var 		cohort		"current age-cohort (10-year)"
+la var 		cohort5 	"current age-cohort (5-year)"
 tab			age		cohort, m
 tab			agemin 	cohort, m
 
@@ -196,7 +199,7 @@ tab iwstatr age_not`agethreshold'
 **label variables from A (if different label desired)**
 la var  age 		"age at interview"
 la var 	raeducl 	"r educ"
-la de 	raeducll 	1 "1.less than sec. educ" 2 "2.sec. or voc. educ" 3 "3.tertiary educ"
+la de 	raeducll 	1 "1.low educ" 2 "2.secondary" 3 "3.university"
 la val 	raeducl raeducll
 	
 loc 	droplist 	"ragender" 			// drop variables not needed
@@ -242,34 +245,34 @@ gen 	psycher = (`ptestname'>=`pthreshold') if `ptestname'<.  /*validated test as
 
 
 
-*****************
-*** Attrition *** 
-*****************
-tab 	iwstatr
-gen 	iwstatr0 = (iwstatr==0) if iwstatr<.
-gen 	iwstatr4 = (iwstatr==4) if iwstatr<.
-gen 	iwstatr9 = (iwstatr==9) if iwstatr<.
-gen 	dead = (iwstatr==5|iwstatr==6) if iwstatr<. 
-bys ID: egen everdead = max(dead) // =1 if ID ever dies 
-bys ID: egen everiwstatr0 = max(iwstatr0) 
-bys ID: egen everiwstatr4 = max(iwstatr4) 
-bys ID: egen everiwstatr9 = max(iwstatr9) 
-la var 	everiwstatr0 "ever inap."
-la var 	everiwstatr4 "ever nr \& alive"
-la var 	everiwstatr4 "ever nr, dk if alive"
-tab everdead if wave==1
-tab everdead iwstatr,m col
-sum iwstatr0 iwstatr4 iwstatr9 dead
-sum everiwstatr0 everiwstatr4 everiwstatr9 everdead	
-tab iwstatr wave,m	
-tab inw_tot everdead,m
-/*loc ctrls "male i.raeducl age"
-eststo attr0: qui reg everiwstatr0 `ctrls'
-eststo attr4: qui reg everiwstatr4 `ctrls'
-eststo attr9: qui reg everiwstatr9 `ctrls'
-esttab attr*, label
-eststo clear
-*/
+	*****************
+	*** Attrition *** 
+	*****************
+	tab 	iwstatr
+	gen 	iwstatr0 = (iwstatr==0) if iwstatr<.
+	gen 	iwstatr4 = (iwstatr==4) if iwstatr<.
+	gen 	iwstatr9 = (iwstatr==9) if iwstatr<.
+	gen 	dead = (iwstatr==5|iwstatr==6) if iwstatr<. 
+	bys ID: egen everdead = max(dead) // =1 if ID ever dies 
+	bys ID: egen everiwstatr0 = max(iwstatr0) 
+	bys ID: egen everiwstatr4 = max(iwstatr4) 
+	bys ID: egen everiwstatr9 = max(iwstatr9) 
+	la var 	everiwstatr0 "ever inap."
+	la var 	everiwstatr4 "ever nr \& alive"
+	la var 	everiwstatr4 "ever nr, dk if alive"
+	tab everdead if wave==1
+	tab everdead iwstatr,m col
+	sum iwstatr0 iwstatr4 iwstatr9 dead
+	sum everiwstatr0 everiwstatr4 everiwstatr9 everdead	
+	tab iwstatr wave,m	
+	tab inw_tot everdead,m
+	/*loc ctrls "male i.raeducl age"
+	eststo attr0: qui reg everiwstatr0 `ctrls'
+	eststo attr4: qui reg everiwstatr4 `ctrls'
+	eststo attr9: qui reg everiwstatr9 `ctrls'
+	esttab attr*, label
+	eststo clear
+	*/
 
 sort 	ID wave
 save	"`h_data'H_`data'_panel2.dta", replace 
@@ -287,20 +290,17 @@ pause
 ****************************************************************************************************
 use 	"`h_data'H_`data'_panel2.dta", clear // load earlier dataset 
 
+
 ***********************************
 *** diseases list and durations ***
 ***********************************
-include  "`github_p5subdiseases'"
-*include "C:/Users/User/Documents/GitHub/code/doFiles/personal/projectMM/projectMM-part5-subDiseases.do" // "include" includes current locals into subfile
-*include "https://raw.githubusercontent.com/ccomploj/code/main/doFiles/personal/projectMM/projectMM-part5-subDiseases.do"
-*include "https://github.com/ccomploj/code/blob/b10904f2877ec259d5b3760add674141438686ec/doFiles/personal/projectMM/projectMM-part5-subDiseases.do" // permalink (does not work)
-
+include  "`github_p5subdiseases'" // include github file
 
 
 *****************************
 *** Sample Selection (MM) ***
 *****************************
-log using 	"`out'logs/log-sampleSelection.txt", text replace name(logSampleselection)
+	log using 	"`out'logs/log-sampleSelection.txt", text replace name(logSampleselection)
 	tab hacohort inw1, 
 	*tab countryID hacohort,m   		
 	tab inw1 wave,m		// 30,419 IDs present in wave 1			
@@ -320,17 +320,14 @@ count 					// total
 count 	if wave		==1 // 
 count 	if hacohort	==1 // 
 count 	if inw1		==1	// 
-codebook ID, compact 	// 83,310 IDs
 codebook ID, compact 	// 79,420 IDs
 keep 	if agemin<70 /*exclude all observations from people who are very old when first observed*/
 codebook ID, compact
 log close logSampleselection
+
 	
-	
 
-
-
-gen dataset = "`data'"
+gen 	dataset = "`data'" // add variable referring to dataset
 sort 	ID wave
 save	"`h_data'H_`data'_panel2-MM.dta", replace // check if appeared in correct folder!
 *pause 

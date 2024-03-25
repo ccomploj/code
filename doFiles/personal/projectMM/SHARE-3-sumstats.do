@@ -155,6 +155,7 @@ qui log using 	"$outpath/logs/log-samplefinal.txt", text replace name(log)
 tab hacohort wave 	if sfull,m
 tab iwstatr wave 	if sfull,m
 sum agemin 			if sfull, 
+tab diff_d_count
 qui log close log
 
 tabstat d_*, statistics(count mean sd min max) columns(statistics) varwidth(20)	

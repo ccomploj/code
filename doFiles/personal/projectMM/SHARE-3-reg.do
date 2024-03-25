@@ -19,7 +19,7 @@ loc outloc 	"`cv'" // to save locally
 }
 else {
 loc	cv 		"G:/My Drive/drvData/`data'/" // own PC
-loc	outloc 	"C:/Users/User/Documents/GitHub/2-projectMM-`data'" 	
+loc	outloc 	"C:/Users/User/Documents/GitHub/2-projectMM-`data'" // do not overwrite existing output in the compiled output	
 }
 gl 	outpath 	"`outloc'/files" /*output folder location*/
 loc saveloc 	"main" // main | supplement /*saving location*/
@@ -78,10 +78,28 @@ drop if agemin<`agethreshold'
 
 
 
+
+	*** split by regions ***
+	if dataset == "ELSA" {
+	gen countryID = "EN"
+	}
+	gen 	region = "NA"
+	replace	region = "North"  		 if (countryID=="AT"|countryID=="Bf"|countryID=="Bn"|countryID=="Cf"|countryID=="Cg"|countryID=="Ci" | countryID=="DE"|countryID=="DK"|countryID=="EE"|countryID=="FI"|countryID=="FR"|countryID=="IE"        |countryID=="Ia" |countryID=="Ih" |countryID=="Ir"     |countryID=="LT"|countryID=="LU"|countryID=="LV" |countryID=="NL" |countryID=="SE"       ///
+	| countryID=="EN") // add EN
+	replace region = "Center-East"   if (countryID=="BG"|countryID=="CZ"|countryID=="HR"|countryID=="HU"|countryID=="Cf" |countryID=="PL" |countryID=="RO" |countryID=="SI" |countryID=="SK" )
+ 	replace region = "South" 		 if (countryID=="CY"|countryID=="ES"|countryID=="IT"|countryID=="MT"|countryID=="PT")	
+	qui log using 	"$outpath/logs/log-regionclassification.txt", text replace name(log) 
+	tab countryID region,m
+	log close log
+// 	label 	define regionl 1 "North-East" 2 "East" 3 "Center" 4 "West"
+// 	*label   define regionl 1 "NE" 2 "E" 3 "C" 4 "W"
+// 	label	value  region regionl
+
+
 ****************************************************************************************************
 *Part 7*: Regression (general)
 ****************************************************************************************************	
-cd  	"$outpath/tab"
+*cd  	"$outpath/tab"
 	*sample 5
 	*keep if d_count<4
 
@@ -98,6 +116,9 @@ rename  raeduclcat3 educ_university
 loc sample "sfull"
 loc samplelabel: variable label `sample'
 set scheme s1color	
+
+
+
 
 /*** packages needed for regression ***
 ssc install gologit2 // search and install gologit2
@@ -122,7 +143,7 @@ estadd loc time  "`l'" // : d_any`l' d_mm`l'
 }
 esttab logit*, `esttab_opt' stats(N r2 time) // using "$outpath/reg/o_logitbywaved_any" , `esttab_opt' tex nocons
 */
-** xtlogit using all data **
+/** xtlogit using all data **
 eststo xtlogitre: qui xtlogit d_any 		c.age male married i.raeducl* if `sample'==1, or re vce(cl ID)  // c.age#c.age
 qui estadd loc model2 "RE"
 eststo xtlogitfe: qui xtlogit d_any 		c.age male married i.raeducl* if `sample'==1, or fe 			  // c.age#c.age
@@ -134,8 +155,21 @@ STOP
 */
 
 
-	*/
+	/*/
 	*** +++ transitions +++ ***
+	
+	/*** multinomial logit ***
+	replace d_count = 999 if dead==1
+
+	log using 	"$outpath/logs/log-t-regd_count-age-mlogit`data'.txt", text replace name(mlogit) 
+	eststo mlog1: mlogit d_count age `ctrls' if `sample'==1 & d_count<7, vce(cluster ID)
+	log close mlogit
+	esttab mlog1 using "$outpath/t-regd_count-cohort-mlogit.tex", b se nobase nogaps replace
+	esttab mlog1 using "$outpath/t-regd_count-cohort-mlogit.html", b se nobase nogaps replace
+	*STOP
+	*/
+	
+	
 	*** sequential logit ***
 	*log using 	"$outpath/logs/log-t-regd_count-age-seqlogit`data'.txt", text replace name(seqlogit) 
 	set seed 500
@@ -155,18 +189,34 @@ STOP
 	
 *** +++ b) what predicts the count? (ordered model) +++ ***
 loc y 			"d_count"
-	loc extra "pretreat_workr pretreat_marriedr age_male age_educ_voc age_educ_uni" // i.cohortmin5 as dummies
-loc ctrls 		"educ_* male   `extra'" 
+	*loc extra "pretreat_workr pretreat_marriedr age_male age_educ_voc age_educ_uni" // interaction effects in nonlinear models are complicated to include and should not be added like this
+loc ctrls 		"educ_* male" 
 	preserve 
 	timer clear 	1 		
 	timer on 		1 
 	loc timerlist  "1"
-*** Ordinal model with PANEL data: this is NOT considering the panel dimension ***	
+
+	
+*** Random Effect linear model (Mixed Model) ***
+eststo xtreg1: reg   d_count c.age 									if sfull==1, robust // vce(cl ID) // c.age#c.age
+eststo xtreg2: reg   d_count c.age i.cohortmin5 i.cohortmin5#c.age 	if sfull==1, robust // vce(cl ID) // c.age#c.age
+eststo xtreg2b: reg   d_count c.timesincefirstobs i.cohortmin5 i.cohortmin5#c.timesincefirstobs 	if sfull==1, robust // vce(cl ID) // c.age#c.age
+*eststo xtreg3: xtreg d_count c.age i.cohortmin5 i.cohortmin5#c.age	if sfull==1, robust // vce(cl ID) // c.age#c.age
+* should allow for different intercepts. Do not have to interpret a "lower" age at baseline, show interaction with age for each of the groups, AFTER using xtreg
+*eststo xtreg2: xtreg d_count c.age i.cohortmin5	i.cohortmin5#c.age male i.raeducl if sfull==1, re robust // vce(cl ID) // c.age#c.age
+esttab xtreg*, nobase compress mtitles("" "") la stats(N controls)
+STOP 
+*/
+		
+		
+		STOP // here to not overwrite current output
+		
+/*** Ordinal model with PANEL data: this is NOT considering the panel dimension ***	
 ** regoprob2 **
 timer clear 2 		
 timer on 	2 
 log using 		"$outpath/logs/log-t-regd_count-age-regoprob2`data'.txt", text replace name(regoprob2) 
-eststo regoprob2`data': regoprob2 `y' age `ctrls' if `sample'==1 & dataset=="`data'", i(ID) npl(age) // autofit   
+eststo regoprob2`data': regoprob2 `y' age `ctrls' if `sample'==1 & dataset=="`data'", i(ID) autofit // npl(age) // autofit   
 estadd local regtype "regoprob2"
 	*loc append_estimates "replace" /*replace only at first iteration (only works when same file name and run through full loop)*/ 
 estimates save "$outpath/logs/t-regd_count-age-`data'estimates" , replace // `append_estimates'
@@ -185,7 +235,7 @@ esttab regoprob2`data' 			using "$outpath/t_regd_count-age-regoprob2`data'", htm
 timer clear 3 		
 timer on 	3 
 log using 	"$outpath/logs/log-t-regd_count-age-gologit2`data'.txt", text replace name(gologit2) 
-eststo gologit2`data': gologit2 `y' age `ctrls'	if `sample'==1 & dataset=="`data'", vce(cluster ID) gamma npl(age) // autofit // cutpoints (intercept) are identical to ologit (but not xtologit)
+eststo gologit2`data': gologit2 `y' age `ctrls'	if `sample'==1 & dataset=="`data'", vce(cluster ID) gamma autofit // npl(age) // autofit // cutpoints (intercept) are identical to ologit (but not xtologit)
 estadd local regtype "gologit2"
 estimates save "$outpath/logs/t-regd_count-age-`data'estimates" , append // `append_estimates'
 timer off  	3
@@ -266,14 +316,7 @@ STOP
 
 
 
-	/*** multinomial logit ***
-	log using 	"$outpath/logs/log-t-regd_count-age-mlogit`data'.txt", text replace name(mlogit) 
-	eststo mlog1: mlogit d_count age `ctrls' if `sample'==1 & d_count<7, vce(cluster ID)
-	log close mlogit
-	esttab mlog1 using "$outpath/t-regd_count-cohort-mlogit.tex", b se nobase nogaps replace
-	esttab mlog1 using "$outpath/t-regd_count-cohort-mlogit.html", b se nobase nogaps replace
-	*STOP
-	*/
+
 
 
 
