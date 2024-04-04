@@ -14,7 +14,7 @@ loc datalist 	"SHARE HRS ELSA"
 
 **basic paths if no user specified
 loc	cv 	"G:/My Drive/drvData/`data'/"
-loc github_p5subdiseases "https://raw.githubusercontent.com/ccomploj/code/main/doFiles/personal/projectMM/projectMM-part5-subDiseases.do" // on all devices use github link
+loc github_p5subdiseases "https://raw.githubusercontent.com/ccomploj/code/main/doFiles/personal/projectMM/projectMM-2-part5-subDiseases.do" // on all devices use github link
 
 **flexible to user**
 if "`c(username)'" == "P307344" { // UWP server
@@ -22,7 +22,7 @@ loc cv 		"X:/My Documents/XdrvData/`data'/"
 }
 if "`c(username)'" == "User" { // my personal PC
 loc	cv 		"G:/My Drive/drvData/`data'/"
-loc github_p5subdiseases "C:/Users/User/Documents/GitHub/code/doFiles/personal/projectMM/projectMM-part5-subDiseases.do" // on my device use offline file
+loc github_p5subdiseases "C:/Users/User/Documents/GitHub/code/doFiles/personal/projectMM/projectMM-2-part5-subDiseases.do" // on my device use offline file
 }
 
 loc h_data 		"`cv'`data'data/harmon/" 		  // harmonized data folder location
