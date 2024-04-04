@@ -280,6 +280,25 @@ la var 	d_anyever_g2	"ever reports having had any disease (g2aging)"
 sum 	d_anyever d_anyever_g2
 
 
+
+
+
+
+*******************
+*** Transitions ***
+*******************
+** disease count in next period: d_count_lead (add mortality as outcome) **
+gen 	d_count2 = d_count 
+replace d_count2 = 99 if dead==1 
+bys ID: gen d_count_lead = f.d_count2       if inwt==1 // only use the lead if present in wave
+*bys ID: replace d_count_lead = f2.d_count2 if d_count_lead ==. // it jumps basically here bc 1 gap is allowed
+la var d_count_lead "# diseases in next period" // (gaps are ignored)
+la de  d_count_leadl 99 "dead" // add dead label to 99
+la val d_count_lead d_count_leadl
+drop   d_count2 
+*bro ID wave d_count d_count_lead dead
+
+
 	
 *****************
 *** Durations ***
@@ -326,7 +345,23 @@ sum timetonextdisease*, de
 	// timetonextdisease can be negative if count decreases from t to t+1
 	// currently, timetonextdisease2 still ignores the dose: it treats time from 1 to 2 the same as 1 to 4 (2nd accumulates faster) || if sb jumps from 2 to 4, firstdate_c3 is equal to firstdate_c4 anyway || hence, this measure is simple "to next '1 or more' diseases"
 
-	
+**duration since onset**
+gen 	timesincefirstonset = iwym - firstdate_c1 if (iwym - firstdate_c1>=0)
+la var 	timesincefirstonset "time (months) since first disease"	
+
+**duration from *first* onset to death (in years)**
+gen 	time_onsettodeath =  (radym - firstdate_c1)/12
+*gen 	time_onsettodeathx = (raxym - firstdate_c1)/12 
+la var 	time_onsettodeath "years first onset to death (observed)" 
+*la var 	time_onsettodeathx "years first onset to death (observed) (eol module)" 
+
+*bro ID wave radyear raxyear time_ons* firstyear_c1 firstdate_c1 d_any if time_onsettodeathx<0 /*using rad seems more correct than rax, bc no negative values*/
+gen 	time_onsettodeath_age	 = radage-firstage 
+gen 	time_onsettodeath_age_g2 = radage-firstage_g2
+*sum 	radage radyear radmonth raxyear raxmonth time_onsetto*
+li 		ID wave iwym dead d_count firstdate_c1 firstdate_c2 ra?ym time_onsettodeath* in 1/16, compress nola
+*bro 	ID wave iwym dead d_count firstdate_c1 firstdate_c2 ra?ym time_onsettodeath*  if time_onsettodeath<0
+*++	
 
 /**duration from *first* onset to death**
 gen 	time_onsettodeath =  radym-firstdate_c1
@@ -352,6 +387,23 @@ sum 	ageatdeath ageatdeathx radage
 drop 	ageatdeath ageatdeathx
 ++
 */
+
+
+**************
+*** Groups ***
+**************
+** countatfirstobs and countatonset ** 
+gen 	tempvar = d_count if inw_first==wave 		// count at baseline
+bys ID: egen countatfirstobs = max(tempvar) 
+recode 	countatfirstobs (0 = 0 "0 diseases at baseline") (1 = 1 "1 disease at baseline") (2/3 = 2 "2 or 3 diseases at baseline") (4/10 = 4 "4+ diseases at baseline"), gen(countatfirstobs2)
+drop 	tempvar countatfirstobs
+rename 	countatfirstobs2 countatfirstobs 
+gen 	tempvar = d_count if timesincefirstonset==0 // count at onset
+bys ID: egen countatonset = max(tempvar) 
+replace countatonset =. if age<firstage 		// if first onset not experienced yet, should not include
+recode 	countatonset (1/2 = 1 "1 or 2 diseases at onset") (3/4 = 2 "3 or 4 diseases at onset") (5/15 = 3 "5 or more at onset"), gen(countatonset2)
+drop 	tempvar countatonset
+rename 	countatonset2 countatonset 
 
 
 **generate subsamples**
@@ -391,23 +443,7 @@ gen post = (iwym - firstdate_c1 > 0) if !mi(iwym - firstdate_c1) // first date o
 *bro ID wave age firstage firstdate_c1 iwym post* d_any timesincefirstonset // if d_anyever==0
 *tab timesincefirstonset post ,m
 
-**duration since onset**
-gen 	timesincefirstonset = iwym - firstdate_c1 if (iwym - firstdate_c1>=0)
-la var 	timesincefirstonset "time (months) since first disease"	
 
-**duration from *first* onset to death (in years)**
-gen 	time_onsettodeath =  (radym - firstdate_c1)/12
-*gen 	time_onsettodeathx = (raxym - firstdate_c1)/12 
-la var 	time_onsettodeath "years first onset to death (observed)" 
-*la var 	time_onsettodeathx "years first onset to death (observed) (eol module)" 
-
-*bro ID wave radyear raxyear time_ons* firstyear_c1 firstdate_c1 d_any if time_onsettodeathx<0 /*using rad seems more correct than rax, bc no negative values*/
-gen 	time_onsettodeath_age	 = radage-firstage 
-gen 	time_onsettodeath_age_g2 = radage-firstage_g2
-*sum 	radage radyear radmonth raxyear raxmonth time_onsetto*
-li 		ID wave iwym dead d_count firstdate_c1 firstdate_c2 ra?ym time_onsettodeath* in 1/16, compress nola
-*bro 	ID wave iwym dead d_count firstdate_c1 firstdate_c2 ra?ym time_onsettodeath*  if time_onsettodeath<0
-*++
 
 ** pre-treatment variables (before onset) ** 
 	// currently using same time period to not lose observations

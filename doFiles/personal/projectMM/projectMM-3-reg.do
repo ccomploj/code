@@ -5,9 +5,9 @@ clear all		/*clears all data in memory*/
 
 
 ***choose data***
-loc data 		"SHARE"
-
-*loc append_iterationlog "replace" /*short iteration log at the end of the loop*/ 
+loc data 		"HRS"
+	*loc append_iterationlog "replace" 		
+	/*short iteration log at the end of the loop*/ 
 loc datalist 	"SHARE ELSA HRS"
 *foreach data of local datalist {
 
@@ -19,6 +19,7 @@ loc outloc 	"`cv'" // to save locally
 }
 else {
 loc	cv 		"G:/My Drive/drvData/`data'/" // own PC
+	*loc cv 	"C:\Users\User\Documents\RUG/`data'"
 loc	outloc 	"C:/Users/User/Documents/GitHub/2-projectMM-`data'" // do not overwrite existing output in the compiled output	
 }
 gl 	outpath 	"`outloc'/files" /*output folder location*/
@@ -72,28 +73,27 @@ loc wavelast 		"9" 	// select survey-specific last wave
 	*drop if wave==3    & dataset=="SHARE" // already dropped
 	drop if hacohort>2 & dataset=="SHARE"  
 }	
-loc t "male"
 drop if agemin<`agethreshold'	
 **********************
 
 
 
 
-	*** split by regions ***
-	if dataset == "ELSA" {
-	gen countryID = "EN"
-	}
-	gen 	region = "NA"
-	replace	region = "North"  		 if (countryID=="AT"|countryID=="Bf"|countryID=="Bn"|countryID=="Cf"|countryID=="Cg"|countryID=="Ci" | countryID=="DE"|countryID=="DK"|countryID=="EE"|countryID=="FI"|countryID=="FR"|countryID=="IE"        |countryID=="Ia" |countryID=="Ih" |countryID=="Ir"     |countryID=="LT"|countryID=="LU"|countryID=="LV" |countryID=="NL" |countryID=="SE"       ///
-	| countryID=="EN") // add EN
-	replace region = "Center-East"   if (countryID=="BG"|countryID=="CZ"|countryID=="HR"|countryID=="HU"|countryID=="Cf" |countryID=="PL" |countryID=="RO" |countryID=="SI" |countryID=="SK" )
- 	replace region = "South" 		 if (countryID=="CY"|countryID=="ES"|countryID=="IT"|countryID=="MT"|countryID=="PT")	
-	qui log using 	"$outpath/logs/log-regionclassification.txt", text replace name(log) 
-	tab countryID region,m
-	log close log
-// 	label 	define regionl 1 "North-East" 2 "East" 3 "Center" 4 "West"
-// 	*label   define regionl 1 "NE" 2 "E" 3 "C" 4 "W"
-// 	label	value  region regionl
+// 	*** split by regions ***
+// 	if dataset == "ELSA" {
+// 	gen countryID = "EN"
+// 	}
+// 	gen 	region = "NA"
+// 	replace	region = "North"  		 if (countryID=="AT"|countryID=="Bf"|countryID=="Bn"|countryID=="Cf"|countryID=="Cg"|countryID=="Ci" | countryID=="DE"|countryID=="DK"|countryID=="EE"|countryID=="FI"|countryID=="FR"|countryID=="IE"        |countryID=="Ia" |countryID=="Ih" |countryID=="Ir"     |countryID=="LT"|countryID=="LU"|countryID=="LV" |countryID=="NL" |countryID=="SE"       ///
+// 	| countryID=="EN") // add EN
+// 	replace region = "Center-East"   if (countryID=="BG"|countryID=="CZ"|countryID=="HR"|countryID=="HU"|countryID=="Cf" |countryID=="PL" |countryID=="RO" |countryID=="SI" |countryID=="SK" )
+//  	replace region = "South" 		 if (countryID=="CY"|countryID=="ES"|countryID=="IT"|countryID=="MT"|countryID=="PT")	
+// 	qui log using 	"$outpath/logs/log-regionclassification.txt", text replace name(log) 
+// 	tab countryID region,m
+// 	log close log
+// // 	label 	define regionl 1 "North-East" 2 "East" 3 "Center" 4 "West"
+// // 	*label   define regionl 1 "NE" 2 "E" 3 "C" 4 "W"
+// // 	label	value  region regionl
 
 
 ****************************************************************************************************
@@ -155,19 +155,39 @@ STOP
 */
 
 
-	/*/
-	*** +++ transitions +++ ***
-	
-	/*** multinomial logit ***
-	replace d_count = 999 if dead==1
-
-	log using 	"$outpath/logs/log-t-regd_count-age-mlogit`data'.txt", text replace name(mlogit) 
-	eststo mlog1: mlogit d_count age `ctrls' if `sample'==1 & d_count<7, vce(cluster ID)
-	log close mlogit
-	esttab mlog1 using "$outpath/t-regd_count-cohort-mlogit.tex", b se nobase nogaps replace
-	esttab mlog1 using "$outpath/t-regd_count-cohort-mlogit.html", b se nobase nogaps replace
-	*STOP
 	*/
+	*** +++ transitions +++ ***
+	loc ctrls "i.raeducl i.male" // i.countatfirstobs
+	
+	*** multinomial logit ***
+	*https://www.stata.com/features/overview/panel-data-multinomial-logit/
+	sample 1
+	count 
+	*log using 	"$outpath/logs/log-t-regd_count-age-mlogit`data'.txt", text replace name(mlogit) 
+		xtset ID
+	eststo mlog1: xtmlogit d_count_lead  `ctrls' age if `sample'==1 , base(1) nolog rrr vsquish re // vce(cluster ID) & d_count==1 covariance(unstructured) rrr // fe for conditional fixed effects
+	margins raeducl, at (age=(50(5)85))
+	marginsplot, by(_predict) 
+	log close mlogit
+	++
+	predict p1 p2 p3 p4 p5 p6 p7 p8 p9	
+	*predict p1 p2 p3 p4 p5 p6 p7 p8 p9 p10 p11
+	twoway (line p1 age if raeducl==1) (line p1 age if raeducl==2) (line p1 age if raeducl==3) 
+	twoway (line p2 age if raeducl==1) (line p2 age if raeducl==2) (line p2 age if raeducl==3)	
+	*margins 
+	*marginsplot	
+	*esttab mlog1 using "$outpath/t-regd_count-cohort-mlogit.tex", b se nobase nogaps replace
+	*esttab mlog1 using "$outpath/t-regd_count-cohort-mlogit.html", b se nobase nogaps replace
+	STOP
+		* should do this for every count before transition, for every ____, also do a marginsplot
+		
+		marginsplot 
+		
+	*/
+	
+	
+	
+	
 	
 	
 	*** sequential logit ***
@@ -177,7 +197,7 @@ STOP
 	preserve
 		keep if d_count<7
 		sample 10
-	eststo seqlogit: seqlogit d_count age male i.raeducl if `sample'==1, vce(cluster ID) tree(0:1 2 3 4 5 6, 1:2 3 4 5 6, 2: 3 4 5 6, 3: 4 5 6, 4: 5 6, 5:6) ofinterest(raeducl) over(c.age) or 
+	eststo seqlogit: seqlogit d_count age male i.raeducl if `sample'==1 if d_count==1, vce(cluster ID) tree(0:1 2 3 4 5 6, 1:2 3 4 5 6, 2: 3 4 5 6, 3: 4 5 6, 4: 5 6, 5:6) ofinterest(raeducl) over(c.age) or 
 	*seqlogitdecomp age, table // at(coh 1.5 south 0 paeduc 12) table
 	seqlogitdecomp, area // at(male 0 educ_vocational 0 educ_university 0)
 	*log close seqlogit
@@ -197,14 +217,18 @@ loc ctrls 		"educ_* male"
 	loc timerlist  "1"
 
 	
-*** Random Effect linear model (Mixed Model) ***
-eststo xtreg1: reg   d_count c.age 									if sfull==1, robust // vce(cl ID) // c.age#c.age
+*** Linear Random Effect model (Mixed Model) ***
 eststo xtreg2: reg   d_count c.age i.cohortmin5 i.cohortmin5#c.age 	if sfull==1, robust // vce(cl ID) // c.age#c.age
-eststo xtreg2b: reg   d_count c.timesincefirstobs i.cohortmin5 i.cohortmin5#c.timesincefirstobs 	if sfull==1, robust // vce(cl ID) // c.age#c.age
-*eststo xtreg3: xtreg d_count c.age i.cohortmin5 i.cohortmin5#c.age	if sfull==1, robust // vce(cl ID) // c.age#c.age
-* should allow for different intercepts. Do not have to interpret a "lower" age at baseline, show interaction with age for each of the groups, AFTER using xtreg
-*eststo xtreg2: xtreg d_count c.age i.cohortmin5	i.cohortmin5#c.age male i.raeducl if sfull==1, re robust // vce(cl ID) // c.age#c.age
+eststo xtreg3: xtreg 	   d_count age c.age#c.age 		i.cohortmin5 i.cohortmin5#c.timesincefirstobs male i.raeducl if sfull==1 & dataset=="SHARE", re robust // vce(cl ID) // c.age#c.age
+eststo xtregSHARE: xtreg   d_count c.timesincefirstobs 	i.cohortmin5 i.cohortmin5#c.timesincefirstobs male i.raeducl			if sfull==1 & dataset=="SHARE", robust // vce(cl ID) // c.age#c.age
+*eststo xtreg2c: reg   d_count c.timesincefirstobs i.cohortmin5 i.cohortmin5#c.timesincefirstobs male i.raeducl male#c.timesincefirstobs i.raeducl#c.timesincefirstobs	if sfull==1, robust // vce(cl ID) // c.age#c.age
+	esttab *
+	++
+eststo xtregELSA: xtreg   d_count c.timesincefirstobs i.cohortmin5 i.cohortmin5#c.timesincefirstobs male i.raeducl	if sfull==1 & dataset=="ELSA", robust // vce(cl ID) // c.age#c.age
 esttab xtreg*, nobase compress mtitles("" "") la stats(N controls)
+esttab xtregSHARE xtregELSA, nobase compress mtitles("" "") la stats(N controls) keep(timesincefirstobs *#c.timesincefirstobs)
+*esttab xtregSHARE xtregELSA using "$outpath/t_regd_count-age-xtreg`data'", tex replace  nobase compress  la keep(timesincefirstobs *#c.timesincefirstobs) mtitles("SHARE" "ELSA") stats(N controls)
+esttab xtregSHARE xtregELSA using "C:/Users/User/Documents/GitHub/2-projectMM-SHARE/files/t_regd_count-age-xtreg`data'", tex replace  nobase compress  la keep(timesincefirstobs *#c.timesincefirstobs) mtitles("SHARE" "ELSA") // stats(N controls)
 STOP 
 */
 		

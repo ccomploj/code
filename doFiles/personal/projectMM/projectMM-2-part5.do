@@ -8,9 +8,9 @@ log close _all 	/*closes all open log files*/
 clear all		/*clears all data in memory*/
 
 ***define folder locations***
-loc data 		"SHARE" // SHARE | ELSA (note for ELSA: part5-subDiseases may be incorrect because other diseases are included in measure)
+loc data 		"HRS" // SHARE | ELSA (note for ELSA: part5-subDiseases may be incorrect because other diseases are included in measure)
 loc datalist 	"SHARE HRS ELSA"
-foreach data of local datalist{
+*foreach data of local datalist{
 
 **basic paths if no user specified
 loc	cv 	"G:/My Drive/drvData/`data'/"
@@ -176,16 +176,26 @@ recode cohort5 	  (`agethreshold' = 50)
 recode cohortmin  (`agethreshold' = 50)  
 recode cohortmin5 (`agethreshold' = 50) 
 tab 		cohort
-la de 		cohortl 	50  "ages `agethreshold'-59" 60 "ages 60-69" 70 "ages 70-79" 80 "ages 80+"       
+la de 		cohortl 	50  "ages `agethreshold'-59" 60 "ages 60-69" 70 "ages 70-79" 80 "ages 80+"      
+la de 		cohort5l 	50  "ages `agethreshold'-54" 55 "ages 55-59" 60 "ages 60-64" 65 "ages 65-69" 70 "ages 70-74" 75 "ages 75-79" 80 "ages 80+"        
 la de 		cohortminl  50  "ageatfirstobs: `agethreshold'-59" 60 "ageatfirstobs: 60-69" 70 "ageatfirstobs: 70-79" 80 "ageatfirstobs: 80+"       
 la de 		cohortmin5l 50 "ageatfirstobs: `agethreshold'-54" 55 "ageatfirstobs: 55-59" 60 "ageatfirstobs: 60-64" 65 "ageatfirstobs: 65-69" 70 "ageatfirstobs: 70-74" 75 "ageatfirstobs: 75-79" 80 "ageatfirstobs: 80+"       
 la val 		cohort 		cohortl // labels value labels
+la val 		cohort5 	cohort5l
 la val 		cohortmin 	cohortminl // labels value labels
 la val 		cohortmin5 	cohortmin5l // labels value labels
 la var 		cohort		"current age-cohort (10-year)"
 la var 		cohort5 	"current age-cohort (5-year)"
 tab			age		cohort, m
 tab			agemin 	cohort, m
+
+	** if split data into only 2 age groups **
+	egen 		cohort15 		= cut(age),    at (`agethreshold',65,90) 
+	recode cohort15 	  (`agethreshold' = 50)  // recode threshold to same number for figure file naming
+	la de 		cohort15l 	50  "ages `agethreshold'-64" 65 "ages 65-90" 
+	la val 		cohort15 	cohort15l // labels value labels
+	la var 		cohort15	"current age-cohort (15-year)"
+
 
 
 // agenotelig 
