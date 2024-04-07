@@ -51,7 +51,7 @@ di 	"`agethreshold' `h_data'"
 	gen 	radiagdemen = . 
 
 	***correct disease list (carry forward report after onset)**
-	local carryforwardlist "hibp diab heart lung osteo cancr strok arthr demen" // hiper psych (if disease is missing, this should work nevertheless)
+	local carryforwardlist "hibp diab heart lung osteo cancr strok arthr demen" // hiper psych (if disease is missing, block works nevertheless)
 	foreach var of local carryforwardlist{
 	rename 		rx`var'r 	rx`var'r2 	
 	rename 		  `var'er  	  `var'er2  
@@ -72,9 +72,13 @@ di 	"`agethreshold' `h_data'"
 local eitheror "hibp diab heart lung psych osteo" 
 	loc eitherorlist ""
 foreach var of local eitheror { 
-gen 	d_`var' = 	`var'er==1 | rx`var'r==1           if `var'er<. | rx`var'r<. 
-	*gen 	d2_`var' = 	`var'er==1           if `var'er<. // to check that d_ gives the same result 
-la var 	d_`var'	 	"ever had | taking meds for `var'"
+gen 	d_`var' = 	`var'er==1 | rx`var'r==1    if `var'er<. | rx`var'r<. 
+	*gen 	d2_`var' = 	`var'er==1           	if `var'er<. // to check that d_`var' gives the same result. if someone does not have the disease, they should not report taking medications for it 
+	*sum 	d_`var' d2_`var' // to check that d_`var' gives the same result. if someone does not have the disease, they should not report taking medications for it 
+	// d_`var' and d2_`var' are not the same for "psych", bc CESD/test defines ever had condition, while medication use is only available if the respondent reports to have been diagnosed with a psychatric condition. 
+	*loc   varlabel: var la `var'
+	*local extracted_label = substr("`varlabel'", 11, .) // use this if full disease name
+la var 	d_`var'	 	"'ever had'|taking meds for `var'"
 loc eitherorlist	"`eitherorlist' d_`var'" /*creates a local macro that appends new var at each iteration*/
 }
 *l ID wave d_osteo* osteo* rxosteo* if ID==958
@@ -104,7 +108,7 @@ loc onlyeverhad 	"cancr strok arthr demen"	 // demen kidney
 	loc onlyeverhadlist ""
 foreach var of local onlyeverhad {
 gen 	d_`var' = 	`var'er==1 	if `var'er<.	/*only one condition*/
-la var 	d_`var' 	"(only) ever had `var'"
+la var 	d_`var' 	"ever had `var'"
 loc onlyeverhadlist "`onlyeverhadlist' d_`var'" 
 }
 
@@ -127,6 +131,7 @@ gen d_`var' = rx`var'r==1       if rx`var'r<.  // `var'er==1 		// |
 	*loc 	alldiseases 	""
 	*loc 	alldiseasecodes ""
 loc 	alldiseases "`eitherorlist' `onlyeverhadlist' `onlymedlist'"
+	gl 	alldiseases "`alldiseases'" /*copy local into global for later use (outside of this do file)*/
 loc 	alldiseasecodes "`eitheror' `onlyeverhad' `onlymed'"
 di 		"`alldiseases'" /*(!) check all diseases are shown: if one local is empty, this is simply ignored!*/
 di 		"`alldiseasecodes'"

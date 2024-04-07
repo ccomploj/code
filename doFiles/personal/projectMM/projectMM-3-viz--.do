@@ -108,7 +108,6 @@ la val 	radcohort radcohortl
 
 
 
-
 ** income groups **
 *xtile incomegroups = hhinc, nq(3)
 
@@ -185,10 +184,13 @@ pause
 */	
 
 
+
+
 **************************************
 *** +++ Count by cohort groups +++ *** 
 **************************************
 preserve
+
 
 **recode age and timesincefirstobs if too few observations fall in this category and SEs large**
 levelsof cohortmin5, local(levels)
@@ -205,7 +207,7 @@ replace timesincefirstobs = `timerange'-5 if timesincefirstobs<. & timesincefirs
 loc 	y 			"d_count"
 loc 	ylabel: 	var label `y'
 loc 	cat  	  	"cohortmin5" // male, raeducl, countatfirstobs
-loc 	timevar 	"age" 
+loc 	timevar 	"age" /*use age dummies*/
 loc 	xla 		"xla(50(5)90)" /*needed for separate sub-plots*/
 loc 	xlarotate	""	
 /** xtline (crude data: identical to adjusted predictions (profile plots) from margins, but without CI) **
@@ -220,14 +222,15 @@ loc 	opt_marginsplot "ytitle("linear prediction (`ylabel')")" // noci
 loc 	ctrls  "`ctrl'"
 loc 	reg  		reg `y' `timevar'##`cat' `ctrls' if `sample'==1 
 qui `reg'
-	timer on 1
-*qui margins `timevar'#`cat'
-qui margins `cat', at(age=(`agethreshold'(2)90))
+
+timer on 1
+qui margins `timevar'#`cat' 
+*qui margins `cat', at(age=(`agethreshold'(1)90)) // this is a lot slower
 marginsplot, `opt_marginsplot'  name(g`cat'_`cohort', replace) `xla' `xlarotate' title("Crude Data `cohortlabel'") note("Sample: `samplelabel' | Controls: `ctrls' (none)" "Model: `reg'")  // by(cohortmin5) 
-gr export 	"$outpath/fig/main/g_reg_by`timevar'-`cat'_`sample'_d_count.jpg", replace		
-	timer off 1 
-	timer list 1
-++
+*gr export 	"$outpath/fig/main/g_reg_by`timevar'-`cat'_`sample'_`y'.jpg", replace		
+timer off 1 
+timer list 1
+
 	/*by covariate levels ((a) single plot)* 
 loc 	 catlist 	"male raeducl countatfirstobs"	
 foreach  cat of local catlist {	
@@ -277,7 +280,7 @@ gr export 	"$outpath/fig/main/g_reg_by`timevar'-`cat'_`sample'_d_count_`cohort'.
 	*/
 */
 
-/*** +++ graph over timesincefirstobs +++ ***
+*** +++ graph over timesincefirstobs +++ ***
 loc 	y 			"d_count"
 loc 	ylabel: 	var label `y'
 	**# Bookmark #6 if i want to show that time of entry does not matter, i can show that accumulation is parallel for different inw_first groups. However, do this in a separate graph; for this, use inw_first as a category
@@ -292,10 +295,11 @@ loc 	reg  		xtreg `y' `timevar'##`cat' `ctrls' if `sample'==1
 qui `reg'
 qui margins `timevar'#`cat'
 marginsplot, `opt_marginsplot'  name(g`cat'_`cohort', replace) `xla' `xlarotate'  title("Crude Data `cohortlabel'")  note("Sample: `samplelabel' | Controls: `ctrls' (none)" "Underlying Regression: `reg'") // by(cohortmin5) // 
-gr export 	"$outpath/fig/main/g_reg_by`timevar'-`cat'_`sample'_d_count.jpg", replace
+*gr export 	"$outpath/fig/main/g_reg_by`timevar'-`cat'_`sample'_d_count.jpg", replace
 pause
 */
 restore /*restore located here due to recoding of age and timesincefirstobs above*/
+++
 
 *** +++++++++++++++++++ graph over time +++++++++++++++++++ ***
 preserve
@@ -521,6 +525,34 @@ gr export 	"$outpath/fig/main/g_ologit_by`x'_`y'_`startcount'.jpg", replace
 */
 
 *mtable	
+
+
+
+	** ++ plot prediction of prevalence of each disease over age (smoothes out mortality) ++ **
+	loc 	glist 	""
+	loc   	y 		"d_any"
+	loc 	ylist	"d_any $alldiseases" 
+	foreach y of local ylist{
+	loc 	ylabel: var label `y'			
+		// ignore a variable in ylist if has only missing values)
+		qui count if missing(`y')
+		if r(N) == _N {
+		scatter `y' age, yline(0) title("missing:" "`ylabel'") name(g`y', replace) xla(50(5)100) ytitle("") xtitle("")
+		loc glist "`glist' g`y'"
+		continue  // Skip logistic regression in next loop for this variable if all values are missing
+		}
+	qui logit 	`y' male#c.age
+		predict xb`y', pr
+		loc 	xblist "`xblist' xb`y'"
+	qui margins male, at(age=(`agethreshold'(2)95)) 
+	marginsplot, title("Logistic Prediction" "(`ylabel')") name(g`y') xla(50(5)100) ytitle("")
+	loc glist "`glist' g`y'"
+		*graph twoway line xb`y' age, title("Logistic Prediction" "(`ylabel')") lcolor(blue) lwidth(medthick)
+	}
+	gr combine `glist', ycommon
+
+	di "`xblist'"
+*		twoway connected xbd_any age
 
 
 +++++++++++++

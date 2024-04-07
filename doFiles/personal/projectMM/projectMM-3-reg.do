@@ -165,7 +165,9 @@ STOP
 	count 
 	*log using 	"$outpath/logs/log-t-regd_count-age-mlogit`data'.txt", text replace name(mlogit) 
 		xtset ID
-	eststo mlog1: xtmlogit d_count_lead  `ctrls' age if `sample'==1 , base(1) nolog rrr vsquish re // vce(cluster ID) & d_count==1 covariance(unstructured) rrr // fe for conditional fixed effects
+		keep if d_count_lead<4
+	eststo mlog1: xtmlogit d_count_lead  `ctrls' age  if `sample'==1 , base(1) nolog rrr vsquish re // vce(cluster ID) & d_count==1 covariance(unstructured) rrr // fe for conditional fixed effects 
+	
 	margins raeducl, at (age=(50(5)85))
 	marginsplot, by(_predict) 
 	log close mlogit
