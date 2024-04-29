@@ -6,7 +6,7 @@ clear all		/*clears all data in memory*/
 
 
 ***choose data***
-loc data 		"SHARE"
+loc data 		"HRS"
 loc datalist 	"SHARE ELSA HRS"
 *foreach data of local datalist{
 
@@ -107,6 +107,7 @@ forval i=1/`d_count_max'{
 bys ID (time): replace duration = cond(d_count==`i',   cond(diff_d_count==0, duration[_n-1]+1,1),duration)
 	}
 replace duration = . if mi(d_count) // if count missing, duration should be missing
+la var duration 		"consecutive time periods spent with c conditions"
 **show duration correctly generated**
 sum duration*
 tab duration time
@@ -116,10 +117,18 @@ di "`timediff'" // should equal to the maximum of duration above
 	*	bro ID wave d_count* diff_d_count* duration if ID==10013010
 	*	bro ID wave d_count* diff_d_count* duration if ID==10063010
 *li ID time d_count duration in 1/50 if !mi(d_count)
-	/**set durations to missing if left-censored (do not know the 'true' duration)**
+	**set durations to missing if left-censored (do not know the 'true' duration)**
 	bys ID: egen d_count_min = min(d_count)
-	replace duration = . if d_count_min==d_count // do not know if entered survey already with condition
+		*replace duration = . if d_count_min==d_count // do not know if entered survey already with condition
+	gen		 duration_uncens = duration if d_count_min!=d_count
+	la var 	 duration_uncens	"consecutive time periods spent with c conditions (uncensored)"
+	sum duration*
+**# Bookmark #3 check this for SHARE. Sth with duration is generated incorrectly when there is a gap
+	*bro ID wave d_count_min d_count duration duration_uncens	
+	*++
 	*/
+
+
 	/**count from first onset onwards for durations, ignoring "recovery" **	
 	*bys ID (time): replace duration = cond(d_count==`i'|d_count==`i'-1,   cond(diff_d_count==0|diff_d_count==-1, duration[_n-1]+1,1),duration) // if sb goes from 3 to 2 to 3, the first 3 is considered in calcuation of duration
 	// 	gen 	d_count2 = d_count
@@ -142,9 +151,26 @@ loc opt_global 		"scheme(s1color)"
 loc sample 			"sfull" // sbalanced
 loc samplelabel: variable label `sample'
 gl  diseasecodelist "hibp diab heart lung psych osteo cancr strok arthr demen"
+	gl  diseaselist 	"d_hibp d_diab d_heart d_lung d_psych d_osteo d_cancr d_strok d_arthr d_demen"
 
 
-
+	
+	/*** ++ ordered logit with duration dependence (will move later to reg file due to duration variable) ++ ***
+	** cs data **
+	*preserve 
+	recode  d_count_lead (99 = . ) // do not model mortality in ordered logit
+	replace duration_uncens = 5 if duration_uncens>5 & !mi(duration_uncens) // setting maximum duration dependence T
+	hist duration_uncens
+	ologit d_count_lead c.age c.age#c.age c.age#c.d_count c.age#c.age#c.d_count , vce(cl ID)
+	ologit d_count_lead i.duration_uncens c.age c.age#c.age c.age#c.d_count c.age#c.age#c.d_count , vce(cl ID)
+	
+	++
+	
+	** panel data **
+	xtologit
+	
+	++
+	*/
 ****************************************************************************************************
 *Part 7b*: Vizualization (Plots)
 ****************************************************************************************************
@@ -154,11 +180,10 @@ gl  diseasecodelist "hibp diab heart lung psych osteo cancr strok arthr demen"
 *** +++++++++++++++++++ histograms +++++++++++++++++++ ***
 /** histograms of main vars ** 
 preserve 
-*replace firstage = . if d_anyatfirstobs>0 & !mi(d_anyatfirstobs) // already done in data before
 bys ID: egen d_countmax= max(d_count)
 la var 		 d_countmax "# diseases (max within ID before death)"
-loc 	y "onsetage_uncens"
-foreach y in "d_count" "d_countmax" "cognitionstd" "onsetage" "onsetage_uncens" {
+loc 	y "duration"
+foreach y in "d_count" "d_countmax" "cognitionstd" "onsetage" "onsetage_uncens" "duration" "duration_uncens" {
 hist `y'	if `sample'==1, `opt_global' name(g`y')
 gr export 	"$outpath/fig/`saveloc'/g_hist_`sample'_`y'.jpg", replace quality(100) 
 }
@@ -166,12 +191,13 @@ restore
 pause
 */
 
-** histogram of first onset, for each disease separately **
+/** histogram of first onset, for each disease separately **
 preserve // bc generates new vars
 loc 	grlist ""
 local 	templist "$diseasecodelist" // always check chosen diseases are up to date
 foreach y of local templist {
 la var radiag`y' "self-rep. onset: `y'"
+la var onsetd_`y' "observed onset: `y'"
 hist radiag`y'	if `sample'==1, `opt_global' name(h`y')
 loc  histlist 	"`histlist' h`y'"		
 	hist onsetd_`y'			if `sample'==1, `opt_global' name(h2`y')
@@ -182,108 +208,108 @@ loc kdenlist 	"`kdenlist' (line density`y' point`y')"
 	loc kdenlist_observed 	"`kdenlist_observed' (line density`y'_obs point`y'_obs)"
 }
 di	 		"`histlist'"
-gr combine `histlist', 				 title("self-reported first onset by disease (histogram)")
+gr combine `histlist', 				 title("histogram: 	first onset by disease (self-reported)") name(h1)
 gr export 	"$outpath/fig/`saveloc'/g_hist_`sample'_radiagonsetalld.jpg", replace quality(100)
-// 	di	 		"`histlist_observed'"
-// 	gr combine `histlist_observed',  title("observed first onset by disease (histogram)")
-// 	gr export 	"$outpath/fig/`saveloc'/g_hist_`sample'_onsetalld.jpg", replace quality(100)
+	di	 		"`histlist_observed'"
+	gr combine `histlist_observed',  title("histogram: 	first onset by disease (observed)") name(h2)
+	gr export 	"$outpath/fig/`saveloc'/g_hist_`sample'_onsetalld.jpg", replace quality(100)
 di 			"`kdenlist'"
-twoway 		`kdenlist', xla(0(10)80) title("self-reported first onset by disease (density)")
+twoway 		`kdenlist', xla(0(10)80) title("density: 	first onset by disease (self-reported)") name(k1)
 gr export 	"$outpath/fig/`saveloc'/g_kden_`sample'_radiagonsetalld.jpg", replace quality(100)
-// 	di 			"`kdenlist_observed'"
-// 	twoway 		`kdenlist_observed', xla(0(10)80) title("self-reported first onset by disease (density)")
-// 	gr export 	"$outpath/fig/`saveloc'/g_kden_`sample'_onsetalld.jpg", replace quality(100)
-**# Bookmark #2 could add here a similar density plot now, but with combinations of diseases for each age
+	di 			"`kdenlist_observed'"
+	twoway 		`kdenlist_observed', title("density: 	first onset by disease (observed)") name(k2)
+	gr export 	"$outpath/fig/`saveloc'/g_kden_`sample'_onsetalld.jpg", replace quality(100)
+**# Bookmark #2 could add here a similar density plot now, but with (different) combinations of diseases for each age
 restore 
 pause 
 */
 		
-		
-		
-		
-		
-		
-		
-		
 
-
-	** ++ plot prediction of prevalence of each disease over age (smoothes out mortality) ++ **
+	/** ++ logistic prediction over age for each disease type ((?)smoothes out mortality) ++ **
 	loc 	glist 	""
+	loc 	connectedlist ""
 	loc   	y 		"d_any"
-	loc 	ylist	"d_any $alldiseases" 
-	*foreach y of local ylist{
+	loc 	ylist	"d_any $diseaselist" 
+	foreach y of local ylist{
 	loc 	ylabel: var label `y'			
 		// ignore a variable in ylist if has only missing values)
 		qui count if missing(`y')
 		if r(N) == _N {
 		scatter `y' age, yline(0) title("missing:" "`ylabel'") name(g`y', replace) xla(50(5)100) ytitle("") xtitle("")
-		loc glist "`glist' g`y'"
+		loc glist "`glist' g`y'" // still add to glist
 		continue  // Skip logistic regression in next loop for this variable if all values are missing
 		}
 	qui logit 	`y' male#c.age
-		predict xb`y', pr
-		loc 	xblist "`xblist' xb`y'"
-	qui margins male, at(age=(`agethreshold'(2)100)) 
+**# Bookmark #1	
+				**predict... (not really using this here, could just compare the densities above, unless predictions really desired here)**
+				predict xb`y', pr
+				loc 	xblist 			"`xblist' xb`y'"
+				loc 	connectedlist 	"`connectedlist' (connected xb`y' age)"
+	qui margins male, at(age=(`agethreshold'(5)100)) 
 	marginsplot, title("Logistic Prediction" "(`ylabel')") name(g`y') xla(50(5)100) ytitle("")
 	loc glist "`glist' g`y'"
-		*graph twoway line xb`y' age, title("Logistic Prediction" "(`ylabel')") lcolor(blue) lwidth(medthick)
 	}
-	gr combine `glist', ycommon
-	gr export 	"$outpath/fig/main/g_byage-male-alldiseases.jpg", replace `jpghighquality'
+	gr combine `glist', ycommon name(logitby)
+	gr export 	"$outpath/fig/main/g_logit_byage-male-`sample'-alld.jpg", replace quality(100)
 		*gr export "C:\Users\User\Documents\GitHub\2-projectMM-SHARE\files/figELSA/g_byage-male-alldiseases.pdf", `jpghighquality' 
-	STOP
-	di "`xblist'"
-*	twoway connected xbd_any age
+		preserve // plot mean predictions from above
+		collapse (mean) `xblist', by(age)
+		twoway `connectedlist', title("Logistic predictions of age") name(xb)
+		gr export 	"$outpath/fig/main/g_logit_byage-male-`sample'-alld-xb.jpg", replace quality(100)
+		restore 
+**# Bookmark #2 why is there a different prediction for people of the same age?
+	pause 
+	++
 	*/
 
 
-	/*** +++ selective attrition +++ *** 
-	*** split by regions ***
-	if dataset == "ELSA" {
-	gen countryID = "EN"
-	}
-	gen 	region = "N.A."
-	replace	region = "North"  		 if (countryID=="AT"|countryID=="Bf"|countryID=="Bn"|countryID=="Cf"|countryID=="Cg"|countryID=="Ci" | countryID=="DE"|countryID=="DK"|countryID=="EE"|countryID=="FI"|countryID=="FR"|countryID=="IE"        |countryID=="Ia" |countryID=="Ih" |countryID=="Ir"     |countryID=="LT"|countryID=="LU"|countryID=="LV" |countryID=="NL" |countryID=="SE"       ///
-	| countryID=="EN") // add EN
-	replace region = "Center-East"   if (countryID=="BG"|countryID=="CZ"|countryID=="HR"|countryID=="HU"|countryID=="Cf" |countryID=="PL" |countryID=="RO" |countryID=="SI" |countryID=="SK" )
- 	replace region = "South" 		 if (countryID=="CY"|countryID=="ES"|countryID=="IT"|countryID=="MT"|countryID=="PT")	
-	qui log using 	"$outpath/logs/log-regionclassification.txt", text replace name(log) 
-	tab countryID region,m
-	log close log
-// 	label 	define regionl 1 "North-East" 2 "East" 3 "Center" 4 "West"
-// 	*label   define regionl 1 "NE" 2 "E" 3 "C" 4 "W"
-// 	label	value  region regionl	
-	*keep if region=="North"
-	
-	
-	tab d_count d_miss
-	sum hibper diaber hearter lunger psycher osteoer cancrer stroker arthrer demener if sfull==1 & dead==0	
-	gen d_missany = d_miss!=0 & !mi(d_miss)
-	tab d_miss d_missany   	if sfull==1 & dead==0,m
-	count 					if sfull==1 & dead==0
-	
-	*why are there so many missing diseases
-	* why is not everybody asked this question on diseases?
-	*count if dead==0
-	*sum hibper diaber cancrer psycher  if dead==0
-	*maybe bc countries entered later?
-	*egen 	d_miss2 	= rowmiss(`alldiseases') /*counts number of diseases "missing" for each observation (row)*/ in hrs need to adjust this cuz osteo is missing
-	
-	tab 	age d_missany 
-		tab 	age d_missany if d_missany==1, nofreq col
-	tab 	age d_miss 
-	tab 	d_missany inwt
+		/*** +++ selective attrition +++ *** 
+		*** split by regions ***
+		if dataset == "ELSA" {
+		gen countryID = "EN"
+		}
+		gen 	region = "N.A."
+		replace	region = "North"  		 if (countryID=="AT"|countryID=="Bf"|countryID=="Bn"|countryID=="Cf"|countryID=="Cg"|countryID=="Ci" | countryID=="DE"|countryID=="DK"|countryID=="EE"|countryID=="FI"|countryID=="FR"|countryID=="IE"        |countryID=="Ia" |countryID=="Ih" |countryID=="Ir"     |countryID=="LT"|countryID=="LU"|countryID=="LV" |countryID=="NL" |countryID=="SE"       ///
+		| countryID=="EN") // add EN
+		replace region = "Center-East"   if (countryID=="BG"|countryID=="CZ"|countryID=="HR"|countryID=="HU"|countryID=="Cf" |countryID=="PL" |countryID=="RO" |countryID=="SI" |countryID=="SK" )
+		replace region = "South" 		 if (countryID=="CY"|countryID=="ES"|countryID=="IT"|countryID=="MT"|countryID=="PT")	
+		qui log using 	"$outpath/logs/log-regionclassification.txt", text replace name(log) 
+		tab countryID region,m
+		log close log
+	// 	label 	define regionl 1 "North-East" 2 "East" 3 "Center" 4 "West"
+	// 	*label   define regionl 1 "NE" 2 "E" 3 "C" 4 "W"
+	// 	label	value  region regionl	
+		*keep if region=="North"
+		
+		
+		tab d_count d_miss
+		sum hibper diaber hearter lunger psycher osteoer cancrer stroker arthrer demener if sfull==1 & dead==0	
+		gen d_missany = d_miss!=0 & !mi(d_miss)
+		tab d_miss d_missany   	if sfull==1 & dead==0,m
+		count 					if sfull==1 & dead==0
+		
+		*why are there so many missing diseases
+		* why is not everybody asked this question on diseases?
+		*count if dead==0
+		*sum hibper diaber cancrer psycher  if dead==0
+		*maybe bc countries entered later?
+		*egen 	d_miss2 	= rowmiss(`alldiseases') /*counts number of diseases "missing" for each observation (row)*/ in hrs need to adjust this cuz osteo is missing
+		
+		tab 	age d_missany 
+			tab 	age d_missany if d_missany==1, nofreq col
+		tab 	age d_miss 
 		tab 	d_missany inwt
-	logit 	d_missany c.age c.age#c.age 
-	margins , at(age=(51(5)90))
-	marginsplot 
-	
-		preserve 
-		collapse (mean) y = d_missany, by(age region)
-		scatter y age, by(region)
-		restore
-	*/
-	
+			tab 	d_missany inwt
+		logit 	d_missany c.age c.age#c.age 
+		margins , at(age=(51(5)90))
+		marginsplot 
+		
+			preserve 
+			collapse (mean) y = d_missany, by(age region)
+			scatter y age, by(region)
+			restore
+		*/
+		
 
 	
 */

@@ -8,7 +8,7 @@ log close _all 	/*closes all open log files*/
 clear all		/*clears all data in memory*/
 
 ***define folder locations***
-loc data 		"HRS" // SHARE | ELSA (note for ELSA: part5-subDiseases may be incorrect because other diseases are included in measure)
+loc data 		"SHARE" // SHARE | ELSA (note for ELSA: part5-subDiseases may be incorrect because other diseases are included in measure)
 loc datalist 	"SHARE HRS ELSA"
 *foreach data of local datalist{
 
@@ -152,6 +152,7 @@ recode  mstatr 			(7 = 1 "1.widowed") (1/5 = 0 "0.not widowed") (8 = .), gen(wid
 gen 	nevmarriedr = 	(mstatr==8) if mstatr<.
 bys ID: egen nevmarried_c = max(nevmarriedr)
 la var  married 		"married or partnered"	
+la var 	widowedr 		"widowed"
 la var 	nevmarried_c	"never married (ever)"
 tab 	mstatr marriedr, m
 tab 	mstatr widowed,m /*(!) note: never married is set to missing for widowed*/
@@ -188,13 +189,6 @@ la var 		cohort		"current age-cohort (10-year)"
 la var 		cohort5 	"current age-cohort (5-year)"
 tab			age		cohort, m
 tab			agemin 	cohort, m
-
-	** if split data into only 2 age groups **
-	egen 		cohort15 		= cut(age),    at (`agethreshold',65,90) 
-	recode cohort15 	  (`agethreshold' = 50)  // recode threshold to same number for figure file naming
-	la de 		cohort15l 	50  "ages `agethreshold'-64" 65 "ages 65-90" 
-	la val 		cohort15 	cohort15l // labels value labels
-	la var 		cohort15	"current age-cohort (15-year)"
 
 
 

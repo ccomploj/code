@@ -144,7 +144,8 @@ loc 	vra 	"mstatr nhmlivr ruralh ageyr     `xtra'"		// demographics, identifiers
 	*loc 	d_sincelw "hrtattr strokr cancrr hipr" /*these are already incorporated in d_everhad*/
 	loc 	d_agediag "radiaghibp radiagdiab radiagcancr radiaglung radiagheart radiagstrok radiagarthr  radiaghip radiagpsych radiagosteo  radiagkidney" 
 	loc 	d_medictn "rxhibpr rxdiabr rxheartr rxlungr rxpsychr rxosteor rxcancrr rxstrokr rxarthrr"
-loc 	vrb 	"shltr hlthlmar hlthlmr iadlar drinklr smokenr `d_everhad' `d_sincelw' `d_medictn'"	// health
+loc 	deptest "cesdr"
+loc 	vrb 	"shltr hlthlmar hlthlmr iadlar drinklr smokenr `d_everhad' `d_sincelw' `d_medictn' `deptest'"	// health
 loc 	vrc 	"higovr hiprivr"	
 loc 	xtra2	"cogimpr verbfr"							// healthcare utilization and insurance
 loc 	vrd  	"tr20r orientr `xtra2'"					// cognition
@@ -159,7 +160,7 @@ loc 	vrl 	""												// assistance and caregiving
 loc 	vrm 	""												// stress 
 loc 	vro 	""												// (end of life planning)
 loc 	vrp 	""												// (childhood) 
-loc 	vrq		"satlifezr cesdr"								// psychosocial 
+loc 	vrq		"satlifezr"										// psychosocial 
 loc 	vrlist	`vra' `vrb' `vrc' `vrd' `vre' `vrf' `vrg' `vrh' `vri' `vrj' `vrl' `vrm' `vro' `vrp' `vrq'
 
 ***(b) time-invariant variables***

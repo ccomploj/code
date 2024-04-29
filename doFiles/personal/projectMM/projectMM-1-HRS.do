@@ -40,12 +40,15 @@ else {
 loc	cv 		"G:/My Drive/drvData/`data'/" // own PC
 }
 
-*loc cv 			"G:/My Drive/drvData/`data'/" 	  // main folder location
+*loc cv 		"G:/My Drive/drvData/`data'/" 	  // main folder location
 loc h_data 		"`cv'`data'data/harmon/" 		  // harmonized data folder location
 loc out 		"`cv'`data'output/"				  // output folder location
 
 cd "`cv'"
 pwd
+
+
+
 
 ***Bringing in Core Data***
 **Harmonized data**
@@ -56,9 +59,8 @@ pwd
 	local g2vars `r(varlist)'
 	restore
 	*/
-*use 	"`h_data'H_HRS_d.dta"
 use 	   "`h_data'randhrs1992_2020v1"  	// main dataset
-loc g2vars "r*rxpsych r*orient raeducl" // choose substrings of variables needed
+loc g2vars "r*rxpsych r*orient raeducl radiag* r*rec*" // choose substrings of variables needed
 merge 1:1 hhidpn using "`h_data'H_HRS_d.dta", keepusing(`g2vars') // add additional vars from g2aging dataset
 pause
 
@@ -95,11 +97,8 @@ pause // to continue after a pause, type "q" and enter; browse the data using -b
 
 			
 			
-
-	***log entire file***
-	log using 	"`h_data'logdo`data'-1-harmon.txt", text replace name(logDofile) // ends w/ -log close logDofile-
-	*log using 	"G:/My Drive/projects/projectMultimorbidity/outfiles/logs/logdoSHARE-1-harmon.txt", text replace name(logDofile) // ends w/ -log close logDofile-
-	
+***log entire file***
+log using 	"`out'logdo`data'-1-harmon.txt", text replace name(logDofile) // ends w/ -log close logDofile-	
 	
 ****************************************************************************************************
 *Part 2*: Overview of dataset
@@ -155,7 +154,10 @@ loc 	vra 	"mstatr nhmlivr agey_br     `xtra'"		// demographics, identifiers, wei
 	*loc 	d_sincelw "hrtattr strokr cancrr hipr" /*these are already incorporated in d_everhad*/
 	loc 	d_agediag "radiaghibp radiagdiab radiagcancr radiaglung radiagheart radiagstrok radiagarthr  radiaghip radiagpsych radiagosteo  radiagkidney" // radiagpsych /*these are time-invariant*/
 	loc 	d_medictn "rxhibpr rxdiabr rxheartr rxlungr rxpsychr rxosteor rxcancrr rxstrokr rxarthrr"
-loc 	vrb 	"shltr hlthlmar hlthlmr iadlar drinklr smokenr `d_everhad' `d_sincelw' `d_medictn' cesdr"	// health
+**# Bookmark #1
+	loc 	d_recent  "reccancrr"
+	loc 	deptest   "cesdr"
+loc 	vrb 	"shltr hlthlmar hlthlmr iadlar drinklr smokenr `d_everhad' `d_sincelw' `d_medictn'  `d_recent' `deptest'"	// health
 loc 	vrc 	"higovr 	hiltcr lifeinr"										// healthcare utilization and insurance
 	loc xtra2 	"bwc20r mstotr cogtotr"
 loc 	vrd  	"tr20r orientr `xtra2'"							// cognition (mostly only asked to 65+ and not proxy)
@@ -204,7 +206,7 @@ keep 	`idlist' `vrlistset' `keeplist2'
 
 ***store variable labels from -wide- format (I) to copy into -long- reshaped dataset later (II)***	
 **(I) store labels**
-display "`vrlistset'"
+*display "`vrlistset'"
 	loc varasstringlist ""
 loc vlabellist ""
 foreach v of local vrlistset { 	/*use only the variables that actually exist*/
@@ -234,16 +236,16 @@ loc namelabellist "`namelabellist' ``name'label'"
 
 **# Bookmark #3 add to github
 **add to a local the list of time-constant variables that do *not* exist in particular survey (e.g.radiag) (to generate an empty placeholder in reshape)**
-di "`xlist'"
+*di "`xlist'"
 foreach v of local xlist { 
 capture confirm variable `v' // , exact /*checks if variable exists*/
 if _rc{
 local vnotexist "`v'" /*only use label of variable if that variable (wave) exists*/
-di "`vnotexist'"
+*di "`vnotexist'"
 loc xlistnotexist "`xlistnotexist' `vnotexist'"	
 }
 }
-di "`xlistnotexist'"
+*di "`xlistnotexist'"
 
 ***reshape operation***
 **reshape 'wide' to 'long' format**
@@ -258,7 +260,7 @@ label variable `name' "``name'label'"
 forvalues i=1/`wavelast'{
 loc wavelabellist `wavelabellist' `i' "Wave `i'"  
 }
-*di 			`"`wavelabellist'"'
+*di 		`"`wavelabellist'"'
 la de 		wavel `wavelabellist'
 la val 		wave wavel 
 l  			`ID' wave `varlist' in 1		

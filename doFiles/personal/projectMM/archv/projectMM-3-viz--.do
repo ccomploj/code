@@ -77,20 +77,24 @@ drop if agemin<`agethreshold'
 **********************
 set graphics on 
 *set graphics off /*disables graphics (but also -graph combine- commands) */
-cd  "$outpath/fig"
+
+
+**# Bookmark #1
+cd  	"$outpath/fig"
 
 
 ****************************************************************************************************
-*Part 7a*: Vizualization (Do File Setup, variable and local definitions) 
+*Part 7a*: Vizualization (general)
 ****************************************************************************************************	
+	
 *** define additional variables ***
-*** age groups ***
+** age groups **
 gen 	agegrp 	= age
 replace agegrp 	= `upperthreshold' if agegrp>`upperthreshold' & agegrp<. /*group few very old*/
 la var  agegrp 	"age"
 *tabstat age, by(agegrp) stats(min max)
 
-*** death year ***
+** death year **
 // clonevar radyear2 = radyear 
 // replace  radyear2=0 if mi(radyear2) // not dead people will have 
 egen 	radcohort 	= cut(radage),    at (50,60,70,80,120)
@@ -99,29 +103,9 @@ la de 	radcohortl 	0 "never dead" 50  "died at 50-59" 60 "died at 60-69" 70 "die
 la val 	radcohort radcohortl
 *tab radage radcohort
 
-*** generate duration with c conditions ***
-gen duration = 0 if d_count>0 & !mi(d_count) // only when count is 1 and not missing 
-sum d_count, meanonly
-loc d_count_max = r(max) // maximum disease count across i
-forval i=1/`d_count_max'{
-bys ID (time): replace duration = cond(d_count==`i',   cond(diff_d_count==0, duration[_n-1]+1,1),duration)
-	}
-replace duration = . if mi(d_count) // if count missing, duration should be missing
-**show duration correctly generated**
-sum duration*
-tab duration time
-sum time, meanonly 
-loc timediff = (r(max)-r(min))/2
-di "`timediff'" // should equal to the maximum of duration above
-	*	bro ID wave d_count* diff_d_count* duration if ID==10013010
-	*	bro ID wave d_count* diff_d_count* duration if ID==10063010
-*li ID time d_count duration in 1/50 if !mi(d_count)
-	/**set durations to missing if left-censored (do not know the 'true' duration)**
-	bys ID: egen d_count_min = min(d_count)
-	replace duration = . if d_count_min==d_count // do not know if entered survey already with condition
-	*/
-	/**count from first onset onwards for durations, ignoring "recovery" **	
-	*bys ID (time): replace duration = cond(d_count==`i'|d_count==`i'-1,   cond(diff_d_count==0|diff_d_count==-1, duration[_n-1]+1,1),duration) // if sb goes from 3 to 2 to 3, the first 3 is considered in calcuation of duration
+	** generate duration with c conditions **
+	gen duration = 0  // only generate for cases when count is 1 and not missing 
+	// 	**count from first onset onwards for durations: d_count2 ignores "recovery" **	
 	// 	gen 	d_count2 = d_count
 	// 	replace d_count2 = d_count - diff_d_count if diff_d_count < 0
 	// 	*tab d_count d_count2
@@ -129,89 +113,49 @@ di "`timediff'" // should equal to the maximum of duration above
 	// 	bys ID: gen 	diff_d_count2 = d_count2 - L.d_count2
 	// 	bro ID wave d_count* diff_d_count* duration if ID==10013010
 	// 	*/
-	
-** income groups **
-**# Bookmark #1
-*xtile incomegroups = hhinc, nq(3)
+	sum d_count, meanonly
+	loc d_count_max = r(max)
+	forval i=1/`d_count_max'{
+	bys ID (time): replace duration = cond(d_count==`i',   cond(diff_d_count==0, duration[_n-1]+1,1),duration)
+	**# Bookmark #2 could correct duration for when people jump down again to lower count - the duration in this case is "wrong"
+	*bys ID (time): replace duration = cond(d_count==`i'|d_count==`i'-1,   cond(diff_d_count==0|diff_d_count==-1, duration[_n-1]+1,1),duration) // if sb goes from 3 to 2 to 3, the first 3 is considered in calcuation of duration
+	}
+	replace duration = . if mi(d_count) // if count missing, duration should be missing
+	*	bro ID wave d_count* diff_d_count* duration if ID==10013010
+	*	bro ID wave d_count* diff_d_count* duration if ID==10063010
 
+	**set durations to missing if left-censored (do not know the 'true' duration)**
+	bys ID: egen d_count_min = min(d_count)
+	replace duration = . if d_count_min==d_count // do not know if entered survey already with condition
+
+		/**#use only observations before a transition ** 
+		bys ID (duration): egen durationmax = max(duration)
+		replace duration = . if duration!= durationmax	// 
+		drop durationmax
+		*/
+
+	sum duration*
+	tab duration time
+	*bro ID time d_count d_count_lead duration
+
+
+
+** income groups **
+*xtile incomegroups = hhinc, nq(3)
 
 *** define locals to apply to entire file ***
 set scheme s1color
 loc opt_global 		"scheme(s1color)"
-*loc jpghighquality  "quality(100)" // for jpg files higher quality
+loc jpghighquality  "quality(100)" // for jpg files higher quality
 loc sample 			"sfull" // sbalanced
 loc samplelabel: variable label `sample'
-gl  diseasecodelist "hibp diab heart lung psych osteo cancr strok arthr demen"
 
 
-
-****************************************************************************************************
-*Part 7b*: Vizualization (Plots)
-****************************************************************************************************
-
-
-
-*** +++++++++++++++++++ histograms +++++++++++++++++++ ***
-/** histograms of main vars ** 
-preserve 
-*replace firstage = . if d_anyatfirstobs>0 & !mi(d_anyatfirstobs) // already done in data before
-bys ID: egen d_countmax= max(d_count)
-la var 		 d_countmax "# diseases (max within ID before death)"
-loc 	y "onsetage_uncens"
-foreach y in "d_count" "d_countmax" "cognitionstd" "onsetage" "onsetage_uncens" {
-hist `y'	if `sample'==1, `opt_global' name(g`y')
-gr export 	"$outpath/fig/`saveloc'/g_hist_`sample'_`y'.jpg", replace quality(100) 
-}
-restore
-pause
-*/
-
-** histogram of first onset, for each disease separately **
-preserve // bc generates new vars
-loc 	grlist ""
-local 	templist "$diseasecodelist" // always check chosen diseases are up to date
-foreach y of local templist {
-la var radiag`y' "self-rep. onset: `y'"
-hist radiag`y'	if `sample'==1, `opt_global' name(h`y')
-loc  histlist 	"`histlist' h`y'"		
-	hist onsetd_`y'			if `sample'==1, `opt_global' name(h2`y')
-	loc  histlist_observed 	"`histlist_observed' h2`y'"		
-kdensity  radiag`y', gen(point`y' density`y') bw(2) nograph 
-loc kdenlist 	"`kdenlist' (line density`y' point`y')"
-	kdensity  onsetd_`y', gen(point`y'_obs density`y'_obs) bw(2) nograph 
-	loc kdenlist_observed 	"`kdenlist_observed' (line density`y'_obs point`y'_obs)"
-}
-di	 		"`histlist'"
-gr combine `histlist', 				 title("self-reported first onset by disease (histogram)")
-gr export 	"$outpath/fig/`saveloc'/g_hist_`sample'_radiagonsetalld.jpg", replace quality(100)
-// 	di	 		"`histlist_observed'"
-// 	gr combine `histlist_observed',  title("observed first onset by disease (histogram)")
-// 	gr export 	"$outpath/fig/`saveloc'/g_hist_`sample'_onsetalld.jpg", replace quality(100)
-di 			"`kdenlist'"
-twoway 		`kdenlist', xla(0(10)80) title("self-reported first onset by disease (density)")
-gr export 	"$outpath/fig/`saveloc'/g_kden_`sample'_radiagonsetalld.jpg", replace quality(100)
-// 	di 			"`kdenlist_observed'"
-// 	twoway 		`kdenlist_observed', xla(0(10)80) title("self-reported first onset by disease (density)")
-// 	gr export 	"$outpath/fig/`saveloc'/g_kden_`sample'_onsetalld.jpg", replace quality(100)
-**# Bookmark #2 could add here a similar density plot now, but with combinations of diseases for each age
-restore 
-pause 
-*/
-		
-		
-		
-		
-		
-		
-		
-		
-
-
-	** ++ plot prediction of prevalence of each disease over age (smoothes out mortality) ++ **
+	/** ++ plot prediction of prevalence of each disease over age (smoothes out mortality) ++ **
 	loc 	glist 	""
 	loc   	y 		"d_any"
 	loc 	ylist	"d_any $alldiseases" 
-	*foreach y of local ylist{
+	foreach y of local ylist{
 	loc 	ylabel: var label `y'			
 		// ignore a variable in ylist if has only missing values)
 		qui count if missing(`y')
@@ -237,55 +181,19 @@ pause
 	*/
 
 
-	/*** +++ selective attrition +++ *** 
-	*** split by regions ***
-	if dataset == "ELSA" {
-	gen countryID = "EN"
-	}
-	gen 	region = "N.A."
-	replace	region = "North"  		 if (countryID=="AT"|countryID=="Bf"|countryID=="Bn"|countryID=="Cf"|countryID=="Cg"|countryID=="Ci" | countryID=="DE"|countryID=="DK"|countryID=="EE"|countryID=="FI"|countryID=="FR"|countryID=="IE"        |countryID=="Ia" |countryID=="Ih" |countryID=="Ir"     |countryID=="LT"|countryID=="LU"|countryID=="LV" |countryID=="NL" |countryID=="SE"       ///
-	| countryID=="EN") // add EN
-	replace region = "Center-East"   if (countryID=="BG"|countryID=="CZ"|countryID=="HR"|countryID=="HU"|countryID=="Cf" |countryID=="PL" |countryID=="RO" |countryID=="SI" |countryID=="SK" )
- 	replace region = "South" 		 if (countryID=="CY"|countryID=="ES"|countryID=="IT"|countryID=="MT"|countryID=="PT")	
-	qui log using 	"$outpath/logs/log-regionclassification.txt", text replace name(log) 
-	tab countryID region,m
-	log close log
-// 	label 	define regionl 1 "North-East" 2 "East" 3 "Center" 4 "West"
-// 	*label   define regionl 1 "NE" 2 "E" 3 "C" 4 "W"
-// 	label	value  region regionl	
-	*keep if region=="North"
-	
-	
-	tab d_count d_miss
-	sum hibper diaber hearter lunger psycher osteoer cancrer stroker arthrer demener if sfull==1 & dead==0	
-	gen d_missany = d_miss!=0 & !mi(d_miss)
-	tab d_miss d_missany   	if sfull==1 & dead==0,m
-	count 					if sfull==1 & dead==0
-	
-	*why are there so many missing diseases
-	* why is not everybody asked this question on diseases?
-	*count if dead==0
-	*sum hibper diaber cancrer psycher  if dead==0
-	*maybe bc countries entered later?
-	*egen 	d_miss2 	= rowmiss(`alldiseases') /*counts number of diseases "missing" for each observation (row)*/ in hrs need to adjust this cuz osteo is missing
-	
-	tab 	age d_missany 
-		tab 	age d_missany if d_missany==1, nofreq col
-	tab 	age d_miss 
-	tab 	d_missany inwt
-		tab 	d_missany inwt
-	logit 	d_missany c.age c.age#c.age 
-	margins , at(age=(51(5)90))
-	marginsplot 
-	
-		preserve 
-		collapse (mean) y = d_missany, by(age region)
-		scatter y age, by(region)
-		restore
-	*/
-	
-
-	
+/*** +++++++++++++++++++ histograms of dependent variable +++++++++++++++++++ ***
+preserve 
+*replace firstage = . if d_anyatfirstobs>0 & !mi(d_anyatfirstobs) // already done in data before
+bys ID: egen d_countmax= max(d_count)
+la var 		 d_countmax "# diseases (max within ID before death)"
+loc 	y "d_count"
+foreach y in "d_count" "d_countmax" "cognitionstd" "firstage" {
+hist `y'	if `sample'==1, `opt_global' 
+gr export 	"$outpath/fig/`saveloc'/g_hist_`sample'_`y'.jpg", replace `jpghighquality'
+}
+restore
+pause
+*STOP
 */
 
 
@@ -455,7 +363,7 @@ pause
 */
 
 
-	** +++ (a) graph over age by first onset time +++ *** (and maybe also do by timesincefirstobs), timesincefirstobs does not make sense until i group categories by time, not by agegrps anymore
+	/** +++ (a) graph over age by first onset time +++ *** (and maybe also do by timesincefirstobs), timesincefirstobs does not make sense until i group categories by time, not by agegrps anymore
 **# Bookmark #1 plot same plot also by categories of firstage_mm
 * do also with d_count_lead 
 	*preserve // bc replace firstage
@@ -610,7 +518,7 @@ gr export 	"$outpath/fig/main/g_ologit_by`x'_`y'.jpg", replace `jpghighquality'
 	marginsplot 
 	*/
 	
-	/**crude plotting: transition by age**
+	**crude plotting: transition by age**
 	loc 	col "gs10"
 	loc 	x "age"
 	loc 	gamma=2
@@ -629,7 +537,7 @@ gr export 	"$outpath/fig/main/g_ologit_by`x'_`y'.jpg", replace `jpghighquality'
 	pause
 	*/	
 	
-	/**crude plotting: transition by duration in state**
+	**crude plotting: transition by duration in state**
 	loc 	col "gr10"
 	loc 	x "duration"
 loc cohortvar "cohort"
@@ -847,7 +755,6 @@ tab countryID, sum(d_count)
 // streset, {past|future|past future}
 // st [, nocmd notable]
 // stset, clear
-	// by disease count
 stset wave, failure(dead)
 stdes	
 tab timesincefirstobs wave,m	

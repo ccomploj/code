@@ -168,6 +168,8 @@ codebook diff_*,compact // assuming the first disease starts with hibp in the da
 sum d_anyatfirstobs if sfull & wave==inw_first & agemin==50  // ppl w/ >1 conditions at baseline
 sum d_anyatfirstobs if sfull & wave==inw_first & inrange(agemin,50,65) // ppl w/ >1 conditions at baseline
 qui log close log
+	*sum d_* if inw_first==wave // which diseases are most common to be at first obs
+	*sum d_* if inw_first==wave & inrange(age,50,54) // which diseases are most common to be at first obs	
 *STOP
 */
 
@@ -185,8 +187,8 @@ keep if inwt==1 | dead==1 /*-listwise- drops obs if any of the variables is miss
 	
 loc frmt				"tex"
 loc continuous_meanonly	"iwyr rabyear radyear dead d_anyatfirstobs    male d_any" // /*mean only*/
-loc continuous 			"age `continuous_meanonly' d_count firstage firstage_g2 time_onsettodeath time_c* timetonextdisease2"  
-loc continuous2_alld	"firstage_d* radiag*" //   
+loc continuous 			"age `continuous_meanonly' d_count onsetage onsetage_g2 time_onsettodeath time_c* timetonextdisease2"  
+loc continuous2_alld	"onsetaged* radiag*" //   
 loc categorical			"i.raeducl i.cohort" //  i.raeducl i.cohort  married | i.mstatr
 loc columns 			"wave"
 *loc columnsmany		"s50to65 wave" // shealthy 
@@ -222,8 +224,8 @@ collect export "$outpath/tab/`saveloc'/sumstats/o_sumstat_bywave`sample'", as(`f
 **same table, just with all diseases**
 dtable  if `sample', `opt_dtable' notes(`notes') continuous(`continuous2_alld', stat(count mean sd)) 
 collect style tex , nobegintable /*keeps only fragment without \begin{table}*/
-*collect export "$outpath/tab/sumstats/o_sumstat_bywave`sample'", as(`frmt') tableonly append /*append table*/
-collect export "$outpath/tab/`saveloc'/sumstats/o_sumstat_bywave`sample'_alld", as(`frmt') tableonly replace /*replace table*/
+	*//collect export "$outpath/tab/sumstats/o_sumstat_bywave`sample'", as(`frmt') tableonly append /*append table*/
+*collect export "$outpath/tab/`saveloc'/sumstats/o_sumstat_bywave`sample'_alld", as(`frmt') tableonly replace /*replace table*/
 } /*closes sample loop*/
 restore
 STOP

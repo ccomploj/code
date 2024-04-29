@@ -5,7 +5,7 @@ clear all		/*clears all data in memory*/
 
 
 ***choose data***
-loc data 		"SHARE"
+loc data 		"HRS"
 	*loc append_iterationlog "replace" 		
 	/*short iteration log at the end of the loop*/ 
 loc datalist 	"SHARE ELSA HRS"

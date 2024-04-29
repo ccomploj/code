@@ -172,6 +172,7 @@ loc 	grlist ""
 local 	templist "$diseasecodelist" // always check chosen diseases are up to date
 foreach y of local templist {
 la var radiag`y' "self-rep. onset: `y'"
+la var onsetd_`y' "(observed) onset: `y'"
 hist radiag`y'	if `sample'==1, `opt_global' name(h`y')
 loc  histlist 	"`histlist' h`y'"		
 	hist onsetd_`y'			if `sample'==1, `opt_global' name(h2`y')
@@ -182,17 +183,17 @@ loc kdenlist 	"`kdenlist' (line density`y' point`y')"
 	loc kdenlist_observed 	"`kdenlist_observed' (line density`y'_obs point`y'_obs)"
 }
 di	 		"`histlist'"
-gr combine `histlist', 				 title("self-reported first onset by disease (histogram)")
+gr combine `histlist', 				 title("self-reported first onset by disease (histogram)") name(h1)
 gr export 	"$outpath/fig/`saveloc'/g_hist_`sample'_radiagonsetalld.jpg", replace quality(100)
-// 	di	 		"`histlist_observed'"
-// 	gr combine `histlist_observed',  title("observed first onset by disease (histogram)")
-// 	gr export 	"$outpath/fig/`saveloc'/g_hist_`sample'_onsetalld.jpg", replace quality(100)
+	di	 		"`histlist_observed'"
+	gr combine `histlist_observed',  title("observed first onset by disease (histogram)") name(h2)
+	gr export 	"$outpath/fig/`saveloc'/g_hist_`sample'_onsetalld.jpg", replace quality(100)
 di 			"`kdenlist'"
-twoway 		`kdenlist', xla(0(10)80) title("self-reported first onset by disease (density)")
+twoway 		`kdenlist', xla(0(10)80) title("self-reported first onset by disease (density)") name(k1)
 gr export 	"$outpath/fig/`saveloc'/g_kden_`sample'_radiagonsetalld.jpg", replace quality(100)
-// 	di 			"`kdenlist_observed'"
-// 	twoway 		`kdenlist_observed', xla(0(10)80) title("self-reported first onset by disease (density)")
-// 	gr export 	"$outpath/fig/`saveloc'/g_kden_`sample'_onsetalld.jpg", replace quality(100)
+	di 			"`kdenlist_observed'"
+	twoway 		`kdenlist_observed', title("self-reported first onset by disease (density)") name(k2)
+	gr export 	"$outpath/fig/`saveloc'/g_kden_`sample'_onsetalld.jpg", replace quality(100)
 **# Bookmark #2 could add here a similar density plot now, but with combinations of diseases for each age
 restore 
 pause 

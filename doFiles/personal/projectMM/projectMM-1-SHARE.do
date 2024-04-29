@@ -93,10 +93,8 @@ pause // to continue after a pause, type "q" and enter; browse the data using -b
 	all variables of interest*/
 	drop inw7
 
-	***log entire file***
-	*log using 	"`h_data'logdoSHARE-1-harmon.txt", text replace name(logDofile) // ends w/ -log close logDofile-
-	log using 	"`out'/logdoSHARE-1-harmon.txt", text replace name(logDofile) // ends w/ -log close logDofile-
-	*log using 	"G:/My Drive/projects/projectMultimorbidity/outfiles/logs/logdoSHARE-1-harmon.txt", text replace name(logDofile) // ends w/ -log close logDofile-
+***log entire file***
+log using 	"`out'/logdoSHARE-1-harmon.txt", text replace name(logDofile) // ends w/ -log close logDofile-
 
 ****************************************************************************************************
 *Part 2*: Overview of dataset
@@ -153,7 +151,8 @@ loc 	vra 	"mstatr nhmlivr ruralh ageyr     `xtra'"		// demographics, identifiers
 	*loc 	d_sincelw "hrtattr strokr cancrr hipr" /*these are already incorporated in d_everhad*/
 	loc 	d_agediag "radiaghibp radiagdiab radiagcancr radiaglung radiagheart radiagstrok radiagarthr  radiaghip radiagpsych radiagosteo  radiagkidney" // radiagpsych /*these are time-invariant*/
 	loc 	d_medictn "rxhibpr rxdiabr rxheartr rxlungr rxpsychr rxosteor rxcancrr rxstrokr rxarthrr"
-loc 	vrb 	"shltr hlthlmar hlthlmr iadlar drinklr smokenr `d_everhad' `d_sincelw' `d_medictn'"	// health
+loc 	deptest "eurodr"
+loc 	vrb 	"shltr hlthlmar hlthlmr iadlar drinklr smokenr `d_everhad' `d_sincelw' `d_medictn' `deptest'"	// health
 loc 	vrc 	"higovr     nrshom1yr hosp1yr doctor1yr doctim1yr homcar1yr drugs1wr"										// healthcare utilization and insurance
 loc 	xtra2 	"cogimpr verbfr" 
 loc 	vrd  	"tr20r orientr `xtra2'"									// cognition
@@ -168,7 +167,7 @@ loc 	vrl 	""												// assistance and caregiving
 loc 	vrm 	""												// stress 
 loc 	vro 	""												// (end of life planning)
 loc 	vrp 	""												// (childhood) 
-loc 	vrq		"satlifezr eurodr"								// psychosocial 
+loc 	vrq		"satlifezr"										// psychosocial 
 loc 	vrlist	`vra' `vrb' `vrc' `vrd' `vre' `vrf' `vrg' `vrh' `vri' `vrj' `vrl' `vrm' `vro' `vrp' `vrq'
 
 ***(b) time-invariant variables***

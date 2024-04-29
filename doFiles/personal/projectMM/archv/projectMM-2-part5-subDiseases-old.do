@@ -69,17 +69,17 @@ di 	"`agethreshold' `h_data'"
 	
 ***either-or condition***
 ** r has disease: either "ever told by doctor" or "currently taking med for"**
-local eitherorcodes "hibp diab heart lung psych osteo" 
-	loc eitherord_list ""
-foreach var of local eitherorcodes { 
+local eitheror "hibp diab heart lung psych osteo" 
+	loc eitherorlist ""
+foreach var of local eitheror { 
 gen 	d_`var' = 	`var'er==1 | rx`var'r==1    if `var'er<. | rx`var'r<. 
 	*gen 	d2_`var' = 	`var'er==1           	if `var'er<. // to check that d_`var' gives the same result. if someone does not have the disease, they should not report taking medications for it 
 	*sum 	d_`var' d2_`var' // to check that d_`var' gives the same result. if someone does not have the disease, they should not report taking medications for it 
 	// d_`var' and d2_`var' are not the same for "psych", bc CESD/test defines ever had condition, while medication use is only available if the respondent reports to have been diagnosed with a psychatric condition. 
 	*loc   varlabel: var la `var'
 	*local extracted_label = substr("`varlabel'", 11, .) // use this if full disease name
-la var 	d_`var'	 		"'ever had'|taking meds for `var'"
-loc eitherord_list	"`eitherord_list' d_`var'" /*creates a local macro that appends new var at each iteration*/
+la var 	d_`var'	 	"'ever had'|taking meds for `var'"
+loc eitherorlist	"`eitherorlist' d_`var'" /*creates a local macro that appends new var at each iteration*/
 }
 *l ID wave d_osteo* osteo* rxosteo* if ID==958
 
@@ -128,32 +128,32 @@ gen d_`var' = rx`var'r==1       if rx`var'r<.  // `var'er==1 		// |
 	order rx* d_*, after(age)	
 
 **"any disease", # of diseases missing, # of diseases present, multimorbidity***
-	*loc 	alldiseasesd 	""
+	*loc 	alldiseases 	""
 	*loc 	alldiseasecodes ""
-loc 	alldiseasesd "`eitherord_list' `onlyeverhadlist' `onlymedlist'"
-	gl 	alldiseasesd "`alldiseasesd'" /*copy local into global for later use (outside of this do file)*/
-loc 	alldiseasecodes "`eitherorcodes' `onlyeverhad' `onlymed'"
-di 		"`alldiseasesd'" /*(!) check all diseases are shown: if one local is empty, this is simply ignored!*/
+loc 	alldiseases "`eitherorlist' `onlyeverhadlist' `onlymedlist'"
+	gl 	alldiseases "`alldiseases'" /*copy local into global for later use (outside of this do file)*/
+loc 	alldiseasecodes "`eitheror' `onlyeverhad' `onlymed'"
+di 		"`alldiseases'" /*(!) check all diseases are shown: if one local is empty, this is simply ignored!*/
 di 		"`alldiseasecodes'"
-codebook `alldiseasesd', compact
+codebook `alldiseases', compact
 
-egen 	d_any 	= rowmax(`alldiseasesd') // Observation (ID-wave) has any of the above diseases
+egen 	d_any 	= rowmax(`alldiseases') // Observation (ID-wave) has any of the above diseases
 la var 	d_any 		"any disease"
 
-egen 	d_miss 	= rowmiss(`alldiseasesd') /*counts number of diseases "missing" for each observation (row)*/
+egen 	d_miss 	= rowmiss(`alldiseases') /*counts number of diseases "missing" for each observation (row)*/
 replace d_miss 	= . if d_any>=. /*set count to (.) if no response to any disease (or dead) */
 la var 	d_miss 		"# miss.diseases"
 tab 	d_miss wave,m 
-li 		ID wave age `alldiseasesd' d_any d_miss     in 1/3
+li 		ID wave age `alldiseases' d_any d_miss     in 1/3
 
 su 		d_miss, meanonly
 local 	d_missmin = r(min) // number of chosen diseases, max of variable
-egen 	d_count = rowtotal(`alldiseasesd') if d_miss==`d_missmin', missing /*(row) sum of the variables in varlist
+egen 	d_count = rowtotal(`alldiseases') if d_miss==`d_missmin', missing /*(row) sum of the variables in varlist
 													:only for obs w/ no missing D (among those considered)*/
 la var 	d_count 	"# diseases"					
 tab 	d_count wave,m
 tab 	d_count d_miss,m 
-li 		ID wave age `alldiseasesd' d_any d_count     in 1/3
+li 		ID wave age `alldiseases' d_any d_count     in 1/3
 
 
 **multimorbidity**
@@ -164,7 +164,7 @@ li 		ID d_any d_miss d_count d_count_geq2 in 1/5
 table 	(var) wave, statistic(mean d_any d_miss d_count d_count_geq2) stat(max d_any d_miss d_count d_count_geq2)
 
 **index of disease**
-loc 	d_countmax = wordcount("`alldiseasesd'") // total number of chosen/considered diseases
+loc 	d_countmax = wordcount("`alldiseases'") // total number of chosen/considered diseases
 gen 	d_count_index = d_count / `d_countmax'
 sum 	d_count_index, de 
 la var 	d_count_index 		"disease index (=count/total diseases)"
@@ -214,7 +214,7 @@ sum 	diff_d_count*
 	
 *** check if any condition is perfectly predicted by age (based on age-eligiblity to the question) ***
 log using 	"`out'logs/log-diseasebycohort.txt", text replace name(log)
-foreach d of local alldiseasesd  {
+foreach d of local alldiseases  {
 tab cohort5 `d'	,m /*if nothing is odd, would seem okay. If we have more people entering later 
 (e.g. inw1==0 & inw2==1, or based on hacohort), this could lead to a jump in the graphs */
 } 
@@ -282,17 +282,16 @@ la var 	 onsetage_uncens 	"age of first onset (observed) (uncensored)"
 	* bro ID wave time tsinceonset timesinceonset onsetyear
 
 **age at first onset, for each disease separately:**
-di 		"`alldiseasesd'"
+di 		"`alldiseases'"
 loc 	onsetlist "" 	
-foreach d of local alldiseasesd {
++
+foreach d of local alldiseases {
 gen 	myvar 			= age if `d'==1
 bys ID: egen onset`d' 	= min(myvar)
 drop 	myvar
-	bys ID: egen `d'ever = max(`d') // ever reported having a disease
-	la var 		 `d'ever "ever has (between t and T) D: `d'"
-	sum onset`d' if `d'ever == 0 		 // if never had disease, onsetage should be missing (zero here)  
-	replace onset`d' = .m if `d'ever == 0 // and replace these cases to special missing value .m
-la var 	onset`d' "age of first onset (observed) for `d'"
+	bys ID: egen `d'ever = max(`d'er) // ever reported having a disease
+	sum onset`d' if d_anyever == 0 // if never had a 
+la var 	onset`d' 	"age of first onset (observed) for `d'"
 loc 	onsetlist 	"`onsetlist' onset`d'" 
 }
 li 		ID wave age onsetage onsetage_* in 1/2 
@@ -339,7 +338,7 @@ la var 	agesinceonset "age since onset"
 sum  tsinceonset timesinceonset agesinceonset
 *bro ID wave time tsinceonset timesinceonset onsetyear
 
-/**duration from c to c+1[+ / or more]** 
+**duration from c to c+1[+ / or more]** 
 *note: [there may be gaps of nonresponse, i.e. diseases could jump from 1 to 4 or 2 to 7, because either nonresponse or jump from c to c+2]: if panel not balanced in disease count or there is a real jump, this could cause additional imprecision*
 *note: some people have x count at t, then x-1 count at t+1*
 forval 	j=2/`d_countmax'{
@@ -349,9 +348,8 @@ la var 		time_c`i'toc`j' "months (observed) `i' to `j'+ diseases"
 }
 li 			ID wave iwym d_count onsetdate_c? time_c?toc? in 85/100 , compress
 li 			ID wave iwym d_count onsetdate_c? time_c?toc? in 50/100 if (inw_miss==0 | everdead==1), compress
-*/
 
-/**duration from c to c+1 [+ / or more] (time-varying single variable)**	
+**duration from c to c+1 [+ / or more] (time-varying single variable)**	
 **note: with and without adjusting for firstdate>=iwym**
 gen timetonextdisease  = .
 gen timetonextdisease2 = .
@@ -370,11 +368,11 @@ sum timetonextdisease*, de
 	*bro ID wave d_count iwym firstdate_c? timetonextdisease* if sbalanced & timetonextdisease<0	
 	// timetonextdisease can be negative if count decreases from t to t+1
 	// currently, timetonextdisease2 still ignores the dose: it treats time from 1 to 2 the same as 1 to 4 (2nd accumulates faster) || if sb jumps from 2 to 4, firstdate_c3 is equal to firstdate_c4 anyway || hence, this measure is simple "to next '1 or more' diseases"
-*/
 
 
 
-/**duration from *first* onset to death (in years)**
+
+**duration from *first* onset to death (in years)**
 gen 	time_onsettodeath =  (radym - onsetdate_c1)/12
 *gen 	time_onsettodeathx = (raxym - firstdate_c1)/12 
 la var 	time_onsettodeath "years first onset to death (observed)" 
@@ -387,7 +385,6 @@ gen 	time_onsettodeath_age_g2 = radage-onsetage_g2
 li 		ID wave iwym dead d_count onsetdate_c1 onsetdate_c2 ra?ym time_onsettodeath* in 1/16, compress nola
 *bro 	ID wave iwym dead d_count firstdate_c1 firstdate_c2 ra?ym time_onsettodeath*  if time_onsettodeath<0
 *++	
-*/
 
 /**duration from *first* onset to death**
 gen 	time_onsettodeath =  radym-firstdate_c1
@@ -411,7 +408,7 @@ gen 	ageatdeathx = raxym - rabym /*generally rax is correct*/
 replace ageatdeathx = ageatdeathx/12
 sum 	ageatdeath ageatdeathx radage
 drop 	ageatdeath ageatdeathx
-*++
+++
 */
 
 *******************
