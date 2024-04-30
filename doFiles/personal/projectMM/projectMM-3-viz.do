@@ -155,14 +155,17 @@ gl  diseasecodelist "hibp diab heart lung psych osteo cancr strok arthr demen"
 
 
 	
-	/*** ++ ordered logit with duration dependence (will move later to reg file due to duration variable) ++ ***
+	*** ++ ordered logit with duration dependence (will move later to reg file due to duration variable) ++ ***
 	** cs data **
 	*preserve 
 	recode  d_count_lead (99 = . ) // do not model mortality in ordered logit
 	replace duration_uncens = 5 if duration_uncens>5 & !mi(duration_uncens) // setting maximum duration dependence T
 	hist duration_uncens
 	ologit d_count_lead c.age c.age#c.age c.age#c.d_count c.age#c.age#c.d_count , vce(cl ID)
-	ologit d_count_lead i.duration_uncens c.age c.age#c.age c.age#c.d_count c.age#c.age#c.d_count , vce(cl ID)
+		log using 		"$outpath/logs/log-t-regd_count-age-ologitduration.txt", text replace name(ologitduration) 
+	ologit d_count_lead i.duration_uncens c.age c.age#c.age c.age#c.d_count c.age#c.age#c.d_count if sfull==1, vce(cl ID)
+		margins , dydx(duration_uncens) atmean
+	log close ologitduration
 	
 	++
 	
