@@ -238,89 +238,43 @@ pause
 	+
 	*/
 		
-	** ++ logistic prediction over age for each disease type ((?)smoothes out mortality) ++ **
-	loc 	glist 	""
-	loc 	connectedlist ""
-	loc   	y 		"d_any"
-	loc 	ylist	"d_any $diseaselist" 
-	foreach y of local ylist{
-	loc 	ylabel: var label `y'			
-		// ignore a variable in ylist if has only missing values)
-		qui count if missing(`y')
-		if r(N) == _N {
-		scatter `y' age, yline(0) title("missing: `ylabel'") name(g`y', replace) xla(50(5)100) ytitle("") xtitle("")
-		loc glist "`glist' g`y'" // still add to glist
-		continue  // Skip next loop (logistic-reg) for this variable if all values are missing
-		}
-	 logit 	`y' male#c.age
-**# Bookmark #1	
-				**predict... (not really using this here, could just compare the densities above, unless predictions really desired here)**
-				predict xb`y', pr
-				loc 	xblist 			"`xblist' xb`y'"
-				loc 	connectedlist 	"`connectedlist' (connected xb`y' age)"
-	qui margins male, at(age=(`agethreshold'(5)100)) 
-	marginsplot, title("Logistic Prediction" "(`ylabel')") name(g`y') xla(50(5)100) ytitle("")
-	loc glist "`glist' g`y'"
+/** ++ logistic prediction over age for each disease type ((?)smoothes out mortality) ++ **
+loc 	glist 	""
+loc 	connectedlist ""
+loc   	y 		"d_any"
+loc 	ylist	"d_any $diseaselist" 
+foreach y of local ylist{
+loc 	ylabel: var label `y'			
+	**ignore a variable in ylist if has only missing values)**
+	qui count if missing(`y')
+	if r(N) == _N {
+	scatter `y' age, yline(0) title("missing: `y'") name(g`y', replace) xla(50(5)100) ytitle("") xtitle("")
+	loc glist "`glist' g`y'" // still add to glist
+	continue  // Skip next loop (logistic-reg) for this variable if all values are missing
 	}
-	gr combine `glist', ycommon name(logitby)
-	gr export 	"$outpath/fig/main/g_logit_byage-male-`sample'-alld.jpg", replace quality(100)
-		*gr export "C:\Users\User\Documents\GitHub\2-projectMM-SHARE\files/figELSA/g_byage-male-alldiseases.pdf", `jpghighquality' 
-		preserve // plot mean predictions from above
-		collapse (mean) `xblist', by(age)
-		twoway `connectedlist', title("Logistic predictions of age") name(xb)
-		gr export 	"$outpath/fig/main/g_logit_byage-male-`sample'-alld-xb.jpg", replace quality(100)
-		restore 
-**# Bookmark #2 why is there a different prediction for people of the same age?
-	pause 
-	*/
+qui logit 	`y' male#c.age
+	**generate predictions for each level of x's (same as -margins- above, but can combine predictions)**
+	predict xb`y', pr
+	loc 	xblist 			"`xblist' xb`y'"
+	loc 	connectedlist 	"`connectedlist' (connected xb`y' age)"
+qui margins male, at(age=(`agethreshold'(5)100)) 
+marginsplot, title("Logistic Prediction" "(`ylabel')") name(g`y') xla(50(5)100) ytitle("") 
+loc glist "`glist' g`y'"
+}
+gr combine `glist', ycommon name(logitby)
+gr export 	"$outpath/fig/main/g_logit_byage-male-`sample'-alld.jpg", replace quality(100)
+	*gr export "C:\Users\User\Documents\GitHub\2-projectMM-SHARE\files/figELSA/g_byage-male-alldiseases.pdf", `jpghighquality' 
+	** plot xbvalues above **
+	preserve // plot mean predictions from above
+	collapse (mean) `xblist', by(age)
+	twoway `connectedlist', title("Logistic predictions of age") name(xb)
+	gr export 	"$outpath/fig/main/g_logit_byage-`sample'-alld-xb.jpg", replace quality(100)
+	restore 
+pause 
+*/
 
 
-		/*** +++ selective attrition +++ *** 
-		*** split by regions ***
-		if dataset == "ELSA" {
-		gen countryID = "EN"
-		}
-		gen 	region = "N.A."
-		replace	region = "North"  		 if (countryID=="AT"|countryID=="Bf"|countryID=="Bn"|countryID=="Cf"|countryID=="Cg"|countryID=="Ci" | countryID=="DE"|countryID=="DK"|countryID=="EE"|countryID=="FI"|countryID=="FR"|countryID=="IE"        |countryID=="Ia" |countryID=="Ih" |countryID=="Ir"     |countryID=="LT"|countryID=="LU"|countryID=="LV" |countryID=="NL" |countryID=="SE"       ///
-		| countryID=="EN") // add EN
-		replace region = "Center-East"   if (countryID=="BG"|countryID=="CZ"|countryID=="HR"|countryID=="HU"|countryID=="Cf" |countryID=="PL" |countryID=="RO" |countryID=="SI" |countryID=="SK" )
-		replace region = "South" 		 if (countryID=="CY"|countryID=="ES"|countryID=="IT"|countryID=="MT"|countryID=="PT")	
-		qui log using 	"$outpath/logs/log-regionclassification.txt", text replace name(log) 
-		tab countryID region,m
-		log close log
-	// 	label 	define regionl 1 "North-East" 2 "East" 3 "Center" 4 "West"
-	// 	*label   define regionl 1 "NE" 2 "E" 3 "C" 4 "W"
-	// 	label	value  region regionl	
-		*keep if region=="North"
-		
-		
-		tab d_count d_miss
-		sum hibper diaber hearter lunger psycher osteoer cancrer stroker arthrer demener if sfull==1 & dead==0	
-		gen d_missany = d_miss!=0 & !mi(d_miss)
-		tab d_miss d_missany   	if sfull==1 & dead==0,m
-		count 					if sfull==1 & dead==0
-		
-		*why are there so many missing diseases
-		* why is not everybody asked this question on diseases?
-		*count if dead==0
-		*sum hibper diaber cancrer psycher  if dead==0
-		*maybe bc countries entered later?
-		*egen 	d_miss2 	= rowmiss(`alldiseases') /*counts number of diseases "missing" for each observation (row)*/ in hrs need to adjust this cuz osteo is missing
-		
-		tab 	age d_missany 
-			tab 	age d_missany if d_missany==1, nofreq col
-		tab 	age d_miss 
-		tab 	d_missany inwt
-			tab 	d_missany inwt
-		logit 	d_missany c.age c.age#c.age 
-		margins , at(age=(51(5)90))
-		marginsplot 
-		
-			preserve 
-			collapse (mean) y = d_missany, by(age region)
-			scatter y age, by(region)
-			restore
-		*/
+
 		
 
 	
@@ -918,6 +872,54 @@ stcox `ctrl', nohr // stcox, semiparametric
 stcox `ctrl'
 
 */
+
+
+		/*** +++ selective attrition +++ *** 
+		*** split by regions ***
+		if dataset == "ELSA" {
+		gen countryID = "EN"
+		}
+		gen 	region = "N.A."
+		replace	region = "North"  		 if (countryID=="AT"|countryID=="Bf"|countryID=="Bn"|countryID=="Cf"|countryID=="Cg"|countryID=="Ci" | countryID=="DE"|countryID=="DK"|countryID=="EE"|countryID=="FI"|countryID=="FR"|countryID=="IE"        |countryID=="Ia" |countryID=="Ih" |countryID=="Ir"     |countryID=="LT"|countryID=="LU"|countryID=="LV" |countryID=="NL" |countryID=="SE"       ///
+		| countryID=="EN") // add EN
+		replace region = "Center-East"   if (countryID=="BG"|countryID=="CZ"|countryID=="HR"|countryID=="HU"|countryID=="Cf" |countryID=="PL" |countryID=="RO" |countryID=="SI" |countryID=="SK" )
+		replace region = "South" 		 if (countryID=="CY"|countryID=="ES"|countryID=="IT"|countryID=="MT"|countryID=="PT")	
+		qui log using 	"$outpath/logs/log-regionclassification.txt", text replace name(log) 
+		tab countryID region,m
+		log close log
+	// 	label 	define regionl 1 "North-East" 2 "East" 3 "Center" 4 "West"
+	// 	*label   define regionl 1 "NE" 2 "E" 3 "C" 4 "W"
+	// 	label	value  region regionl	
+		*keep if region=="North"
+		
+		
+		tab d_count d_miss
+		sum hibper diaber hearter lunger psycher osteoer cancrer stroker arthrer demener if sfull==1 & dead==0	
+		gen d_missany = d_miss!=0 & !mi(d_miss)
+		tab d_miss d_missany   	if sfull==1 & dead==0,m
+		count 					if sfull==1 & dead==0
+		
+		*why are there so many missing diseases
+		* why is not everybody asked this question on diseases?
+		*count if dead==0
+		*sum hibper diaber cancrer psycher  if dead==0
+		*maybe bc countries entered later?
+		*egen 	d_miss2 	= rowmiss(`alldiseases') /*counts number of diseases "missing" for each observation (row)*/ in hrs need to adjust this cuz osteo is missing
+		
+		tab 	age d_missany 
+			tab 	age d_missany if d_missany==1, nofreq col
+		tab 	age d_miss 
+		tab 	d_missany inwt
+			tab 	d_missany inwt
+		logit 	d_missany c.age c.age#c.age 
+		margins , at(age=(51(5)90))
+		marginsplot 
+		
+			preserve 
+			collapse (mean) y = d_missany, by(age region)
+			scatter y age, by(region)
+			restore
+		*/
 
 
 
