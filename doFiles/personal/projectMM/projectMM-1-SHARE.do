@@ -149,10 +149,12 @@ loc 	xtra	"hhresphh cplh iwyr iwmr iwstatr iwstats"	// general response info in 
 loc 	vra 	"mstatr nhmlivr ruralh ageyr     `xtra'"		// demographics, identifiers, weights
 	loc 	d_everhad "hibper diaber cancrer lunger hearter stroker arthrer  hiper kidneyer   psycher osteoer" //  
 	*loc 	d_sincelw "hrtattr strokr cancrr hipr" /*these are already incorporated in d_everhad*/
-	loc 	d_agediag "radiaghibp radiagdiab radiagcancr radiaglung radiagheart radiagstrok radiagarthr  radiaghip radiagpsych radiagosteo  radiagkidney" // radiagpsych /*these are time-invariant*/
+	loc 	d_agediag "radiaghibp radiagdiab radiagcancr radiaglung radiagheart radiagstrok radiagarthr  radiaghip radiagpsych radiagdepr radiagosteo  radiagkidney" // radiagpsych /*these are time-invariant*/
 	loc 	d_medictn "rxhibpr rxdiabr rxheartr rxlungr rxpsychr rxosteor rxcancrr rxstrokr rxarthrr"
-loc 	deptest "eurodr"
-loc 	vrb 	"shltr hlthlmar hlthlmr iadlar drinklr smokenr `d_everhad' `d_sincelw' `d_medictn' `deptest'"	// health
+	loc 	d_agediagXtra "rafrhrtatt radiagchf radiaghrtr radiagangin" // this is 'similar' to radiag
+	loc 	d_recentdiagXtra "reccancrr rechrtattr recstrokr" 
+	loc 	deptest "eurodr"
+loc 	vrb 	"shltr hlthlmar hlthlmr iadlar drinklr smokenr `d_everhad' `d_sincelw' `d_medictn'  `deptest' `d_recentdiagXtra'"	// health
 loc 	vrc 	"higovr     nrshom1yr hosp1yr doctor1yr doctim1yr homcar1yr drugs1wr"										// healthcare utilization and insurance
 loc 	xtra2 	"cogimpr verbfr" 
 loc 	vrd  	"tr20r orientr `xtra2'"									// cognition
@@ -172,10 +174,10 @@ loc 	vrlist	`vra' `vrb' `vrc' `vrd' `vre' `vrf' `vrg' `vrh' `vri' `vrj' `vrl' `v
 
 ***(b) time-invariant variables***
 **# Bookmark #3
-	unab inwlist: inw*
+	unab inwlist: inw* // creates local macro with variables starting with inw* that actually exist 
 	*di "`inwlist'"
 loc 	xa 		"hacohort `inwlist' rabyear rabmonth radyear radmonth ragender raeducl `x_eol' radage"		
-loc 	xb 		"`d_agediag'"
+loc 	xb 		"`d_agediag' `d_agediagXtra'"
 loc 	xc 		""
 loc 	xlist	`xa' `xb' `xc' `xd' `xe' `xf' `xg' `xh' `xi' `xj' `xk' `xl' `xm' `xo' `xp' `xq'
 
@@ -187,6 +189,7 @@ loc		keeplist "`keeplist' `vr'`i'" // append each variable with wave indicator t
 }
 }
 *di 		"`keeplist'"
+	loc keeplist "`keeplist' `xlist'"    
 
 **keep only locals that are existing variables (e.g. missing mstat3-var causes errors) (details at [a1])**
 isvar 	`keeplist'  	// keeps only local macros that actually exist, stored as "r(varlist)"
@@ -194,8 +197,8 @@ isvar 	`keeplist'  	// keeps only local macros that actually exist, stored as "r
 loc 	vrlistset "`r(varlist)'"
 	gl	vrlistset "`r(varlist)'"
 *display "`vrlistset'"
-loc 	keeplist2 "" 	// add survey-specific special variables (e.g. eligibility to a pension program)
-keep 	`idlist' `vrlistset' `xlist' `keeplist2'
+loc 	specificvars "" 	// add survey-specific special variables (e.g. eligibility to a pension program)
+keep 	`idlist' `vrlistset' `specificvars'
 
 ***store variable labels from -wide- format (I) to copy into -long- reshaped dataset later (II)***	
 **(I) store labels**

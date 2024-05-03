@@ -60,7 +60,7 @@ pwd
 	restore
 	*/
 use 	   "`h_data'randhrs1992_2020v1"  	// main dataset
-loc g2vars "r*rxpsych r*orient raeducl radiag* r*rec*" // choose substrings of variables needed
+loc g2vars "r*rxpsych r*orient raeducl radiag* r*rec* rafrhrtatt" // choose substrings of variables needed
 merge 1:1 hhidpn using "`h_data'H_HRS_d.dta", keepusing(`g2vars') // add additional vars from g2aging dataset
 pause
 
@@ -152,12 +152,12 @@ loc 	xtra	"hhresphh cplh iwendyr iwendmr iwstatr iwstats"	// general response in
 loc 	vra 	"mstatr nhmlivr agey_br     `xtra'"		// demographics, identifiers, weights
 	loc 	d_everhad "hibper diaber cancrer lunger hearter stroker arthrer  hiper kidneyer   psycher osteoer" //  
 	*loc 	d_sincelw "hrtattr strokr cancrr hipr" /*these are already incorporated in d_everhad*/
-	loc 	d_agediag "radiaghibp radiagdiab radiagcancr radiaglung radiagheart radiagstrok radiagarthr  radiaghip radiagpsych radiagosteo  radiagkidney" // radiagpsych /*these are time-invariant*/
-	loc 	d_medictn "rxhibpr rxdiabr rxheartr rxlungr rxpsychr rxosteor rxcancrr rxstrokr rxarthrr"
-**# Bookmark #1
-	loc 	d_recent  "reccancrr"
+	loc 	d_agediag "radiaghibp radiagdiab radiagcancr radiaglung radiagheart radiagstrok radiagarthr  radiaghip radiagpsych radiagdepr radiagosteo  radiagkidney" // radiagpsych /*these are time-invariant*/
+	loc 	d_medictn "rxhibpr rxdiabr rxheartr rxlungr rxpsychr rxosteor rxcancrr rxstrokr rxarthrr"	
+	loc 	d_agediagXtra "rafrhrtatt radiagchf radiaghrtr radiagangin" // this is 'similar' to radiag
+	loc 	d_recentdiagXtra "reccancrr rechrtattr recstrokr" 
 	loc 	deptest   "cesdr"
-loc 	vrb 	"shltr hlthlmar hlthlmr iadlar drinklr smokenr `d_everhad' `d_sincelw' `d_medictn'  `d_recent' `deptest'"	// health
+loc 	vrb 	"shltr hlthlmar hlthlmr iadlar drinklr smokenr `d_everhad' `d_sincelw' `d_medictn'  `deptest' `d_recentdiagXtra'"	// health
 loc 	vrc 	"higovr 	hiltcr lifeinr"										// healthcare utilization and insurance
 	loc xtra2 	"bwc20r mstotr cogtotr"
 loc 	vrd  	"tr20r orientr `xtra2'"							// cognition (mostly only asked to 65+ and not proxy)
@@ -177,11 +177,10 @@ loc 	vrlist	`vra' `vrb' `vrc' `vrd' `vre' `vrf' `vrg' `vrh' `vri' `vrj' `vrl' `v
 
 
 ***(b) time-invariant variables***
-**# Bookmark #3
-	unab inwlist: inw*
-	*di "`inwlist'"
+unab inwlist: inw* // creates local macro with variables starting with inw* that actually exist 
+*di "`inwlist'"
 loc 	xa 		"hacohort `inwlist' rabyear rabmonth radyear radmonth ragender raeducl `x_eol' radage_y"		
-loc 	xb 		"`d_agediag'"
+loc 	xb 		"`d_agediag' `d_agediagXtra'"
 loc 	xc 		""
 loc 	xlist	`xa' `xb' `xc' `xd' `xe' `xf' `xg' `xh' `xi' `xj' `xk' `xl' `xm' `xo' `xp' `xq'
 
@@ -201,8 +200,8 @@ di		"`r(varlist)'"
 loc 	vrlistset "`r(varlist)'"
 	gl	vrlistset "`r(varlist)'"
 *display "`vrlistset'"
-loc 	keeplist2 "" 	// add survey-specific special variables (e.g. eligibility to a pension program)
-keep 	`idlist' `vrlistset' `keeplist2'
+loc 	specificvars "" 	// add survey-specific special variables (e.g. eligibility to a pension program)
+keep 	`idlist' `vrlistset' `specificvars'
 
 ***store variable labels from -wide- format (I) to copy into -long- reshaped dataset later (II)***	
 **(I) store labels**

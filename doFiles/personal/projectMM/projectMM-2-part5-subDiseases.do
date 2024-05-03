@@ -47,38 +47,43 @@ di 	"`agethreshold' `h_data'"
 	*la var cognitionstd 	"std(total cognition)"
 	la var  demener  		"has dementia"	
 
-	gen 	rxdemenr = . // medication
-	gen 	radiagdemen = . 
+	gen 	rxdemenr = . 	// dementia medication missing
+		gen 	radiagdemen = . // dementia self-report of onset missing
 
-	***correct disease list (carry forward report after onset)**
-	local carryforwardlist "hibp diab heart lung osteo cancr strok arthr demen" // hiper psych (if disease is missing, block works nevertheless)
-	foreach var of local carryforwardlist{
-	rename 		rx`var'r 	rx`var'r2 	
-	rename 		  `var'er  	  `var'er2  
-	clonevar	rx`var'r =  rx`var'r2
-	clonevar  	  `var'er  =  `var'er2
-	bys ID: 	replace rx`var'r = max(rx`var'r[_n-1], rx`var'r)   if inwt==1 // medication use !mi(rx`var'r): does not work well bc variable will be 0 if "ever had" is 0 and "medication" is missing
-	bys ID: 	replace `var'er  = max(  `var'er[_n-1],   `var'er) if inwt==1  // ever had: Change also in "onlyeverhad"	(should not replace in most surveys)
-**# Bookmark #1 (correction not yet successful)
-		replace rx`var'r = 0 if !mi(rx`var'r) &  `var'er==0 // if someone does not have the disease, they should not report taking medications for it 
-	drop `var'er2 rx`var'r2
-	}
+		
+		
+		
+**# Bookmark #3 cheeck once more, also think why even recode medication use as absorbing. this no longer makes sense, absorbing is done for osteoporosis because in SHARE we only have medication on it...
+***correct disease list (carry forward report as absorbing after onset)**
+local carryforwardlist "hibp diab heart lung osteo cancr strok arthr demen" // hiper psych (if disease is missing, block works nevertheless)
+foreach var of local carryforwardlist{
+rename 		rx`var'r 	rx`var'r2 	
+rename 		  `var'er  	  `var'er2  
+clonevar	rx`var'r =  rx`var'r2
+clonevar  	  `var'er  =  `var'er2
+bys ID: 	replace rx`var'r = max(rx`var'r[_n-1], rx`var'r)   if inwt==1 // medication use !mi(rx`var'r): does not work well bc variable will be 0 if "ever had" is 0 and "medication" is missing
+bys ID: 	replace `var'er  = max(  `var'er[_n-1],  `var'er) if inwt==1  // ever had: "onlyeverhad"	(should not replace in most surveys)
+	**if someone does not have the disease, they should not report taking medications for it**
+	recode rx`var'r (1=0) if !mi(rx`var'r) &  `var'er==0 /*only is recoded in ELSA and SHARE. This is due to
+	correction of ever had reports that are not fed into medication use corrections in ELSA. In HRS, this 
+	seems to be done already. In SHARE, question on medication is asked independently of ever had reports.*/ 
+	replace rx`var'r = . if !mi(rx`var'r) &  `var'er==.  // should not change anything in HRS and ELSA
+drop `var'er2 rx`var'r2
+}
 	
-
-
 	
 ***either-or condition***
 ** r has disease: either "ever told by doctor" or "currently taking med for"**
-local eitherorcodes "hibp diab heart lung psych osteo" 
+local eitherorcodes "osteo" 
 	loc eitherord_list ""
 foreach var of local eitherorcodes { 
 gen 	d_`var' = 	`var'er==1 | rx`var'r==1    if `var'er<. | rx`var'r<. 
-	*gen 	d2_`var' = 	`var'er==1           	if `var'er<. // to check that d_`var' gives the same result. if someone does not have the disease, they should not report taking medications for it 
-	*sum 	d_`var' d2_`var' // to check that d_`var' gives the same result. if someone does not have the disease, they should not report taking medications for it 
+	gen 	d2_`var' = 	`var'er==1           	if `var'er<. /*to check that d_`var' gives the same result. if someone does not have the disease, they should not report taking medications for it*/
+	sum 	d_`var' d2_`var' // to check that d_`var' gives the same result. if someone does not have the disease, they should not report taking medications for it 
 	// d_`var' and d2_`var' are not the same for "psych", bc CESD/test defines ever had condition, while medication use is only available if the respondent reports to have been diagnosed with a psychatric condition. 
 	*loc   varlabel: var la `var'
 	*local extracted_label = substr("`varlabel'", 11, .) // use this if full disease name
-la var 	d_`var'	 		"'ever had'|taking meds for `var'"
+la var 	d_`var'	 	"'ever had'|using meds: `var'" // 
 loc eitherord_list	"`eitherord_list' d_`var'" /*creates a local macro that appends new var at each iteration*/
 }
 *l ID wave d_osteo* osteo* rxosteo* if ID==958
@@ -104,7 +109,7 @@ loc eitherord_list	"`eitherord_list' d_`var'" /*creates a local macro that appen
 **# Bookmark #2 Note: left out kidney in first analysis in SHARE because this is available only from w6-w8, messing up d_miss
 **# Bookmark #1 Dementia is excluded because definition difficult to make comparable across countries. Option B: could use different tests (but even then those are not consistent across time always)
 **only ever had (these diseases have no medication)**
-loc onlyeverhad 	"cancr strok arthr demen"	 // demen kidney
+loc onlyeverhad 	"hibp diab heart lung 	depr   cancr strok arthr demen"	 // demen kidney psych
 	loc onlyeverhadlist ""
 foreach var of local onlyeverhad {
 gen 	d_`var' = 	`var'er==1 	if `var'er<.	/*only one condition*/
@@ -167,22 +172,24 @@ table 	(var) wave, statistic(mean d_any d_miss d_count d_count_geq2) stat(max d_
 loc 	d_countmax = wordcount("`alldiseasesd'") // total number of chosen/considered diseases
 gen 	d_count_index = d_count / `d_countmax'
 sum 	d_count_index, de 
+**# Bookmark #2 replace index as 1 if dead
+replace d_count_index = 1 if dead==1 // this is similar to Borella Bullano, De Nardi (2024) Clustering.
 la var 	d_count_index 		"disease index (=count/total diseases)"
 
 **First difference in d_count: if one has c diseases, does he keep the disease or does it disappear again? **	
-**# Bookmark #1
-	bys ID: gen diff_d_count_forward = d_count[_n+1] - d_count 
-	la var 	diff_d_count_forward 	"1st diff (forward) of # of diseases"
+	**# Bookmark #1
+	*bys ID: gen diff_d_count_forward = d_count[_n+1] - d_count 
+	*la var 	diff_d_count_forward 	"1st diff (forward) of # of diseases"
 bys ID: gen 	diff_d_count 	  = d_count - L.d_count
-bys ID: gen 	diff_miss_d_count = d_count - L.d_count // accounts for gaps, e.g. if not responded in some wave
-bys ID: replace	diff_miss_d_count = d_count - L2.d_count if L.d_count>=. & mi(diff_miss_d_count) /*L2 necessary if missing t (e.g. w3 in SHARE)*/  
-bys ID: replace	diff_miss_d_count = d_count - L3.d_count if L2.d_count>=. & mi(diff_miss_d_count)
-*note: could go further, but if gaps are longer than 4-6y I no longer consider them "first" differences 
-*bro ID wave d_count diff_d_count diff_d_count_miss
+	*bys ID: gen 	diff_miss_d_count = d_count - L.d_count // accounts for gaps, e.g. if not responded in some wave
+	*bys ID: replace	diff_miss_d_count = d_count - L2.d_count if L.d_count>=. & mi(diff_miss_d_count) /*L2 necessary if missing t (e.g. w3 in SHARE)*/  
+	*bys ID: replace	diff_miss_d_count = d_count - L3.d_count if L2.d_count>=. & mi(diff_miss_d_count)
+	*note: could go further, but if gaps are longer than 4-6y I no longer consider them "first" differences 
+	*bro ID wave d_count diff_d_count diff_d_count_miss
 la var 	diff_d_count 		"1st diff of # of diseases"
-la var 	diff_miss_d_count	"1st diff of # of diseases: (L(t-2) used if L(t-1) missing) (=adj. for gaps)"
-tab 	diff_d_count diff_miss_d_count,m
-tab 	d_count 	 diff_miss_d_count,m
+	*la var 	diff_miss_d_count	"1st diff of # of diseases: (L(t-2) used if L(t-1) missing) (=adj. for gaps)"
+	*tab 	diff_d_count diff_miss_d_count,m
+	*tab 	d_count 	 diff_miss_d_count,m
 sum 	diff_d_count*
 
 	**First difference in d_DISEASECODE: same as above**
@@ -199,7 +206,7 @@ sum 	diff_d_count*
 	*tab diff_`code',m
 	}	
 	
-	**first difference in DISEASECODE, accounting for missing responses in some time-period**
+	/**first difference in DISEASECODE, accounting for missing responses in some time-period**
 	foreach code of local alldiseasecodes {
 	bys ID: gen 	diff_miss_d_`code'  = d_`code' - L.d_`code'
 	bys ID: replace	diff_miss_d_`code'  = d_`code' - L2.d_`code' if L.d_`code'>=. & mi(diff_miss_d_`code')   
@@ -210,6 +217,7 @@ sum 	diff_d_count*
 	bys ID: replace	diff_miss_`code'er  = `code'er - L3.`code'er if L2.`code'er>=. & mi(diff_miss_`code'er)	
 	la var 			diff_miss_`code'er	"1st diff (ever had - raw data) (adj. for gaps) of `code'"
 	}	
+	*/
 	
 	
 *** check if any condition is perfectly predicted by age (based on age-eligiblity to the question) ***
@@ -246,11 +254,11 @@ li 		ID wave d_any age onsetage onsetage_g2 in 10/20
 
 **any disease ever (observed)**
 bys ID: egen d_anyever = max(d_any) // ever reported having a disease
-la var 	d_anyever 		"ever reports any disease"
+la var 	d_anyever 		"ever experiences any disease"
 
 **any disease ever (g2aging)**
 gen 	d_anyever_g2 = (onsetage_g2<.) /*note: firstage_g2 is time-constant*/
-la var 	d_anyever_g2	"ever reports having had any disease (g2aging)"
+la var 	d_anyever_g2	"ever experiences any disease (g2aging)"
 sum 	d_anyever d_anyever_g2
 
 
@@ -303,8 +311,6 @@ codebook onset*, compact /*this is the first onset for each disease separately, 
 */								
 
 
-
-
 **first onset DATE for each disease "count"**
 di 		   "`d_countmax'" /*max. count of diseases defined above*/
 forval 	j=1/`d_countmax' { /*use maximum count of disease list*/
@@ -318,9 +324,6 @@ li 			ID wave dead d_count iwym onsetdate_c* in 100/116, compress nola /*check*/
 
 
 
-
-
-	
 *****************
 *** Durations ***
 *****************

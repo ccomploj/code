@@ -58,14 +58,14 @@ loc upperthreshold	"85" // select survey-specific upper age threshold
 loc wavelast 		"9" 	// select survey-specific last wave
 loc ptestname 	"cesdr"
 **# Bookmark #1 choose threshold wisely
-loc pthreshold	"4"
+loc pthreshold	"3"
 }
 if "`data'"=="HRS" {
 loc agethreshold 	"51" // select survey-specific lower age threshold
 loc upperthreshold	"85" // select survey-specific upper age threshold	
 loc wavelast 		"14" 	// select survey-specific last wave
 loc ptestname 		"cesdr"
-loc pthreshold		"4"
+loc pthreshold		"3"
 	keep 	if hacohort<=5 	
 	keep if wave>=3 & wave<=13 // cognitive measures not consistently available 		
 }	
@@ -237,9 +237,11 @@ la var 	retempr "retired"
 // O: (end of life planning)
 // P: (childhood)
 // Q: Psychosocial
-rename 	psycher depress_selfrep /*self reported/doctor diagnosis depression*/
-
-gen 	psycher = (`ptestname'>=`pthreshold') if `ptestname'<.  /*validated test as indicator for depression*/
+	rename 		psycher depr_selfrep /*self reported/doctor diagnosis depression*/
+**# Bookmark #1
+	**validated test as indicator for depression**
+	*gen psycher = (`ptestname'>=`pthreshold') if `ptestname'<.  /*validated test as indicator for depression*/
+	gen deprer 	= (`ptestname'>=`pthreshold') if `ptestname'<. /*named -er- even if not absorbing*/
 
 *tab	depress_selfrep psycher if wave==2 // depress_selfrep may be strictly increasing in time
 *corr 	depress_selfrep psycher if wave==2 /*about 0.25 in SHARE in the second wave*/
@@ -298,8 +300,26 @@ use 	"`h_data'H_`data'_panel2.dta", clear // load earlier dataset
 ***********************************
 *** diseases list and durations ***
 ***********************************
-include  "`github_p5subdiseases'" // include github file
+*include  "`github_p5subdiseases'" // include github file
 
+
+	**# Bookmark #2 *** generate own self-reported first onset if missing *** (can move to common code using if conditions)
+	// radiag 
+	sum 	radiagheart // should be empty variable
+	egen 	radiagheart2 = rowmin(radiagchf rafrhrtatt        )  /* -bys ID- not helpful w/ given
+													syntax, need to make sure no mistakes occur */
+	*replace radiagheart  = radiagheart2 // variable slot already exists, hence copy new to old 
+	*drop 	 radiagheart // drop if the variable is missing 
+
+	* Count the number of missing values for the variable
+	egen missing_count = total(missing(radiagheart))
+	* Get the total number of observations
+	egen total_count = total(1)
+	* Create a new variable that is missing if your_variable is always missing
+	gen radiagheart3 = .
+	replace radiagheart3 = radiagheart2 if missing_count == total_count
+	sum radiag* raf* rec*
+	
 
 *****************************
 *** Sample Selection (MM) ***

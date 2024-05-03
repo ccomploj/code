@@ -95,6 +95,10 @@ keep if hacohort==1
 la de 	hacohortl 1 "ELSA cohorts 1-11 (not comparable to HRS)"
 la val  hacohort hacohortl
 
+
+***log entire file***
+log using 	"`out'/logdoSHARE-1-harmon.txt", text replace name(logDofile) // ends w/ -log close logDofile-
+
 ****************************************************************************************************
 *Part 2*: Overview of dataset
 ****************************************************************************************************
@@ -142,10 +146,14 @@ loc 	xtra	"hhresphh cplh iwyr iwmr iwstatr iwstats"	// general response info in 
 loc 	vra 	"mstatr nhmlivr ruralh ageyr     `xtra'"		// demographics, identifiers, weights
 	loc 	d_everhad "hibper diaber cancrer lunger hearter stroker arthrer  hiper kidneyer   psycher osteoer" //  
 	*loc 	d_sincelw "hrtattr strokr cancrr hipr" /*these are already incorporated in d_everhad*/
-	loc 	d_agediag "radiaghibp radiagdiab radiagcancr radiaglung radiagheart radiagstrok radiagarthr  radiaghip radiagpsych radiagosteo  radiagkidney" 
+	loc 	d_agediag "radiaghibp radiagdiab radiagcancr radiaglung radiagheart radiagstrok radiagarthr  radiaghip radiagpsych radiagdepr radiagosteo  radiagkidney" 
+*	loc 	d_agediagHRS  "rafrhrtatt radiagchf 		   radiagangin" // only these available in ELSA
+	loc 	d_agediagXtra "rafrhrtatt radiagchf radiaghrtr radiagangin" // this is 'similar' to radiag; radiagparkin;
+*	loc 	d_recentdiagHRS ""  										// none available in ELSA
+	loc 	d_recentdiagXtra "reccancrr rechrtattr recstrokr" 			//
 	loc 	d_medictn "rxhibpr rxdiabr rxheartr rxlungr rxpsychr rxosteor rxcancrr rxstrokr rxarthrr"
-loc 	deptest "cesdr"
-loc 	vrb 	"shltr hlthlmar hlthlmr iadlar drinklr smokenr `d_everhad' `d_sincelw' `d_medictn' `deptest'"	// health
+	loc 	deptest "cesdr"
+loc 	vrb 	"shltr hlthlmar hlthlmr iadlar drinklr smokenr `d_everhad' `d_sincelw' `d_medictn' `deptest' `d_recentdiagXtra'"	// health
 loc 	vrc 	"higovr hiprivr"	
 loc 	xtra2	"cogimpr verbfr"							// healthcare utilization and insurance
 loc 	vrd  	"tr20r orientr `xtra2'"					// cognition
@@ -164,10 +172,10 @@ loc 	vrq		"satlifezr"										// psychosocial
 loc 	vrlist	`vra' `vrb' `vrc' `vrd' `vre' `vrf' `vrg' `vrh' `vri' `vrj' `vrl' `vrm' `vro' `vrp' `vrq'
 
 ***(b) time-invariant variables***
-unab inwlist: inw*
+unab inwlist: inw* // creates local macro with variables starting with inw* that actually exist 
 *di "`inwlist'"
 loc 	xa 		"hacohort `inwlist' rabyear rabmonth radyear radmonth ragender raeducl `x_eol' radage_y"		
-loc 	xb 		"`d_agediag'"
+loc 	xb 		"`d_agediag' `d_agediagXtra'"
 loc 	xc 		""
 loc 	xlist	`xa' `xb' `xc' `xd' `xe' `xf' `xg' `xh' `xi' `xj' `xk' `xl' `xm' `xo' `xp' `xq'
 
@@ -187,8 +195,8 @@ di		"`r(varlist)'"
 loc 	vrlistset "`r(varlist)'"
 	gl	vrlistset "`r(varlist)'"
 *display "`vrlistset'"
-loc 	keeplist2 "" 	// add survey-specific special variables (e.g. eligibility to a pension program)
-keep 	`idlist' `vrlistset' `keeplist2'
+loc 	specificvars "" 	// add survey-specific special variables (e.g. eligibility to a pension program)
+keep 	`idlist' `vrlistset' `specificvars'
 
 ***store variable labels from -wide- format (I) to copy into -long- reshaped dataset later (II)***	
 **(I) store labels**
@@ -251,7 +259,6 @@ la val 		wave wavel
 l  			`ID' wave `varlist' in 1		
 la var 		wave "Survey Wave"
 tab wave
-
 
 
 
