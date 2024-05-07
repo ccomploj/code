@@ -97,7 +97,7 @@ la val  hacohort hacohortl
 
 
 ***log entire file***
-log using 	"`out'/logdoSHARE-1-harmon.txt", text replace name(logDofile) // ends w/ -log close logDofile-
+log using 	"`out'/logdo`data'-1-harmon.txt", text replace name(logDofile) // ends w/ -log close logDofile-
 
 ****************************************************************************************************
 *Part 2*: Overview of dataset

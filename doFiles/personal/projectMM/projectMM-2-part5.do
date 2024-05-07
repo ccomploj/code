@@ -8,7 +8,7 @@ log close _all 	/*closes all open log files*/
 clear all		/*clears all data in memory*/
 
 ***define folder locations***
-loc data 		"SHARE" // SHARE | ELSA (note for ELSA: part5-subDiseases may be incorrect because other diseases are included in measure)
+loc data 		"HRS" // SHARE | ELSA (note for ELSA: part5-subDiseases may be incorrect because other diseases are included in measure)
 loc datalist 	"SHARE HRS ELSA"
 *foreach data of local datalist{
 
@@ -45,7 +45,7 @@ loc upperthreshold	"75"
 if "`data'"=="SHARE" {
 loc agethreshold 	"50" // select survey-specific lower age threshold
 loc upperthreshold	"85" // select survey-specific upper age threshold	
-loc wavelast 		"8" 	// select survey-specific last wave
+loc wavelast 		"8"  // select survey-specific last wave
 loc ptestname 		"eurod"
 loc pthreshold		"4"
 	drop if wave==3 // is not really a time period, there are no regular variables for this wave
@@ -242,6 +242,7 @@ la var 	retempr "retired"
 	**validated test as indicator for depression**
 	*gen psycher = (`ptestname'>=`pthreshold') if `ptestname'<.  /*validated test as indicator for depression*/
 	gen deprer 	= (`ptestname'>=`pthreshold') if `ptestname'<. /*named -er- even if not absorbing*/
+	la var deprer "(currently has depression)"
 
 *tab	depress_selfrep psycher if wave==2 // depress_selfrep may be strictly increasing in time
 *corr 	depress_selfrep psycher if wave==2 /*about 0.25 in SHARE in the second wave*/
@@ -291,7 +292,7 @@ pause
 *sort ID wave 
 *save "`h_data'H_panel2-SOMENAME.dta", replace 
 
-****************************************************************************************************username
+****************************************************************************************************
 *Part 5.2*: Sample Selection and variables (Multimorbidity Paper)
 ****************************************************************************************************
 use 	"`h_data'H_`data'_panel2.dta", clear // load earlier dataset 
@@ -300,26 +301,51 @@ use 	"`h_data'H_`data'_panel2.dta", clear // load earlier dataset
 ***********************************
 *** diseases list and durations ***
 ***********************************
-*include  "`github_p5subdiseases'" // include github file
+include  "`github_p5subdiseases'" // include github file
 
-
-	**# Bookmark #2 *** generate own self-reported first onset if missing *** (can move to common code using if conditions)
-	// radiag 
-	sum 	radiagheart // should be empty variable
-	egen 	radiagheart2 = rowmin(radiagchf rafrhrtatt        )  /* -bys ID- not helpful w/ given
-													syntax, need to make sure no mistakes occur */
-	*replace radiagheart  = radiagheart2 // variable slot already exists, hence copy new to old 
-	*drop 	 radiagheart // drop if the variable is missing 
-
-	* Count the number of missing values for the variable
-	egen missing_count = total(missing(radiagheart))
-	* Get the total number of observations
-	egen total_count = total(1)
-	* Create a new variable that is missing if your_variable is always missing
-	gen radiagheart3 = .
-	replace radiagheart3 = radiagheart2 if missing_count == total_count
-	sum radiag* raf* rec*
 	
+
+	**# Bookmark #2 *** generate own self-reported first onset if missing variable *** (can move to common code using if conditions)
+		egen totalN = total(1) // total count of dataset 
+		loc 	list "radiagheart radiagstrok radiagcancr"
+		foreach var of local list {
+		egen missing`var'  = total(missing(`var')) 	// Count the number of missing observations for the variable
+		}		
+		
+		// radiag: heart
+		loc var "radiagheart"		
+		if 	 missing`var' == totalN {
+		*sum 	radiagheart // this variable is an empty variable (always missing) if recoding as below: 
+		egen 	radiagheart2 = rowmin(radiagchf radiaghrtr rafrhrtatt)  // rechrtattr not used (most recent heart attack) /* -bys ID- not helpful here*/
+		bys ID: egen myvar   = min(radiagheart2) // replace with minimum value 
+		replace radiagheart2 = myvar // make sure the first ever reported onset is used (relevant if rechrtattr ('most recent diagnosis') is not missing)
+		order `var'2, after(`var')
+		rename `var' `var'3 // rename to a copy  
+			drop 	`var'3 // or drop it instead
+		}
+		
+		
+		// radiag: stroke
+		loc var "radiagstrok"	
+		if 	 missing`var' == totalN {
+		bys ID: egen 	radiagstrok2 = min(recstrokr) 
+		order `var'2, after(`var')
+		rename `var' `var'3 // rename to a copy  
+			drop 	`var'3 // or drop it instead
+		}		
+		
+		// radiag: cancr
+		loc var "radiagcancr"	
+		if 	 missing`var' == totalN {
+		bys ID: egen 	radiagcancr2 = min(reccancr)
+		order `var'2, after(`var')
+		rename `var' `var'3 // rename to a copy  
+			drop 	`var'3 // or drop it instead
+		}		
+		
+		*++
+		* this was now generated for HRS, should also work for ELSA, but other vars may be added there *  
+		* there is radiagangin in HRS, how about other surveys and why was it excluded? * 	
 
 *****************************
 *** Sample Selection (MM) ***
@@ -361,7 +387,7 @@ save	"`h_data'H_`data'_panel2-MM.dta", replace // check if appeared in correct f
 ****************************************************************************************************
 *++ END OF FILE ++*
 log close logDofile /*logs file to specified folder if log active*/
-}
+} /*end of loop for multiple datasets*/
 +++ END OF FILE +++
 ****************************************************************************************************
 

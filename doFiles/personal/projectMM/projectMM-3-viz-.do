@@ -6,7 +6,7 @@ clear all		/*clears all data in memory*/
 
 
 ***choose data***
-loc data 		"HRS"
+loc data 		"ELSA"
 loc datalist 	"SHARE ELSA HRS"
 *foreach data of local datalist{
 
@@ -177,7 +177,7 @@ pause
 */
 
 
-/** histogram of first onset, for each disease separately **
+** histogram of first onset, for each disease separately **
 preserve // bc generates new vars
 loc 	grlist ""
 local 	templist "$diseasecodelist" // always check chosen diseases are up to date
