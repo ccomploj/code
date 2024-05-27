@@ -5,7 +5,7 @@ clear all		/*clears all data in memory*/
 
 
 ***choose data***
-loc data 		"HRS"
+loc data 		"SHARE"
 	*loc append_iterationlog "replace" 		
 	/*short iteration log at the end of the loop*/ 
 loc datalist 	"SHARE ELSA HRS"
@@ -78,31 +78,30 @@ drop if agemin<`agethreshold'
 **********************
 
 
-
-
-// 	*** split by regions ***
-// 	if dataset == "ELSA" {
-// 	gen countryID = "EN"
-// 	}
-// 	gen 	region = "NA"
-// 	replace	region = "North"  		 if (countryID=="AT"|countryID=="Bf"|countryID=="Bn"|countryID=="Cf"|countryID=="Cg"|countryID=="Ci" | countryID=="DE"|countryID=="DK"|countryID=="EE"|countryID=="FI"|countryID=="FR"|countryID=="IE"        |countryID=="Ia" |countryID=="Ih" |countryID=="Ir"     |countryID=="LT"|countryID=="LU"|countryID=="LV" |countryID=="NL" |countryID=="SE"       ///
-// 	| countryID=="EN") // add EN
-// 	replace region = "Center-East"   if (countryID=="BG"|countryID=="CZ"|countryID=="HR"|countryID=="HU"|countryID=="Cf" |countryID=="PL" |countryID=="RO" |countryID=="SI" |countryID=="SK" )
-//  	replace region = "South" 		 if (countryID=="CY"|countryID=="ES"|countryID=="IT"|countryID=="MT"|countryID=="PT")	
-// 	qui log using 	"$outpath/logs/log-regionclassification.txt", text replace name(log) 
-// 	tab countryID region,m
-// 	log close log
-// // 	label 	define regionl 1 "North-East" 2 "East" 3 "Center" 4 "West"
-// // 	*label   define regionl 1 "NE" 2 "E" 3 "C" 4 "W"
-// // 	label	value  region regionl
-
-
 ****************************************************************************************************
-*Part 7*: Regression (general)
+*Part 7a*: Regression (define .do file)
 ****************************************************************************************************	
+
 *cd  	"$outpath/tab"
-	*sample 5
-	*keep if d_count<4
+
+
+	// 	*** split by regions ***
+	// 	if dataset == "ELSA" {
+	// 	gen countryID = "EN"
+	// 	}
+	// 	gen 	region = "NA"
+	// 	replace	region = "North"  		 if (countryID=="AT"|countryID=="Bf"|countryID=="Bn"|countryID=="Cf"|countryID=="Cg"|countryID=="Ci" | countryID=="DE"|countryID=="DK"|countryID=="EE"|countryID=="FI"|countryID=="FR"|countryID=="IE"        |countryID=="Ia" |countryID=="Ih" |countryID=="Ir"     |countryID=="LT"|countryID=="LU"|countryID=="LV" |countryID=="NL" |countryID=="SE"       ///
+	// 	| countryID=="EN") // add EN
+	// 	replace region = "Center-East"   if (countryID=="BG"|countryID=="CZ"|countryID=="HR"|countryID=="HU"|countryID=="Cf" |countryID=="PL" |countryID=="RO" |countryID=="SI" |countryID=="SK" )
+	//  	replace region = "South" 		 if (countryID=="CY"|countryID=="ES"|countryID=="IT"|countryID=="MT"|countryID=="PT")	
+	// 	qui log using 	"$outpath/logs/log-regionclassification.txt", text replace name(log) 
+	// 	tab countryID region,m
+	// 	log close log
+	// // 	label 	define regionl 1 "North-East" 2 "East" 3 "Center" 4 "West"
+	// // 	*label   define regionl 1 "NE" 2 "E" 3 "C" 4 "W"
+	// // 	label	value  region regionl
+
+
 
 *** additional variables *** 
 tab raeducl, gen(raeduclcat) // separate variables needed for regoprob2
@@ -128,20 +127,24 @@ search st0359 // DH model (xtdhreg)
 findit mdraws // DH model required package
 */
 
+
+****************************************************************************************************
+*Part 7b*: Regression (general)
+****************************************************************************************************	
 	
-/*** +++ a) what predicts having any disease? (logit by wave just to check consistency (not for paper)), then (xt)logit using pooled sample +++ ***
+/*** +++ what predicts having any disease? (logit by wave just to check consistency (not for paper)), then (xt)logit using pooled sample +++ ***
 ** logit by wave **
 levelsof time, local(levels)
 foreach l of local levels{
-eststo logit`l': qui logit d_any c.age  male married i.raeducl*  if time==`l', or 
+eststo logit`l': qui logit d_any c.age  male marriedr i.raeducl*  if time==`l', or 
 estadd loc time  "`l'" 
 }
 esttab logit*,  stats(N r2_p time) nobase eform // `esttab_opt'
-	*export results to first time period only*
+	*export results using wave 1 only*
 	sum time, meanonly 
 	loc l = r(min)
-	eststo logit`l': qui logit d_any c.age  male i.raeducl* married  if time==`l', or 
-	eststo logit`l'ctrls: qui logit d_any c.age  male i.raeducl* married widowedr retempr smokenr if time==`l', or 
+	eststo logit`l': qui logit d_any c.age  male i.raeducl* marriedr  if time==`l', or 
+	eststo logit`l'ctrls: qui logit d_any c.age  male i.raeducl* marriedr retempr smokenr if time==`l', or 
 	estadd loc time  "`l'", replace: logit*
 	loc    esttab_opt "la nobase nocons stats(N r2_p time) eform"
 	esttab logit`l'*, 									 `esttab_opt'  
@@ -161,6 +164,12 @@ STOP
 */
 
 
+	/*** what predicts an earlier onset ? *** 
+	sum onset*
+	loc ctrl "male i.raeducl"
+	tobit onsetage `ctrl', ll()
+	+
+	*/
 
 	*/
 	*** +++ transitions +++ ***
@@ -367,7 +376,7 @@ esttab xtologit`data'				using "$outpath/t_regd_count-age-xtologit`data'", html 
 
 *** xtols *** (suitable if assuming count approximates unobserved health reasonably well)
 log using 	"$outpath/logs/log-t-regd_count-age-xtologit`data'.txt", text replace name(xtreg) 
-eststo xtreg`data': xtreg  `y' age				 	`ctrls'  if `sample'==1 & data=="`data'", re
+eststo xtreg`data': xtreg  `y' age				`ctrls'  if `sample'==1 & data=="`data'", re
 eststo xtreg`data'2: xtreg `y' age##cohortmin5 	`ctrls'  if `sample'==1 & data=="`data'", re // (not sure if it makes sense above also to interact with cohortmin5)
 estadd local regtype "xtreg"
 estimates save "$outpath/logs/t-regd_count-age-`data'estimates" , append // `append_estimates'

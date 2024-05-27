@@ -53,9 +53,10 @@ di 	"`agethreshold' `h_data'"
 		
 		
 		
-**# Bookmark #3 cheeck once more, also think why even recode medication use as absorbing. this no longer makes sense, absorbing is done for osteoporosis because in SHARE we only have medication on it...
+**# Bookmark #3 check once more, also think why even recode medication use as absorbing. this no longer makes sense, absorbing is done for osteoporosis because in SHARE we only have medication on it...
+**# Bookmark #1 20241505: I have removed osteo from list due to SHARE missing osteoer
 ***correct disease list (carry forward report as absorbing after onset)**
-local carryforwardlist "hibp diab heart lung osteo cancr strok arthr demen" // hiper psych (if disease is missing, block works nevertheless)
+local carryforwardlist "hibp diab heart lung  cancr strok arthr demen" // hiper psych (if disease is missing, block works nevertheless), osteo
 foreach var of local carryforwardlist{
 rename 		rx`var'r 	rx`var'r2 	
 rename 		  `var'er  	  `var'er2  
@@ -78,8 +79,8 @@ local eitherorcodes "osteo"
 	loc eitherord_list ""
 foreach var of local eitherorcodes { 
 gen 	d_`var' = 	`var'er==1 | rx`var'r==1    if `var'er<. | rx`var'r<. 
-	gen 	d2_`var' = 	`var'er==1           	if `var'er<. /*to check that d_`var' gives the same result. if someone does not have the disease, they should not report taking medications for it*/
-	sum 	d_`var' d2_`var' // to check that d_`var' gives the same result. if someone does not have the disease, they should not report taking medications for it 
+	*gen 	d2_`var' = 	`var'er==1           	if `var'er<. /*to check that d_`var' gives the same result. if someone does not have the disease, they should not report taking medications for it*/
+	*sum 	d_`var' d2_`var' // to check that d_`var' gives the same result. if someone does not have the disease, they should not report taking medications for it 
 	// d_`var' and d2_`var' are not the same for "psych", bc CESD/test defines ever had condition, while medication use is only available if the respondent reports to have been diagnosed with a psychatric condition. 
 	*loc   varlabel: var la `var'
 	*local extracted_label = substr("`varlabel'", 11, .) // use this if full disease name
@@ -113,7 +114,7 @@ loc onlyeverhad 	"hibp diab heart lung 	depr   cancr strok arthr demen"	 // deme
 	loc onlyeverhadlist ""
 foreach var of local onlyeverhad {
 gen 	d_`var' = 	`var'er==1 	if `var'er<.	/*only one condition*/
-la var 	d_`var' 	"ever had `var'"
+la var 	d_`var' 	"'ever had' `var'"
 loc onlyeverhadlist "`onlyeverhadlist' d_`var'" 
 }
 
@@ -223,7 +224,7 @@ sum 	diff_d_count*
 *** check if any condition is perfectly predicted by age (based on age-eligiblity to the question) ***
 log using 	"`out'logs/log-diseasebycohort.txt", text replace name(log)
 foreach d of local alldiseasesd  {
-tab cohort5 `d'	,m /*if nothing is odd, would seem okay. If we have more people entering later 
+tab agegrp5 `d'	,m /*if nothing is odd, would seem okay. If we have more people entering later 
 (e.g. inw1==0 & inw2==1, or based on hacohort), this could lead to a jump in the graphs */
 } 
 log close log
@@ -300,6 +301,7 @@ drop 	myvar
 	la var 		 `d'ever "ever has (between t and T) D: `d'"
 	sum onset`d' if `d'ever == 0 		 // if never had disease, onsetage should be missing (zero here)  
 	replace onset`d' = .m if `d'ever == 0 // and replace these cases to special missing value .m
+	drop  `d'ever 
 la var 	onset`d' "age of first onset (observed) for `d'"
 loc 	onsetlist 	"`onsetlist' onset`d'" 
 }

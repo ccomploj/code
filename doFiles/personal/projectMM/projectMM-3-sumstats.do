@@ -6,7 +6,7 @@ clear all		/*clears all data in memory*/
 
 
 ***choose data***
-loc data "HRS"
+loc data "SHARE"
 loc datalist 	"SHARE HRS ELSA"
 *foreach data of local datalist{
 
@@ -102,7 +102,7 @@ tab 	iwstatr wave  		// full sample
 	sum agemin if d_anyever==0
 	sum agemin if d_anyever_g2==0
 	tab diff_d_count
-	tab diff_miss_d_count
+	*	tab diff_miss_d_count
 
 	** does the "treatment" also become smaller/turn off ? **
 	tab d_any wave if post==1
@@ -144,7 +144,12 @@ tab 	iwstatr wave  		// full sample
 	
 
 
-
+	** generate average followup time **
+	gen myvar = time if inwt==1 // var takes value of time only if present in wave
+	bys ID: egen timemin = min(myvar)
+	bys ID: egen timemax = max(myvar)
+	gen followup = timemax - timemin 
+	sum followup if dataset=="SHARE" & sfull==1
 
 	
 	
@@ -163,7 +168,7 @@ tabstat d_*, statistics(count mean sd min max) columns(statistics) varwidth(20)
 **included diseases**
 *note: cannot export to .tex with little code. This option is available: https://www.statalist.org/forums/forum/general-stata-discussion/general/1642470-expxport-codebook-descriptives-to-latex
 qui log using 	"$outpath/logs/log-t_diseaselist.txt", text replace name(log) 
-codebook d_* timetonextdisease2, compact 
+*codebook d_* timetonextdisease2, compact 
 codebook diff_*,compact // assuming the first disease starts with hibp in the dataset
 sum d_anyatfirstobs if sfull & wave==inw_first & agemin==50  // ppl w/ >1 conditions at baseline
 sum d_anyatfirstobs if sfull & wave==inw_first & inrange(agemin,50,65) // ppl w/ >1 conditions at baseline
@@ -177,7 +182,7 @@ qui log close log
 *** Summary Statistics ***
 **************************	
 
-/*** general table (not summary statistics) ***
+/*** general table (these are not summary statistics) ***
 table iwstatr male, statistic (mean male) statistic(sd male) statistic(freq)	
 tabulate iwstatr, summarize(male)
 */	
@@ -187,9 +192,9 @@ keep if inwt==1 | dead==1 /*-listwise- drops obs if any of the variables is miss
 	
 loc frmt				"tex"
 loc continuous_meanonly	"iwyr rabyear radyear dead d_anyatfirstobs    male d_any" // /*mean only*/
-loc continuous 			"age `continuous_meanonly' d_count onsetage onsetage_g2 time_onsettodeath time_c* timetonextdisease2"  
-loc continuous2_alld	"onsetaged* radiag*" //   
-loc categorical			"i.raeducl i.cohort" //  i.raeducl i.cohort  married | i.mstatr
+loc continuous 			"age `continuous_meanonly' d_count onsetage onsetage_g2 " // timetonextdisease2 time_onsettodeath time_c* 
+loc continuous2_alld	"onsetd* radiag*" //   
+loc categorical			"i.raeducl i.agegrpmin10" //  i.raeducl i.agegrpmin10  married | i.mstatr
 loc columns 			"wave"
 *loc columnsmany		"s50to65 wave" // shealthy 
 *loc stratification 	"shealthy" // male
@@ -208,7 +213,7 @@ loc 	opt_table 		"nototals stat(frequency) stat(percent) sformat("%s%%" percent)
 	di "`hacohortl'"
 
 loc 	sample 		"sfull" // 
-foreach sample in 	"sfull" "shealthyatfirstobs" { //"shealthy"  /*comment out line if single sample*/
+*foreach sample in 	"sfull" { //"shealthy" "shealthyatfirstobs"  /*comment out line if single sample*/
 loc 	samplelabel: variable label `sample' /*adds var label to local*/
 loc 	notes 		""
 *loc 	notes 		"Notes: The Table shows (number of nonmissing observations) | (mean) | (sd) | The sample used is: `samplelabel'. The sample cohorts that are included are: `hacohortl'" // where cohorts 1 and 2 are included
@@ -225,7 +230,7 @@ collect export "$outpath/tab/`saveloc'/sumstats/o_sumstat_bywave`sample'", as(`f
 dtable  if `sample', `opt_dtable' notes(`notes') continuous(`continuous2_alld', stat(count mean sd)) 
 collect style tex , nobegintable /*keeps only fragment without \begin{table}*/
 	*//collect export "$outpath/tab/sumstats/o_sumstat_bywave`sample'", as(`frmt') tableonly append /*append table*/
-*collect export "$outpath/tab/`saveloc'/sumstats/o_sumstat_bywave`sample'_alld", as(`frmt') tableonly replace /*replace table*/
+collect export "$outpath/tab/`saveloc'/sumstats/o_sumstat_bywave`sample'_alld", as(`frmt') tableonly replace /*replace table*/
 } /*closes sample loop*/
 restore
 STOP

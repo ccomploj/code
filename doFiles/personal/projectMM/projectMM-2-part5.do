@@ -8,8 +8,8 @@ log close _all 	/*closes all open log files*/
 clear all		/*clears all data in memory*/
 
 ***define folder locations***
-loc data 		"HRS" // SHARE | ELSA (note for ELSA: part5-subDiseases may be incorrect because other diseases are included in measure)
-loc datalist 	"SHARE HRS ELSA"
+loc data 		"SHARE" // SHARE | ELSA (note for ELSA: part5-subDiseases may be incorrect because other diseases are included in measure)
+loc datalist 	"HRS SHARE ELSA"
 *foreach data of local datalist{
 
 **basic paths if no user specified
@@ -100,11 +100,19 @@ la var 	inwt "in curr. wave"
 gen 		 myvar 		= wave if inwt==1 
 bys ID: egen inw_first	= min(myvar) 
 drop 		 myvar
-
 li ID 		 wave inw* in 1/3
 *sum		 inw_first // not all participants are ever present in survey
 la var 		 inw_first "wave first observed"
 tab 		 inw_first wave,m 
+
+**inw_first (entry into survey - in calendar time)**
+gen 		 	myvar 			= time if inwt==1 
+bys ID: egen 	inw_first_yr	= min(myvar) 	// inw_first in years, not waves
+drop myvar
+li ID wave inw_first* time inwt age in 1/5
+tab inw_first_yr
+
+	
 
 **time since first observed (entry into survey)**
 *note: MUST generate BEFORE gap appears (e.g. before deleting wave 3 (Life-history) from the panel)*
@@ -129,11 +137,11 @@ loc 	timemin= r(min)	// take first survey year as starting time for 'time'
 di 		`timemin' 
 gen 			time_sincefirstwave = iwyr - `timemin' // interview time w.r.t. first survey time
 gen 		 	myvar 			= time_sincefirstwave if inwt==1 
-bys ID: egen 	inw_first_yr	= min(myvar) 	// inw_first in years, not waves
-gen 			timesincefirstobs = time_sincefirstwave - inw_first_yr if wave>=inw_first // time from first obs to iwyr
+bys ID: egen 	inw_first_time	= min(myvar) 	// inw_first in years, not waves
+gen 			timesincefirstobs = time_sincefirstwave - inw_first_time if wave>=inw_first // time from first obs to iwyr
 li 		ID wave time inwt inw_first* time_sincefirstwave timesincefirstobs  in 300/310
-drop 	myvar // time_sincefirstwave 
-*tab 	inw_first inw_first_yr,m // sometimes, first iwyr is different from first wave
+*tab 	inw_first inw_first_time,m // sometimes, first iwyr is different from first wave
+drop 	myvar inw_first_time // time_sincefirstwave 
 sum 	timesincefirstobs
 la var 	timesincefirstobs 	"time since first observed"
 tab 	iwyr timesincefirstobs
@@ -159,36 +167,43 @@ tab 	mstatr widowed,m /*(!) note: never married is set to missing for widowed*/
 tab 	mstatr nevmarriedr,m
 tab 	nevmarriedr nevmarried_c /*few people could have married, most likely though inaccurate responses*/
 
-**ages, cohorts (choice of definition depends on survey sampling eligibility)**
+**ages, agegroups (choice of definition depends on survey sampling eligibility)**
 // age first/last observed
 bys ID: egen agemin=min(age) 			/*age at first response across years*/ 
 bys ID: egen agemax=max(age) 			/*age at last  response across years*/ 
 la var 		 agemin "age when first observed"
 gen 		 ageatfirstobs = agemin
 
-**define cohorts (choice of definition depends on survey sampling eligibility)**
-egen 		cohort 		= cut(age),    at (`agethreshold',60,70,80,120) 	
-egen 		cohort5 	= cut(age),    at (`agethreshold',55,60,65,70,75,80,120)
-egen 		cohortmin 	= cut(agemin), at (`agethreshold',60,70,80,120)
-egen 		cohortmin5 	= cut(agemin), at (`agethreshold',55,60,65,70,75,80,120) 
+**define agegroups (choice of definition depends on survey sampling eligibility)**
+**# Bookmark #1 renamed: cohort = agegrp10, cohort5 = agegrpmin
+// egen 		cohort 		= cut(age),    at (`agethreshold',60,70,80,120) 	
+// egen 		cohort5 	= cut(age),    at (`agethreshold',55,60,65,70,75,80,120)
+// egen 		cohortmin 	= cut(agemin), at (`agethreshold',60,70,80,120)
+// egen 		cohortmin5 	= cut(agemin), at (`agethreshold',55,60,65,70,75,80,120) 
+egen 		agegrp10 	= cut(age),    at (`agethreshold',60,70,80,120) 	
+egen 		agegrp5 	= cut(age),    at (`agethreshold',55,60,65,70,75,80,120)
+egen 		agegrpmin10	= cut(agemin), at (`agethreshold',60,70,80,120)
+egen 		agegrpmin5 	= cut(agemin), at (`agethreshold',55,60,65,70,75,80,120) 
 **# Bookmark #3
-recode cohort 	  (`agethreshold' = 50)  // recode threshold to same number for figure file naming
-recode cohort5 	  (`agethreshold' = 50) 
-recode cohortmin  (`agethreshold' = 50)  
-recode cohortmin5 (`agethreshold' = 50) 
-tab 		cohort
-la de 		cohortl 	50  "ages `agethreshold'-59" 60 "ages 60-69" 70 "ages 70-79" 80 "ages 80+"      
-la de 		cohort5l 	50  "ages `agethreshold'-54" 55 "ages 55-59" 60 "ages 60-64" 65 "ages 65-69" 70 "ages 70-74" 75 "ages 75-79" 80 "ages 80+"        
-la de 		cohortminl  50  "ageatfirstobs: `agethreshold'-59" 60 "ageatfirstobs: 60-69" 70 "ageatfirstobs: 70-79" 80 "ageatfirstobs: 80+"       
-la de 		cohortmin5l 50 "ageatfirstobs: `agethreshold'-54" 55 "ageatfirstobs: 55-59" 60 "ageatfirstobs: 60-64" 65 "ageatfirstobs: 65-69" 70 "ageatfirstobs: 70-74" 75 "ageatfirstobs: 75-79" 80 "ageatfirstobs: 80+"       
-la val 		cohort 		cohortl // labels value labels
-la val 		cohort5 	cohort5l
-la val 		cohortmin 	cohortminl // labels value labels
-la val 		cohortmin5 	cohortmin5l // labels value labels
-la var 		cohort		"current age-cohort (10-year)"
-la var 		cohort5 	"current age-cohort (5-year)"
-tab			age		cohort, m
-tab			agemin 	cohort, m
+recode agegrp10 	(`agethreshold' = 50)  // recode threshold to same number for figure file naming
+recode agegrp5 	  	(`agethreshold' = 50) 
+recode agegrpmin10  (`agethreshold' = 50)  
+recode agegrpmin5 	(`agethreshold' = 50) 
+*tab 		agemingrp10
+la de 		agegrp10l 	50  "ages `agethreshold'-59" 60 "ages 60-69" 70 "ages 70-79" 80 "ages 80+"      
+la de 		agegrp5l 	50  "ages `agethreshold'-54" 55 "ages 55-59" 60 "ages 60-64" 65 "ages 65-69" 70 "ages 70-74" 75 "ages 75-79" 80 "ages 80+"        
+la de 		agegrpminl  50  "ageatfirstobs: `agethreshold'-59" 60 "ageatfirstobs: 60-69" 70 "ageatfirstobs: 70-79" 80 "ageatfirstobs: 80+"       
+la de 		agegrpmin5l 50 "ageatfirstobs: `agethreshold'-54" 55 "ageatfirstobs: 55-59" 60 "ageatfirstobs: 60-64" 65 "ageatfirstobs: 65-69" 70 "ageatfirstobs: 70-74" 75 "ageatfirstobs: 75-79" 80 "ageatfirstobs: 80+"       
+la val 		agegrp10 	agegrp10l // labels value labels
+la val 		agegrp5 	agegrp5l
+la val 		agegrpmin10 agegrpminl // labels value labels
+la val 		agegrpmin5 	agegrpmin5l // labels value labels
+la var 		agegrp10	"current-age group (10-year)"
+la var 		agegrp5 	"current-age group (5-year)"
+la var 		agegrpmin10	"ageatfirstobs group (10-year)"
+la var 		agegrpmin5 	"ageatfirstobs group (5-year)"
+tab			age		agegrp10, m
+tab			agemin 	agegrp5, m
 
 
 
@@ -319,6 +334,7 @@ include  "`github_p5subdiseases'" // include github file
 		egen 	radiagheart2 = rowmin(radiagchf radiaghrtr rafrhrtatt)  // rechrtattr not used (most recent heart attack) /* -bys ID- not helpful here*/
 		bys ID: egen myvar   = min(radiagheart2) // replace with minimum value 
 		replace radiagheart2 = myvar // make sure the first ever reported onset is used (relevant if rechrtattr ('most recent diagnosis') is not missing)
+		drop 	myvar
 		order `var'2, after(`var')
 		rename `var' `var'3 // rename to a copy  
 			drop 	`var'3 // or drop it instead
