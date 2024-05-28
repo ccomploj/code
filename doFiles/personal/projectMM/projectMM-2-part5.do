@@ -8,7 +8,7 @@ log close _all 	/*closes all open log files*/
 clear all		/*clears all data in memory*/
 
 ***define folder locations***
-loc data 		"SHARE" // SHARE | ELSA (note for ELSA: part5-subDiseases may be incorrect because other diseases are included in measure)
+loc data 		"HRS" // SHARE | ELSA (note for ELSA: part5-subDiseases may be incorrect because other diseases are included in measure)
 loc datalist 	"HRS SHARE ELSA"
 *foreach data of local datalist{
 
@@ -21,7 +21,8 @@ if "`c(username)'" == "P307344" { // UWP server
 loc cv 		"X:/My Documents/XdrvData/`data'/"
 }
 if "`c(username)'" == "User" { // my personal PC
-loc	cv 		"G:/My Drive/drvData/`data'/"
+*loc	cv 		"G:/My Drive/drvData/`data'/"
+loc	cv 		"C:/Users/User/Documents/RUG/`data'/"
 loc github_p5subdiseases "C:/Users/User/Documents/GitHub/code/doFiles/personal/projectMM/projectMM-2-part5-subDiseases.do" // on my device use offline file
 }
 

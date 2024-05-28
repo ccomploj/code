@@ -29,16 +29,18 @@ timer on 1 				// counts the duration of file computation
 *PART 1*: Adapt this section to the specific HRS-type harmonized dataset from the g2aging
 *note: you do not have to change any other section except "Part 1", and the variables in "Part 3"
 ****************************************************************************************************
+***Choose Data***
+loc data 		"SHARE" 
 ***define folder locations***
-loc data 		"SHARE" // SHARE | ELSA (note for ELSA part5-subDiseases may be incorrect because other diseases are present)
-		if "`c(username)'" == "P307344" { // UWP server
-		loc cv 		"X:/My Documents/XdrvData/`data'/"
-		*gl  outpath "\\Client\C$\Users\User\Documents\GitHub\2-projectMM-`data'\files"
-		}
-		else {
-		loc	cv 		"G:/My Drive/drvData/`data'/"
-		*gl 	outpath "C:/Users/User/Documents/GitHub/2-projectMM-`data'/files" 	
-		}
+if "`c(username)'" == "P307344" { // UWP server
+loc cv 		"X:/My Documents/XdrvData/`data'/"
+	*gl  outpath "\\Client\C$\Users\User\Documents\GitHub\2-projectMM-`data'\files"
+}
+else {
+*loc	cv 		"G:/My Drive/drvData/`data'/"
+loc	cv 		"C:/Users/User/Documents/RUG/`data'/"
+	*gl 	outpath "C:/Users/User/Documents/GitHub/2-projectMM-`data'/files" 	
+}
 loc h_data 		"`cv'`data'data/harmon/" 		  // harmonized data folder location
 loc out 		"`cv'`data'output/"				  // output folder location
 

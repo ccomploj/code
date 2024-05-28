@@ -37,7 +37,8 @@ if "`c(username)'" == "P307344" { // UWP server
 loc cv 		"X:/My Documents/XdrvData/`data'/"
 }
 else {
-loc	cv 		"G:/My Drive/drvData/`data'/" // own PC
+*loc	cv 		"G:/My Drive/drvData/`data'/" // own PC
+loc	cv 		"C:/Users/User/Documents/RUG/`data'/"
 }
 
 *loc cv 			"G:/My Drive/drvData/`data'/" 	  // main folder location

@@ -6,7 +6,7 @@ clear all		/*clears all data in memory*/
 
 
 ***choose data***
-loc data 		"SHARE"
+loc data 		"ELSA"
 loc datalist 	"SHARE ELSA HRS"
 *foreach data of local datalist{
 
@@ -74,7 +74,7 @@ loc wavelast 		"9" 	// select survey-specific last wave
 	drop if hacohort>2 & dataset=="SHARE"  
 }	
 drop if agemin<`agethreshold'	
-	pause
+	*STOP /*comment to continue running file*/
 **********************
 set graphics on 
 *set graphics off /*disables graphics (but also -graph combine- commands) */
@@ -178,34 +178,34 @@ pause
 */
 
 
-/** histogram of first onset, for each disease separately **
+** histogram of first onset, for each disease separately **
 preserve // bc generates new vars
 loc 	grlist ""
 local 	templist "$diseasecodelist" // always check chosen diseases are up to date
 foreach y of local templist {
 la var radiag`y' "self-rep. onset: `y'"
 la var onsetd_`y' "observed onset: `y'"
-hist radiag`y'	if `sample'==1, `opt_global' name(h`y')
-loc  histlist 	"`histlist' h`y'"		
-	hist onsetd_`y'			if `sample'==1, `opt_global' name(h2`y')
-	loc  histlist_observed 	"`histlist_observed' h2`y'"		
+// hist radiag`y'	if `sample'==1, `opt_global' name(h`y')
+// loc  histlist 	"`histlist' h`y'"		
+// 	hist onsetd_`y'			if `sample'==1, `opt_global' name(h2`y')
+// 	loc  histlist_observed 	"`histlist_observed' h2`y'"		
 kdensity  radiag`y', gen(point`y' density`y') bw(2) nograph 
 loc kdenlist 	"`kdenlist' (line density`y' point`y')"
 	kdensity  onsetd_`y', gen(point`y'_obs density`y'_obs) bw(2) nograph 
 	loc kdenlist_observed 	"`kdenlist_observed' (line density`y'_obs point`y'_obs)"
 }
-di	 		"`histlist'"
-gr combine `histlist', 				 title("histogram: first onset by disease (self-reported)") name(h1)
-gr export 	"$outpath/fig/`saveloc'/g_hist_`sample'_radiagonsetalld.pdf", replace // quality(100)
-	di	 		"`histlist_observed'"
-	gr combine `histlist_observed',  title("histogram: first onset by disease (observed)") name(h2)
-	gr export 	"$outpath/fig/`saveloc'/g_hist_`sample'_onsetalld.pdf", replace // quality(100)
+// di	 		"`histlist'"
+// gr combine `histlist', 				 title("histogram: first onset by disease (self-reported)") name(h1)
+// gr export 	"$outpath/fig/`saveloc'/g_hist_`sample'_radiagonsetalld.pdf", replace // quality(100)
+// 	di	 		"`histlist_observed'"
+// 	gr combine `histlist_observed',  title("histogram: first onset by disease (observed)") name(h2)
+// 	gr export 	"$outpath/fig/`saveloc'/g_hist_`sample'_onsetalld.pdf", replace // quality(100)
 di 			"`kdenlist'"
 twoway 		`kdenlist', xla(0(10)80) title("density: first onset by disease (self-reported)") name(k1)
-gr export 	"$outpath/fig/`saveloc'/g_kden_`sample'_radiagonsetalld.jpg", replace quality(100)
+gr export 	"$outpath/fig/`saveloc'/g_kden_`sample'_radiagonsetalld.pdf", replace 
 	di 			"`kdenlist_observed'"
 	twoway 		`kdenlist_observed', title("density: first onset by disease (observed)") name(k2)
-	gr export 	"$outpath/fig/`saveloc'/g_kden_`sample'_onsetalld.jpg", replace quality(100)
+	gr export 	"$outpath/fig/`saveloc'/g_kden_`sample'_onsetalld.pdf", replace 
 **# Bookmark #2 could add here a similar density plot now, but with (different) combinations of diseases for each age
 restore 
 pause 
@@ -263,8 +263,8 @@ gr export 	"$outpath/fig/main/g_logit_byage-male-`sample'-alld.pdf", replace
 	preserve // plot mean predictions from above
 	collapse (mean) `xblist', by(age)
 	twoway `connectedlist', title("Logistic predictions of age") name(xb)
-	gr export 	"$outpath/fig/main/g_logit_byage-`sample'-alld-xb.jpg", replace quality(100)
-		gr export 	"C:\Users\User\Documents\GitHub\2-projectMM-SHARE\files/figELSA/g_logit_byage-sfull-alld-xb.jpg", replace quality(100)
+	*gr export 	"$outpath/fig/main/g_logit_byage-`sample'-alld-xb.jpg", replace 
+	*	gr export 	"C:\Users\User\Documents\GitHub\2-projectMM-SHARE\files/figELSA/g_logit_byage-sfull-alld-xb.jpg", replace quality(100)
 	restore 
 pause 
 */
