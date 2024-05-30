@@ -6,8 +6,6 @@ clear all		/*clears all data in memory*/
 
 ***choose data***
 loc data 		"SHARE"
-	*loc append_iterationlog "replace" 		
-	/*short iteration log at the end of the loop*/ 
 loc datalist 	"SHARE ELSA HRS"
 *foreach data of local datalist {
 
@@ -18,8 +16,8 @@ loc outloc 	"`cv'" // to save locally
 *loc outloc "\\Client\C$\Users\User\Documents\GitHub\2-projectMM-`data'\" // from UWP save directly to PC (only works with full version of Citrix)
 }
 else {
-loc	cv 		"G:/My Drive/drvData/`data'/" // own PC
-	*loc cv 	"C:\Users\User\Documents\RUG/`data'"
+*loc cv 		"G:/My Drive/drvData/`data'/" // own PC
+loc	cv 		"C:/Users/User/Documents/RUG/`data'/"
 loc	outloc 	"C:/Users/User/Documents/GitHub/2-projectMM-`data'" // do not overwrite existing output in the compiled output	
 }
 gl 	outpath 	"`outloc'/files" /*output folder location*/
@@ -81,51 +79,12 @@ drop if agemin<`agethreshold'
 ****************************************************************************************************
 *Part 7a*: Regression (define .do file)
 ****************************************************************************************************	
-
 *cd  	"$outpath/tab"
-
-
-	// 	*** split by regions ***
-	// 	if dataset == "ELSA" {
-	// 	gen countryID = "EN"
-	// 	}
-	// 	gen 	region = "NA"
-	// 	replace	region = "North"  		 if (countryID=="AT"|countryID=="Bf"|countryID=="Bn"|countryID=="Cf"|countryID=="Cg"|countryID=="Ci" | countryID=="DE"|countryID=="DK"|countryID=="EE"|countryID=="FI"|countryID=="FR"|countryID=="IE"        |countryID=="Ia" |countryID=="Ih" |countryID=="Ir"     |countryID=="LT"|countryID=="LU"|countryID=="LV" |countryID=="NL" |countryID=="SE"       ///
-	// 	| countryID=="EN") // add EN
-	// 	replace region = "Center-East"   if (countryID=="BG"|countryID=="CZ"|countryID=="HR"|countryID=="HU"|countryID=="Cf" |countryID=="PL" |countryID=="RO" |countryID=="SI" |countryID=="SK" )
-	//  	replace region = "South" 		 if (countryID=="CY"|countryID=="ES"|countryID=="IT"|countryID=="MT"|countryID=="PT")	
-	// 	qui log using 	"$outpath/logs/log-regionclassification.txt", text replace name(log) 
-	// 	tab countryID region,m
-	// 	log close log
-	// // 	label 	define regionl 1 "North-East" 2 "East" 3 "Center" 4 "West"
-	// // 	*label   define regionl 1 "NE" 2 "E" 3 "C" 4 "W"
-	// // 	label	value  region regionl
-
-
-
-*** additional variables *** 
-tab raeducl, gen(raeduclcat) // separate variables needed for regoprob2
-drop 	raeduclcat1
-rename 	raeduclcat2 educ_vocational
-rename  raeduclcat3 educ_university
-
 
 *** definition of global vars ***
 loc sample "sfull"
 loc samplelabel: variable label `sample'
 set scheme s1color	
-
-
-/*** packages needed for regression ***
-ssc install gologit2 // search and install gologit2
-rnethelp "http://fmwww.bc.edu/RePEc/bocode/o/oparallel.sthlp" // for brant test
-findit spost13 // needed for -mtable-, but also brant test	
-*brant test (only for ologit): https://www.statalist.org/forums/forum/general-stata-discussion/general/1335252-ologit-and-brant-test
-ssc install regoprob2
-ssc install seqlogit
-search st0359 // DH model (xtdhreg)
-findit mdraws // DH model required package
-*/
 
 
 ****************************************************************************************************
@@ -170,11 +129,6 @@ STOP
 	tobit onsetage `ctrl', ll()
 	+
 	*/
-
-	*/
-	*** +++ transitions +++ ***
-	loc ctrls "i.raeducl i.male" // i.countatfirstobs
-	
 	
 	
 	/*** 2y-transition probabilites, conditional on previous value ***
@@ -301,10 +255,6 @@ STOP
 	esttab xtregSHARE xtregELSA  using "C:/Users/User/Documents/GitHub/2-projectMM-SHARE/files/t_regd_count-age-xtregSHAREELSA-firstage", tex replace  `esttab_opt' note("Controls include `ctrls'")  keep(age *#c.age)   // stats(N controls)
 	STOP
 	*/
-
-	** ordered logic as De nardi
-	loc ctrls "i.duration"
-	ologit 	`y' age c.age#c.age `ctrls' if `sample'==1 & dataset=="`data'", vce(robust)
 	
 
 ++++++		STOP // here to not overwrite current output
@@ -323,8 +273,8 @@ timer off  	2
 timer list  2
 loc timerlist "`timerlist' 2"
 qui log close regoprob2
-esttab regoprob2`data' 			using "$outpath/t_regd_count-age-regoprob2`data'", tex replace
-esttab regoprob2`data' 			using "$outpath/t_regd_count-age-regoprob2`data'", html replace
+esttab regoprob2`data' 			using "$outpath/reg/t_regd_count-age-regoprob2`data'", tex replace
+esttab regoprob2`data' 			using "$outpath/reg/t_regd_count-age-regoprob2`data'", html replace
 *STOP
 */
 
@@ -340,8 +290,8 @@ timer off  	3
 timer list  3
 loc timerlist "`timerlist' 3"
 qui log close gologit2
-esttab gologit2`data'     		using "$outpath/t_regd_count-age-gologit2`data'", tex replace
-esttab gologit2`data'			using "$outpath/t_regd_count-age-gologit2`data'", html replace
+esttab gologit2`data'     		using "$outpath/reg/t_regd_count-age-gologit2`data'", tex replace
+esttab gologit2`data'			using "$outpath/reg/t_regd_count-age-gologit2`data'", html replace
 */
 
 ** ologit ** 
@@ -351,8 +301,8 @@ estadd local regtype "ologit"
 estimates save "$outpath/logs/t-regd_count-age-`data'estimates" , append //  `append_estimates'
 *brant, detail // brant only works on ologit; not xtologit. xtologit and ologit are not identical when only 1 time period is used; brant does not work with d_count>=8 because of perfect prediction 
 qui log close 	ologit 
-esttab ologit`data' 	    	using "$outpath/t_regd_count-age-ologit`data'", tex replace
-esttab ologit`data'				using "$outpath/t_regd_count-age-ologit`data'", html replace
+esttab ologit`data' 	    	using "$outpath/reg/t_regd_count-age-ologit`data'", tex replace
+esttab ologit`data'				using "$outpath/reg/t_regd_count-age-ologit`data'", html replace
 *STOP
 */
 
@@ -363,8 +313,8 @@ eststo xtologit`data': xtologit 	`y' age `ctrls'	if `sample'==1 & dataset=="`dat
 estadd local regtype "xtologit"
 estimates save "$outpath/logs/t-regd_count-age-`data'estimates" , append // `append_estimates'
 qui log close 	xtologit 
-esttab xtologit`data' 		    	using "$outpath/t_regd_count-age-xtologit`data'", tex replace
-esttab xtologit`data'				using "$outpath/t_regd_count-age-xtologit`data'", html replace
+esttab xtologit`data' 		    	using "$outpath/reg/t_regd_count-age-xtologit`data'", tex replace
+esttab xtologit`data'				using "$outpath/reg/t_regd_count-age-xtologit`data'", html replace
 
 *margins, at(age=(50(2)80))
 *margins, dydx(`marginsvar') // at(male = (1 0)) 
@@ -391,10 +341,6 @@ esttab *`data' using "$outpath/t_regd_count-age-combined`data'", html replace st
 
 
 
-
-*di "`append_iterationlog'" // could have single file if path specified as single location
-log using 				"$outpath/logs/iterationlog.txt", text replace name(iterationlog) 
-*loc append_iterationlog "append" /*append after this*/ 
 timer 					off  1
 di "`timerlist'"
 foreach t of local timerlist {
@@ -402,32 +348,8 @@ timer	list `t' // timers have to be listed sequentially
 }
 di 						"Loop with `data' completed." 
 estimates dir
-log close iterationlog
-restore
-}
-
 STOP
-
 ++
-
-
-
-
-
-
-
-
-
-
-	/*** combine results to a single table ***
-	esttab m1 m2 panel1 using "$outpath/t_regd_count-age`data'", tex replace
-	esttab m1 m2 panel1 using "$outpath/t_regd_count-age`data'", html replace
-	*/
-
-	* Display the results
-	//	estat ic		
-
-
 
 
 

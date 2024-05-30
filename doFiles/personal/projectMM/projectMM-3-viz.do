@@ -6,7 +6,7 @@ clear all		/*clears all data in memory*/
 
 
 ***choose data***
-loc data 		"ELSA"
+loc data 		"HRS"
 loc datalist 	"SHARE ELSA HRS"
 *foreach data of local datalist{
 
@@ -18,8 +18,8 @@ loc outloc 	"`cv'" // to save locally
 *loc outloc "\\Client\C$\Users\User\Documents\GitHub\2-projectMM-`data'\" // from UWP save directly to PC (only works with full version of Citrix)
 }
 else {
-loc	cv 		"G:/My Drive/drvData/`data'/" // own PC
-	*loc cv 	"C:\Users\User\Documents\RUG/`data'"
+*loc cv 		"G:/My Drive/drvData/`data'/" // own PC
+loc	cv 		"C:/Users/User/Documents/RUG/`data'/"
 loc	outloc 	"C:/Users/User/Documents/GitHub/2-projectMM-`data'" 	
 }
 gl 	outpath 	"`outloc'/files" /*output folder location*/
@@ -84,6 +84,16 @@ cd  "$outpath/fig"
 ****************************************************************************************************
 *Part 7a*: Vizualization (Do File Setup, variable and local definitions) 
 ****************************************************************************************************	
+*** define locals to apply to entire file ***
+set scheme s1color
+*loc opt_global 		"scheme(s1color)"
+loc sample 			"sfull" // sbalanced
+loc samplelabel: variable label `sample'
+gl  diseasecodelist "hibp diab heart lung depr osteo cancr strok arthr demen" // psych
+	gl  diseaselist 	"d_hibp d_diab d_heart d_lung d_depr d_osteo d_cancr d_strok d_arthr d_demen"
+
+
+
 *** define additional variables ***
 *** age groups ***
 gen 	agegrp 	= age
@@ -91,43 +101,36 @@ replace agegrp 	= `upperthreshold' if agegrp>`upperthreshold' & agegrp<. /*group
 la var  agegrp 	"age"
 *tabstat age, by(agegrp) stats(min max)
 
-*** death year ***
-// clonevar radyear2 = radyear 
-// replace  radyear2=0 if mi(radyear2) // not dead people will have 
-egen 	radcohort 	= cut(radage),    at (50,60,70,80,120)
-replace radcohort = 0 if everdead==0
-la de 	radcohortl 	0 "never dead" 50  "died at 50-59" 60 "died at 60-69" 70 "died at 70-79" 80 "died at 80+"      
-la val 	radcohort radcohortl
-*tab radage radcohort
 
-*** generate duration with c conditions ***
-gen duration = 0 if d_count>0 & !mi(d_count) // only when count is 1 and not missing 
-sum d_count, meanonly
-loc d_count_max = r(max) // maximum disease count across i
-forval i=1/`d_count_max'{
-bys ID (time): replace duration = cond(d_count==`i',   cond(diff_d_count==0, duration[_n-1]+1,1),duration)
-	}
-replace duration = . if mi(d_count) // if count missing, duration should be missing
-la var duration 		"consecutive time periods spent with c conditions"
-**show duration correctly generated**
-sum duration*
-tab duration time
-sum time, meanonly 
-loc timediff = (r(max)-r(min))/2
-di "`timediff'" // should equal to the maximum of duration above
-	*	bro ID wave d_count* diff_d_count* duration if ID==10013010
-	*	bro ID wave d_count* diff_d_count* duration if ID==10063010
-*li ID time d_count duration in 1/50 if !mi(d_count)
-	**set durations to missing if left-censored (do not know the 'true' duration)**
-	bys ID: egen d_count_min = min(d_count)
-		*replace duration = . if d_count_min==d_count // do not know if entered survey already with condition
-	gen		 duration_uncens = duration if d_count_min!=d_count
-	la var 	 duration_uncens	"consecutive time periods spent with c conditions (uncensored)"
+
+	*** generate duration with c conditions ***
+	gen duration = 0 if d_count>0 & !mi(d_count) // only when count is 1 and not missing 
+	sum d_count, meanonly
+	loc d_count_max = r(max) // maximum disease count across i
+	forval i=1/`d_count_max'{
+	bys ID (time): replace duration = cond(d_count==`i',   cond(diff_d_count==0, duration[_n-1]+1,1),duration)
+		}
+	replace duration = . if mi(d_count) // if count missing, duration should be missing
+	la var duration 		"consecutive time periods spent with c conditions"
+	**show duration correctly generated**
 	sum duration*
-**# Bookmark #3 check this for SHARE. Sth with duration is generated incorrectly when there is a gap
-	*bro ID wave d_count_min d_count duration duration_uncens	
-	*++
-	*/
+	tab duration time
+	sum time, meanonly 
+	loc timediff = (r(max)-r(min))/2
+	di "`timediff'" // should equal to the maximum of duration above
+		*	bro ID wave d_count* diff_d_count* duration if ID==10013010
+		*	bro ID wave d_count* diff_d_count* duration if ID==10063010
+	*li ID time d_count duration in 1/50 if !mi(d_count)
+		**set durations to missing if left-censored (do not know the 'true' duration)**
+		bys ID: egen d_count_min = min(d_count)
+			*replace duration = . if d_count_min==d_count // do not know if entered survey already with condition
+		gen		 duration_uncens = duration if d_count_min!=d_count
+		la var 	 duration_uncens	"consecutive time periods spent with c conditions (uncensored)"
+		sum duration*
+	**# Bookmark #3 check this for SHARE. Sth with duration is generated incorrectly when there is a gap
+		*bro ID wave d_count_min d_count duration duration_uncens	
+		*++
+		*/
 
 
 	/**count from first onset onwards for durations, ignoring "recovery" **	
@@ -144,15 +147,6 @@ di "`timediff'" // should equal to the maximum of duration above
 **# Bookmark #1
 *xtile incomegroups = hhinc, nq(3)
 
-
-*** define locals to apply to entire file ***
-set scheme s1color
-loc opt_global 		"scheme(s1color)"
-*loc jpghighquality  "quality(100)" // for jpg files higher quality
-loc sample 			"sfull" // sbalanced
-loc samplelabel: variable label `sample'
-gl  diseasecodelist "hibp diab heart lung depr osteo cancr strok arthr demen" // psych
-	gl  diseaselist 	"d_hibp d_diab d_heart d_lung d_depr d_osteo d_cancr d_strok d_arthr d_demen"
 
 
 	
@@ -174,41 +168,92 @@ hist `y'	if `sample'==1, `opt_global' name(h`y')
 gr export 	"$outpath/fig/`saveloc'/g_hist_`sample'_`y'.jpg", replace quality(100) 
 }
 restore
-pause
+STOP
 */
 
 
-** histogram of first onset, for each disease separately **
-preserve // bc generates new vars
-loc 	grlist ""
+***********************************************************************
+*** +++ Histogram/Density of onset, for each disease separately +++ *** 
+***********************************************************************
+*preserve // bc generates new vars
+ 		*sample 10
+		gen 	sex = "male" 	if male==1
+		replace sex = "female" 	if male==0
+*loc 	grlist ""
 local 	templist "$diseasecodelist" // always check chosen diseases are up to date
 foreach y of local templist {
-la var radiag`y' "self-rep. onset: `y'"
-la var onsetd_`y' "observed onset: `y'"
-// hist radiag`y'	if `sample'==1, `opt_global' name(h`y')
-// loc  histlist 	"`histlist' h`y'"		
-// 	hist onsetd_`y'			if `sample'==1, `opt_global' name(h2`y')
-// 	loc  histlist_observed 	"`histlist_observed' h2`y'"		
-kdensity  radiag`y', gen(point`y' density`y') bw(2) nograph 
-loc kdenlist 	"`kdenlist' (line density`y' point`y')"
-	kdensity  onsetd_`y', gen(point`y'_obs density`y'_obs) bw(2) nograph 
-	loc kdenlist_observed 	"`kdenlist_observed' (line density`y'_obs point`y'_obs)"
+la var radiag`y' 	"slfr. onset `y'"
+la var onsetd_`y'	"obs. onset: `y'"
 }
-// di	 		"`histlist'"
-// gr combine `histlist', 				 title("histogram: first onset by disease (self-reported)") name(h1)
-// gr export 	"$outpath/fig/`saveloc'/g_hist_`sample'_radiagonsetalld.pdf", replace // quality(100)
-// 	di	 		"`histlist_observed'"
-// 	gr combine `histlist_observed',  title("histogram: first onset by disease (observed)") name(h2)
-// 	gr export 	"$outpath/fig/`saveloc'/g_hist_`sample'_onsetalld.pdf", replace // quality(100)
-di 			"`kdenlist'"
-twoway 		`kdenlist', xla(0(10)80) title("density: first onset by disease (self-reported)") name(k1)
-gr export 	"$outpath/fig/`saveloc'/g_kden_`sample'_radiagonsetalld.pdf", replace 
-	di 			"`kdenlist_observed'"
-	twoway 		`kdenlist_observed', title("density: first onset by disease (observed)") name(k2)
-	gr export 	"$outpath/fig/`saveloc'/g_kden_`sample'_onsetalld.pdf", replace 
-**# Bookmark #2 could add here a similar density plot now, but with (different) combinations of diseases for each age
+/*** histogram ***
+foreach y of local templist {
+hist radiag`y'	if `sample'==1, `opt_global' name(h`y')
+loc  histlist 	"`histlist' h`y'"		
+	hist onsetd_`y'			if `sample'==1, `opt_global' name(h2`y')
+	loc  histlist_observed 	"`histlist_observed' h2`y'"		
+}	
+di	 		"`histlist'"
+gr combine `histlist', 				 title("histogram: first onset by disease (self-reported)") name(h1)
+*gr export 	"$outpath/fig/`saveloc'/g_hist_`sample'_radiagonsetalld.pdf", replace 
+di	 		"`histlist_observed'"
+gr combine `histlist_observed',  title("histogram: first onset by disease (observed)") name(h2)
+*	gr export 	"$outpath/fig/`saveloc'/g_hist_`sample'_onsetalld.pdf", replace 
+*/
+*** density ***	
+foreach sex in male female {
+foreach y of local templist {	
+	// kdensity  radiag`y', gen(point`y' density`y') bw(2) nograph /*for non-sex-specific*/ 
+	// loc kdenlist 	"`kdenlist' (line density`y' point`y')"	
+	// kdensity  onsetd_`y', gen(point`y'_obs density`y'_obs) bw(2) nograph 
+	// loc kdenlist_observed 	"`kdenlist_observed' (line density`y'_obs point`y'_obs)"
+kdensity radiag`y' if sex == "`sex'", gen(point`y'`sex' density`y'`sex') bw(2) nograph 
+loc kdenlist`sex' 		"`kdenlist`sex'' 	 (line density`y'`sex' point`y'`sex')"
+kdensity onsetd_`y' if sex == "`sex'", gen(point`y'_obs`sex' density`y'_obs`sex') bw(2) nograph 
+loc kdenlist_obs`sex' 	"`kdenlist_obs`sex'' (line density`y'_obs`sex' point`y'_obs`sex')"
+** change label of resulting densities **
+loc 	radiag`y'label: var label radiag`y'
+la var 	density`y'`sex' "`radiag`y'label'"
+loc 	onsetd_`y'label: var label onsetd_`y'
+la var 	density`y'_obs`sex' "`onsetd_`y'label'"
+}
+}
+	// 	di 			"`kdenlist'" /*for non-sex-specific*/
+	// 	twoway 		`kdenlist', xla(0(10)80) title("density: first onset by disease (self-reported)") name(k1)
+	// 	gr export 	"$outpath/fig/`saveloc'/g_kden_`sample'_radiagonsetalld.pdf", replace 
+	// 	di 			"`kdenlist_observed'"
+	// 	twoway 		`kdenlist_observed', title("density: first onset by disease (observed)") name(k2)
+	// 	gr export 	"$outpath/fig/`saveloc'/g_kden_`sample'_onsetalld.pdf", replace 
+di "`kdenlistmale'"
+twoway `kdenlistmale', xla(0(10)80) 	title("male") name(k1male)
+twoway `kdenlistfemale', xla(0(10)80) 	title("female") name(k1female)
+gr combine k1male k1female, title("density: first onset by disease (self-reported)") ycommon name(k1bysex)
+gr export 	"$outpath/fig/`saveloc'/g_kden_radiagonsetalld_bysex.pdf", replace 
+twoway `kdenlist_obsmale',  	title("male") name(k2male)
+twoway `kdenlist_obsfemale', 	title("female") name(k2female)
+gr combine k2male k2female, title("density: first onset by disease (observed)") ycommon name(k2bysex)
+gr export 	"$outpath/fig/`saveloc'/g_kden_onsetalld_bysex.pdf", replace 
 restore 
-pause 
+
+*** density of higher order first onset ***	
+// foreach sex in male female {
+foreach y of local templist {	
+// kdensity radiag`y' if sex == "`sex'", gen(point`y'`sex' density`y'`sex') bw(2) nograph 
+// loc kdenlist`sex' 		"`kdenlist`sex'' 	 (line density`y'`sex' point`y'`sex')"
+kdensity onsetd_`y' if sex == "`sex'", gen(point`y'_obs`sex' density`y'_obs`sex') bw(2) nograph 
+loc kdenlist_obs`sex' 	"`kdenlist_obs`sex'' (line density`y'_obs`sex' point`y'_obs`sex')"
+** change label of resulting densities **
+// loc 	radiag`y'label: var label radiag`y'
+// la var 	density`y'`sex' "`radiag`y'label'"
+loc 	onsetd_`y'label: var label onsetd_`y'
+la var 	density`y'_obs`sex' "`onsetd_`y'label'"
+}
+}
+
+STOP
+**# Bookmark #2 could add here a similar density plot now, but with (different) combinations of diseases for each age
+
+
+
 */
 
 	/**bar chart with ever had condition **
@@ -233,7 +278,7 @@ pause
 	*/	
 
 
-** ++ logistic prediction over age for each disease type ((?)plot smoothes out mortality) ++ **
+/** ++ logistic prediction over age for each disease type ((?)plot smoothes out mortality) ++ **
 loc 	glist 	""
 loc 	connectedlist ""
 loc   	y 		"d_any"
@@ -268,6 +313,8 @@ gr export 	"$outpath/fig/main/g_logit_byage-male-`sample'-alld.pdf", replace
 	restore 
 pause 
 */
+
+
 
 
 
@@ -334,11 +381,11 @@ pause
 *** +++ Disease count over age/time +++ *** 
 *******************************************
 
-**recode age and timesincefirstobs if too few observations fall in this category and SEs large**
+**recode age and timesincefirstobs if too few observations fall in this category and SEs large (for agemin<=70 sample**
 levelsof agegrpmin5, local(levels)
 foreach  cohort of   local levels {
 qui 	sum time, meanonly 
-loc 	timerange = r(max)-r(min)+5 /*maximum time an id is observed (5 added for cohort)*/
+loc 	timerange = r(max)-r(min)+5 /*maximum time an id is observed (5 added for agemingrp)*/
 di 		"`timerange'"
 replace age = `cohort'+`timerange' if age >`cohort'+`timerange' & age<. & agegrpmin5==`cohort' 
 replace timesincefirstobs = `timerange'-5 if timesincefirstobs<. & timesincefirstobs>`timerange'-5
@@ -350,7 +397,9 @@ loc 	ylabel: 	var label `y'
 loc 	cat  	  	"agegrpmin5" // male, raeducl, countatfirstobs
 loc 	timevar 	"age" /*use age dummies*/
 loc 	xla 		"xla(50(5)90)" /*needed for separate sub-plots*/
-loc 	xlarotate	""	
+// loc 	xlarotate	""	
+loc 	opt_marginsplot "ytitle("Predicted (`ylabel')")" // noci  
+loc 	ctrls  "`ctrl'"
 /** xtline (crude data: identical to predictions (profile plots) from margins, but without CI) **
 *preserve // cannot preserve data twice in stata
 collapse (mean) `y' = `y' 	(count) `y'_freq = `y' if `sample'==1 `sampleaddition' , by(`cat' `timevar') 
@@ -359,8 +408,6 @@ xtline 	 `y', overlay i(`cat') t(`timevar') ytitle("mean `ylabel'") `opt_global'
 *gr export 	"$outpath/fig/main/g_crude_by`timevar'-`cat'_`sample'_d_count_`cohort'.jpg", replace quality(100)
 *restore
 */
-loc 	opt_marginsplot "ytitle("Predicted (`ylabel')")" // noci  
-loc 	ctrls  "`ctrl'"
 
 *overall plot by cohort groups* 
 loc 	reg  		reg `y' `timevar'##`cat' `ctrls' if `sample'==1 
@@ -368,11 +415,12 @@ qui `reg'
 timer on 1
 qui margins `timevar'#`cat' 
 //qui margins `cat', at(age=(`agethreshold'(1)90)) // this is a lot slower but does the same in this case
-marginsplot,  `opt_marginsplot'   `xla' `xlarotate' title("Crude Data `cohortlabel'") note("Sample: `samplelabel' | Controls: `ctrls' (none)" "Model: `reg'") name(g`cat'_`cohort', replace) // by(agegrpmin5) 
-*gr export 	"$outpath/fig/main/g_reg_by`timevar'-`cat'_`sample'_`y'.jpg", replace	`jpghighquality'	
+marginsplot,  `opt_marginsplot'   `xla' title("Crude Data `cohortlabel'") note("Sample: `samplelabel' | Controls: `ctrls' (none)" "Model: `reg'") name(g`cat'_`cohort', replace) // by(agegrpmin5) 
+*gr export 	"$outpath/fig/main/g_reg_by`timevar'-`cat'_`sample'_`y'.jpg", replace	quality(100)
 timer off 1 
 timer list 1
-
+	pause
+	
 	/*by covariate levels ((a) single combined plot of each cohort group)* 
 	loc 	 catlist 	"male raeducl countatfirstobs"	
 	foreach  cat of local catlist {	
@@ -404,22 +452,23 @@ marginsplot, `opt_marginsplot'  `xla' `xlarotate' title("Crude Data `cohortlabel
 }
 */
 
-*by mortality*
-**# Bookmark #1 can do separately for all countatfirstobs levels (otherwise, include this to plot (b) above)
-loc 	 cat 	"radcohort"
-loc 	 cohort "50"
-foreach  cohort of local levels {
-loc cohortlabel :  label (agegrpmin5) `cohort'
-loc cohortlabel "(`cohortlabel')"  /*add parentheses if subplots*/
-loc 	 ctrls  "`ctrl'"			
-loc 	 reg  	reg `y' `timevar'##`cat' `ctrls' if `sample'==1 & agegrpmin5==`cohort' & countatfirstobs==0
-qui `reg'
-margins `timevar'#`cat' 					// , at(countatfirstobs=0)
-marginsplot		,   `opt_marginsplot'  name(g`cat'_`cohort', replace) `xla' `xlarotate' title("Crude Data `cohortlabel'") note("Sample: `samplelabel' | Controls: `ctrls' (none)" "Model: `reg'")  // by(agegrpmin5) 
-gr export 	"$outpath/fig/main/g_reg_by`timevar'-`cat'_`sample'_d_count_`cohort'.jpg", replace quality(100)
-}
-pause
-*/
+**# Bookmark #1 rename also in latex file
+	*by mortality*
+	**# Bookmark #1 can do separately for all countatfirstobs levels (otherwise, include this to plot (b) above)
+	loc 	 cat 	"radcohort"
+	loc 	 cohort "50"
+	foreach  cohort of local levels {
+	loc cohortlabel :  label (agegrpmin5) `cohort'
+	loc cohortlabel "(`cohortlabel')"  /*add parentheses if subplots*/
+	loc 	 ctrls  "`ctrl'"			
+	loc 	 reg  	reg `y' `timevar'##`cat' `ctrls' if `sample'==1 & agegrpmin5==`cohort' & countatfirstobs==0
+	qui `reg'
+	margins `timevar'#`cat' 					// , at(countatfirstobs=0)
+	marginsplot		,   `opt_marginsplot'  name(g`cat'_`cohort', replace) `xla' `xlarotate' title("Crude Data `cohortlabel'") note("Sample: `samplelabel' | Controls: `ctrls' (none)" "Model: `reg'")  // by(agegrpmin5) 
+	gr export 	"$outpath/fig/main/g_reg_by`timevar'-`cat'_`sample'_d_count_`cohort'.jpg", replace quality(100)
+	}
+	pause
+	*/
 
 	
 	/** probability of survival by wave **
@@ -447,7 +496,7 @@ loc 	ylabel: 	var label `y'
 loc 	cat  	  	"agegrpmin5" 
 loc 	timevar 	"timesincefirstobs" 
 loc 	xla 		""
-loc 	xlarotate	""	
+// loc 	xlarotate	""	
 loc 	opt_marginsplot "ytitle("Predicted (`ylabel')")" // noci  
 loc 	ctrls  		"`ctrl'"
 loc 	reg  		xtreg `y' `timevar'##`cat' `ctrls' if `sample'==1 
@@ -490,7 +539,7 @@ pause
 	loc 	cat  	  	"firstagegrp5" 
 	loc 	timevar 	"age" 
 	loc 	xla 		""
-	loc 	xlarotate	""	
+// 	loc 	xlarotate	""	
 	loc 	opt_marginsplot "ytitle("Predicted (`ylabel')")" // noci  
 	loc 	ctrls  		"`ctrl'"
 loc cohortvar 	"agegrpmin5"
@@ -526,15 +575,15 @@ loc 	y 			"d_count"
 loc 	ylabel: 	var label `y'
 loc 	timevar 	"time" // age | time | timesincefirstobs_yr | time | timesincefirstobs
 loc 	xla 		"" /*keep this empty for raw plot*/
-loc 	xlarotate	"xla(, ang(20))" /*only applies to marginsplot*/
+// loc 	xlarotate	"xla(, ang(20))" /*only applies to marginsplot*/
 loc 	cat 		"agegrpmin5b"
 loc 	opt_marginsplot "ytitle("Predicted (`ylabel')")" // noci  
 loc 	ctrls  		"`ctrl'"
 loc 	reg  		reg `y' `timevar'##`cat' `ctrls' if `sample'==1 
 qui `reg'
 qui margins `timevar'#`cat' 
-marginsplot, `opt_marginsplot'  name(g`cat'_`cohort', replace) `xla' `xlarotate'   title("`ylabel' over calendar time")  note("Sample: `samplelabel' | Controls: `ctrls' (none)" "Model: `reg'")
-gr export 	"$outpath/fig/main/g_reg_by`timevar'-`cat'_`sample'_`y'.jpg", replace `jpghighquality'
+marginsplot, `opt_marginsplot'  name(g`cat'_`cohort', replace) `xla'   title("`ylabel' over calendar time")  note("Sample: `samplelabel' | Controls: `ctrls' (none)" "Model: `reg'")  xla(, ang(20))
+gr export 	"$outpath/fig/main/g_reg_by`timevar'-`cat'_`sample'_`y'.jpg", replace 
 restore	
 pause 
 */
@@ -584,7 +633,7 @@ gr export 	"$outpath/fig/main/g_ologit_by`x'_`y'.jpg", replace `jpghighquality'
 	*/
 
 
-	*** +++ 2-y transition probability +++ ***
+	/*** +++ 2-y transition probability +++ ***
 	*preserve 
 	gen 	d_count2 = d_count
 	replace d_count2 = 99 if dead==1 

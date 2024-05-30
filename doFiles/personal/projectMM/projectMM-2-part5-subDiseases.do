@@ -71,7 +71,7 @@ bys ID: 	replace `var'er  = max(  `var'er[_n-1],  `var'er) if inwt==1  // ever h
 	replace rx`var'r = . if !mi(rx`var'r) &  `var'er==.  // should not change anything in HRS and ELSA
 drop `var'er2 rx`var'r2
 }
-	
+
 	
 ***either-or condition***
 ** r has disease: either "ever told by doctor" or "currently taking med for"**
@@ -252,6 +252,13 @@ egen 	onsetage_g2 = rowmin(`radiaglist') 	/*earliest reported age for any of the
 la var 	onsetage_g2 "age of first onset (g2aging)"
 li 		ID wave d_any age onsetage onsetage_g2 in 10/20
 
+**# Bookmark #2 age of second onset (g2aging version)
+// I have this code. This finds the earliest age of the variables radiaglist. 
+// Now I want to do something similar, but to compute a cumulative number of diseases at each age. 
+// For example, if at age 30 there are 2 possible diseases, then 
+
+
+
 
 **any disease ever (observed)**
 bys ID: egen d_anyever = max(d_any) // ever reported having a disease
@@ -289,6 +296,18 @@ clonevar onsetage_uncens = onsetage
 replace  onsetage_uncens = . if d_anyatfirstobs>0 & !mi(d_anyatfirstobs)
 la var 	 onsetage_uncens 	"age of first onset (observed) (uncensored)"
 	* bro ID wave time tsinceonset timesinceonset onsetyear
+	
+**# Bookmark #1 first onset age (of higher order count) (should do with radiag)
+	** first onset age (of higher order count) **
+	gen 	myvar 			= age if d_count==2 
+	bys ID: egen onsetage2d = min(myvar)
+	la var 	onsetage2d 		"age of first onset (of 2D) (observed)" //  (censored)	
+	drop 	myvar
+	gen 	myvar 			= age if d_count==3
+	bys ID: egen onsetage3d = min(myvar)
+	la var 	onsetage3d 		"age of first onset (of 2D) (observed)" // (observed) (censored)	
+	drop 	myvar
+
 
 **age at first onset, for each disease separately:**
 di 		"`alldiseasesd'"
@@ -450,34 +469,6 @@ recode 	countatonset (1/2 = 1 "1 or 2 diseases at onset") (3/4 = 2 "3 or 4 disea
 drop 	tempvar countatonset
 rename 	countatonset2 countatonset 
 
-
-**generate subsamples**
-loc 	sfull5 	"(everdead==1|inw_tot>=5)"
-gen 	sfull5 = `sfull5'
-gen 	sfull = sfull5	
-la var 	sfull "`sfull5'"
-	**check generation is correct**
-	tab sfull5 inw_tot if everdead==0
-sum d_anyatfirstobs 
-sum d_anyatfirstobs if sfull
-count if sfull
-*++
-*/
-
-***generate (stratification) samples (same for all surveys)***
-gen 	sbalanced 	= (inw_miss==0 | everdead==1)	
-gen 	sneverdead  = (sfull & everdead==0)
-loc 	shealthyatfirstobs "sfull & d_anyatfirstobs==0"
-gen 	shealthyatfirstobs 	= `shealthyatfirstobs' if d_anyatfirstobs<. /*if d_anyatfirstobs missing, we do not know if the ID was healthy or not at baseline, hence this should be missing*/
-
-
-**varlabels of samples**
-la var 	sbalanced 			"balanced"
-la var 	shealthyatfirstobs  "`shealthyatfirstobs'"
-
-**value labels of samples**
-la de 	shealthyl 	0 "has disease at baseline" 1 "has no disease at baseline"
-la val 	shealthyatfirstobs shealthyl 
 
 
 *** Additional Variables ***
