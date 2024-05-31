@@ -155,6 +155,11 @@ qui margins `cat', at(age=(30(5)90))
 marginsplot,  `opt_marginsplot'   `xla' `xlarotate' title("Prediction from linear fit using age") note("Sample: `samplelabel' | Controls: `ctrls' (none)" "Model: `reg'") name(g`cat'_`cohort', replace) yline(0) // by(agegrpmin5) 
 gr export 	"$outpath/fig/main/g_reg_byage_d_count_outofsample.jpg", replace	quality(100)
 	STOP
+	
+	
+	
+	*** mixed model ***
+	xtreg, mle = xtmixed...
 
 
 

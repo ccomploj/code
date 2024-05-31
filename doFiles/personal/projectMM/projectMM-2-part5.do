@@ -10,7 +10,7 @@ clear all		/*clears all data in memory*/
 ***define folder locations***
 loc data 		"HRS" // SHARE | ELSA (note for ELSA: part5-subDiseases may be incorrect because other diseases are included in measure)
 loc datalist 	"HRS SHARE ELSA"
-*foreach data of local datalist{
+foreach data of local datalist{
 
 **basic paths if no user specified
 loc	cv 	"G:/My Drive/drvData/`data'/"
@@ -214,9 +214,9 @@ tab  rabyear rabyeargrp10
 *** death year ***
 	// clonevar radyear2 = radyear 
 	// replace  radyear2=0 if mi(radyear2) // not dead people will have 
-egen 	radagegrp = cut(radage),    at (50,60,70,80,120)
+egen 	radagegrp = cut(radage),    at (50,65,80,120)
 replace radagegrp = 0 if everdead==0
-la de 	radagegrpl 	0 "never dead" 50  "died at 50-59" 60 "died at 60-69" 70 "died at 70-79" 80 "died at 80+"    
+la de 	radagegrpl 	0 "never dead" 50  "died at 50-64" 65 "died at 65-80" 80 "died at 80+"    
 la val 	radagegrp radagegrpl
 *tab radage radcohort
 

@@ -1,5 +1,5 @@
 pause on
-*pause off
+pause off
 log close _all 	/*closes all open log files*/
 clear all		/*clears all data in memory*/
 
@@ -103,7 +103,7 @@ la var  agegrp 	"age"
 
 
 
-	*** generate duration with c conditions ***
+	/*** generate duration with c conditions ***
 	gen duration = 0 if d_count>0 & !mi(d_count) // only when count is 1 and not missing 
 	sum d_count, meanonly
 	loc d_count_max = r(max) // maximum disease count across i
@@ -172,10 +172,10 @@ STOP
 */
 
 
-***********************************************************************
+/***********************************************************************
 *** +++ Histogram/Density of onset, for each disease separately +++ *** 
 ***********************************************************************
-*preserve // bc generates new vars
+preserve // bc generates new vars
  		*sample 10
 		gen 	sex = "male" 	if male==1
 		replace sex = "female" 	if male==0
@@ -377,7 +377,7 @@ pause
 
 
 
-*******************************************
+/*******************************************
 *** +++ Disease count over age/time +++ *** 
 *******************************************
 
@@ -452,18 +452,18 @@ marginsplot, `opt_marginsplot'  `xla' `xlarotate' title("Crude Data `cohortlabel
 }
 */
 
-**# Bookmark #1 rename also in latex file
 	*by mortality*
 	**# Bookmark #1 can do separately for all countatfirstobs levels (otherwise, include this to plot (b) above)
-	loc 	 cat 	"radcohort"
+**# Bookmark #1 I think this does this by all groups, hence code stops for >65
+	loc 	 cat 	"radagegrp"
 	loc 	 cohort "50"
 	foreach  cohort of local levels {
 	loc cohortlabel :  label (agegrpmin5) `cohort'
 	loc cohortlabel "(`cohortlabel')"  /*add parentheses if subplots*/
 	loc 	 ctrls  "`ctrl'"			
-	loc 	 reg  	reg `y' `timevar'##`cat' `ctrls' if `sample'==1 & agegrpmin5==`cohort' & countatfirstobs==0
+	loc 	 reg  	xtreg `y' `timevar'##`cat' `ctrls' if `sample'==1 & countatfirstobs==0  & agegrpmin5==`cohort' 
 	qui `reg'
-	margins `timevar'#`cat' 					// , at(countatfirstobs=0)
+	qui margins `timevar'#`cat' 					// , at(countatfirstobs=0)
 	marginsplot		,   `opt_marginsplot'  name(g`cat'_`cohort', replace) `xla' `xlarotate' title("Crude Data `cohortlabel'") note("Sample: `samplelabel' | Controls: `ctrls' (none)" "Model: `reg'")  // by(agegrpmin5) 
 	gr export 	"$outpath/fig/main/g_reg_by`timevar'-`cat'_`sample'_d_count_`cohort'.jpg", replace quality(100)
 	}
@@ -509,7 +509,7 @@ pause
 */
 
 
-	** +++ (a) graph over age by first onset time +++ *** (and maybe also do by timesincefirstobs), timesincefirstobs does not make sense until i group categories by time, not by agegrps anymore
+	/** +++ (a) graph over age by first onset time +++ *** (and maybe also do by timesincefirstobs), timesincefirstobs does not make sense until i group categories by time, not by agegrps anymore
 **# Bookmark #1 plot same plot also by categories of firstage_mm
 * do also with d_count_lead 
 	*preserve // bc replace firstage
@@ -633,7 +633,7 @@ gr export 	"$outpath/fig/main/g_ologit_by`x'_`y'.jpg", replace `jpghighquality'
 	*/
 
 
-	/*** +++ 2-y transition probability +++ ***
+	*** +++ 2-y transition probability +++ ***
 	*preserve 
 	gen 	d_count2 = d_count
 	replace d_count2 = 99 if dead==1 
@@ -664,7 +664,7 @@ gr export 	"$outpath/fig/main/g_ologit_by`x'_`y'.jpg", replace `jpghighquality'
 	marginsplot 
 	*/
 	
-	/**crude plotting: transition by age**
+	**crude plotting: transition by age**
 	loc 	col "gs10"
 	loc 	x "age"
 	loc 	gamma=2
@@ -677,10 +677,10 @@ gr export 	"$outpath/fig/main/g_ologit_by`x'_`y'.jpg", replace `jpghighquality'
 	twoway 	(scatter y1 `x') (scatter y2 `x') (scatter y3 `x') (scatter y4 `x') (scatter y5 `x') (scatter y6 `x') (scatter dead `x')  (lowess y1 `x', lcolor(`col'))  (lowess y2 `x', lcolor(`col'))  (lowess y3 `x', lcolor(`col'))  (lowess y4 `x', lcolor(`col')) (lowess y5 `x', lcolor(`col')) (lowess y6 `x', lcolor(`col')) (lowess dead `x', lcolor(`col')) ///
       , title("2-year transition probability: `gamma' to j") xla(50(5)85)  name(g_`gamma', replace)  legend(cols(3) ///
 	 order(`labellist')) // ) //  
-	gr export 	"$outpath/fig/main/g_by`x'_transp_`gamma'toj.jpg", replace `jpghighquality'
+	*gr export 	"$outpath/fig/main/g_by`x'_transp_`gamma'toj.jpg", replace `jpghighquality'
 	restore
 	}
-	pause
+	STOP
 	*/	
 	
 	/**crude plotting: transition by duration in state**

@@ -96,7 +96,7 @@ use 			"./`data'data/harmon/H_`data'_panel2-MM.dta", clear
 	gl y 	"d_count_lead2"
 	*loc xit2 "c.d_count#c.age c.d_count#c.age#c.age" // how to include linear interactions of types with d_count?
 	gl xit 	"c.age c.age#c.age i.duration `xit2'" //     , i.countatfirstobs: how should baseline health status s sort of captured in the outcome
-	gl zit_0 "i.rabyeargrp c.ageatfirstobs" //  d_count  
+	gl zit_0 "i.rabyeargrp c.ageatfirstobs" //   
 	
 	** w/o unobserved heterogeneity
 	loc data "HRS"
