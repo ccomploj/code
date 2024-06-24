@@ -288,13 +288,13 @@ la var 	 onsetyear "year of first onset (observed) (uncensored)"
 **# Bookmark #1 replace firstage varname with onset_age
 gen 	myvar 		= age if d_any==1 /*age, if any disease is present*/
 bys ID: egen onsetage = min(myvar)
-la var 	onsetage 		"age of first onset (observed) (censored)"
+la var 	onsetage 		"age of first onset (obs.) (censored)"
 drop 	myvar
 sort 	ID wave
 li 		ID wave age d_any onsetage in 1/16 /*check correct generation*/
 clonevar onsetage_uncens = onsetage
 replace  onsetage_uncens = . if d_anyatfirstobs>0 & !mi(d_anyatfirstobs)
-la var 	 onsetage_uncens 	"age of first onset (observed) (uncensored)"
+la var 	 onsetage_uncens 	"age of first onset (obs.) (uncens. part)"
 	* bro ID wave time tsinceonset timesinceonset onsetyear
 	
 **# Bookmark #1 first onset age (of higher order count) (should do with radiag)
@@ -321,8 +321,12 @@ drop 	myvar
 	sum onset`d' if `d'ever == 0 		 // if never had disease, onsetage should be missing (zero here)  
 	replace onset`d' = .m if `d'ever == 0 // and replace these cases to special missing value .m
 	drop  `d'ever 
-la var 	onset`d' "age of first onset (observed) for `d'"
+la var 	onset`d' "age at 1st onset (obs.) - `d'"
 loc 	onsetlist 	"`onsetlist' onset`d'" 
+// make generate uncensored part for each variable 
+gen 	onset`d'_uncens = onset`d' 
+replace onset`d'_uncens = . if onset`d' == ageatfirstobs
+la var 	onset`d'_uncens "age at 1st onset (obs.) - `d' (uncens)"
 }
 li 		ID wave age onsetage onsetage_* in 1/2 
 codebook onset*, compact /*this is the first onset for each disease separately, but a different 
@@ -451,6 +455,8 @@ la de  d_count_leadl 99 "dead" // add dead label to 99
 la val d_count_lead d_count_leadl
 drop   d_count2 
 *bro ID wave d_count d_count_lead dead
+**# Bookmark #1 temporarily recode dead to missing
+	recode d_count_lead (99=.)
 
 
 **************

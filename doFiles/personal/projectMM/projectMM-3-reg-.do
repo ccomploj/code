@@ -22,6 +22,7 @@ loc	outloc 	"C:/Users/User/Documents/GitHub/2-projectMM-`data'" // do not overwr
 }
 gl 	outpath 	"`outloc'/files" /*output folder location*/
 loc saveloc 	"main" // main | supplement /*saving location*/
+loc altsaveloc  "allfiles" // saving location of all plots/subplots
 cd  			"`cv'"	
 use 			"./`data'data/harmon/H_`data'_panel2-MM.dta", clear	
 	pause

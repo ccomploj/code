@@ -159,7 +159,7 @@ loc 	vrc 	"higovr hiprivr"
 loc 	xtra2	"cogimpr verbfr"							// healthcare utilization and insurance
 loc 	vrd  	"tr20r orientr `xtra2'"					// cognition
 loc 	vre		""												// financial and housing wealth
-loc		vrf 	""												// income and consumption
+loc		vrf 	"itoth"												// income and consumption
 loc 	vrg 	"hhreshh"										// family structure
 loc	 	vrh 	"workr lbrf_er"									// employment history
 loc	 	vri 	"retempr"										// retirement (and expectations)

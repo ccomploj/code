@@ -161,7 +161,7 @@ loc 	vrc 	"higovr     nrshom1yr hosp1yr doctor1yr doctim1yr homcar1yr drugs1wr"	
 loc 	xtra2 	"cogimpr verbfr" 
 loc 	vrd  	"tr20r orientr `xtra2'"									// cognition
 loc 	vre		""												// financial and housing wealth
-loc		vrf 	""												// income and consumption
+loc		vrf 	"itoth"												// income and consumption
 loc 	vrg 	"hhreshh"										// family structure
 loc	 	vrh 	"workr lbrf_sr"									// employment history
 loc	 	vri 	"retempr"										// retirement (and expectations)

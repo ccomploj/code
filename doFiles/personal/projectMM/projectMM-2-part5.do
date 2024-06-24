@@ -1,18 +1,14 @@
-
-
-
-
 pause on
 pause off
 log close _all 	/*closes all open log files*/
 clear all		/*clears all data in memory*/
 
 ***define folder locations***
-loc data 		"HRS" // SHARE | ELSA (note for ELSA: part5-subDiseases may be incorrect because other diseases are included in measure)
+loc data 		"SHARE" // SHARE | ELSA (note for ELSA: part5-subDiseases may be incorrect because other diseases are included in measure)
 loc datalist 	"HRS SHARE ELSA"
-foreach data of local datalist{
+*foreach data of local datalist{
 
-**basic paths if no user specified
+**basic paths if no user specified**
 loc	cv 	"G:/My Drive/drvData/`data'/"
 loc github_p5subdiseases "https://raw.githubusercontent.com/ccomploj/code/main/doFiles/personal/projectMM/projectMM-2-part5-subDiseases.do" // on all devices use github link
 
@@ -174,7 +170,7 @@ tab 	nevmarriedr nevmarried_c /*few people could have married, most likely thoug
 bys ID: egen agemin=min(age) 			/*age at first response across years*/ 
 bys ID: egen agemax=max(age) 			/*age at last  response across years*/ 
 la var 		 agemin "age when first observed"
-gen 		 ageatfirstobs = agemin
+clonevar 	 ageatfirstobs = agemin
 
 **define agegroups (choice of definition depends on survey sampling eligibility)**
 **# Bookmark #1 renamed: cohort = agegrp10, cohort5 = agegrpmin
@@ -279,8 +275,6 @@ la var 	retempr "retired"
 // Y: Other relevant variables (e.g. from other datasets)
 *gen	ageatdeath // construct ageatdeath from end-of-life version of harmonized dataset (see here https://g2aging.org/downloads) (if this is available and informative);  
 
-
-
 	*****************
 	*** Attrition *** 
 	*****************
@@ -315,15 +309,15 @@ save	"`h_data'H_`data'_panel2.dta", replace
 pause
 
 
-****************************************************************************************************
+**********************************************************************************************
 *Part 5.1*: Sample Selection and variables (some Paper)
-****************************************************************************************************
+**********************************************************************************************
 *sort ID wave 
 *save "`h_data'H_panel2-SOMENAME.dta", replace 
 
-****************************************************************************************************
+**********************************************************************************************
 *Part 5.2*: Sample Selection and variables (Multimorbidity Paper)
-****************************************************************************************************
+**********************************************************************************************
 use 	"`h_data'H_`data'_panel2.dta", clear // load earlier dataset 
 
 
@@ -334,31 +328,28 @@ include  "`github_p5subdiseases'" // include github file
 
 	
 ***generate subsamples***
-loc 	sfull 	"(everdead==1|inw_tot>=5) & agemin<70"
-gen 	sfull = `sfull'
-la var 	sfull 	"`sfull'"
-	**check generation is correct**
-	tab sfull inw_tot if everdead==0
-sum d_anyatfirstobs 
-sum d_anyatfirstobs if sfull
+// full sample
+count // saves N into r(N)
+gen		sfullsample = 1 	
+la var 	sfullsample "full sample (N=`r(N)')"
 
-gen 	sbalanced 	= (inw_miss==0 | everdead==1)	
-gen 	sneverdead  = (sfull & everdead==0)
-loc 	shealthyatfirstobs "sfull & d_anyatfirstobs==0"
-gen 	shealthyatfirstobs 	= `shealthyatfirstobs' if d_anyatfirstobs<. /*if d_anyatfirstobs missing, we do not know if the ID was healthy or not at baseline, hence this should be missing*/
+	// loc 	temp 		"(inw_miss==0 | everdead==1)"	
+	// gen 	sbalanced 	= `temp'
+	// la var 	sbalanced 	"balanced sample `temp'"
 
-count if sfull
+// selected sample
+loc 	temp 	"(everdead==1|inw_tot>=5) & agemin<70"
+gen 	sfull5 = `temp'
+la var 	sfull5 	"`temp'"
+tab 	sfull5 inw_tot if everdead==0 // check if generated correctly 
 
+loc 	temp 			"sfull5 & d_anyatfirstobs==0"
+gen 	sfull5healthy = `temp' if d_anyatfirstobs<. /*if d_anyatfirstobs missing, we do not know if the ID was healthy or not at baseline, hence this should be missing*/
+la var 	sfull5healthy  "`temp'"
+la de 	sfull5healthyl 0 "has disease at baseline" 1 "has no disease at baseline"
+la val 	sfull5healthy sfull5healthyl
 
-**varlabels of samples**
-la var 	sbalanced 			"balanced"
-la var 	shealthyatfirstobs  "`shealthyatfirstobs'"
-
-**value labels of samples**
-la de 	shealthyl 	0 "has disease at baseline" 1 "has no disease at baseline"
-la val 	shealthyatfirstobs shealthyl 	
-
-	**# Bookmark #2 *** generate own self-reported first onset if missing variable *** (can move to common code using if conditions)
+	**# Bookmark #2 *** generate own self-reported first onset if first onset variable is missing *** (can move to common code using if conditions conditional on dataset)
 		egen totalN = total(1) // total count of dataset 
 		loc 	list "radiagheart radiagstrok radiagcancr"
 		foreach var of local list {
@@ -436,21 +427,21 @@ sort 	ID wave
 save	"`h_data'H_`data'_panel2-MM.dta", replace // check if appeared in correct folder!
 *pause 
 
+	export delimited using "G:\My Drive\projects\projectMM\dataInCsv\H_`data'_g3.csv", replace // save in csv format (works only on my machine)
 
 
-****************************************************************************************************
+**********************************************************************************************
 *++ END OF FILE ++*
 log close logDofile /*logs file to specified folder if log active*/
 } /*end of loop for multiple datasets*/
 +++ END OF FILE +++
-****************************************************************************************************
+**********************************************************************************************
 
 
 
-
-****************************************************************************************************
+**********************************************************************************************
 *Part 6*: Analysis (use separate .do file)
-****************************************************************************************************
+**********************************************************************************************
 *[see separate file]*
 
 
@@ -459,9 +450,9 @@ log close logDofile /*logs file to specified folder if log active*/
 
 
 
-****************************************************************************************************
+**********************************************************************************************
 ***Addendum***
-****************************************************************************************************
+**********************************************************************************************
 ***some useful Stata shortcuts on Windows:
 * CTRL + L 			: select line 
 * CTRL + D 			: run selected block 
@@ -479,10 +470,9 @@ log close logDofile /*logs file to specified folder if log active*/
 ***common errors***
 * - "log file already open": use -log close log- or -log close _all-
 
-****************************************************************************************************
+**********************************************************************************************
 *Full variable descriptions*
-****************************************************************************************************
-
+**********************************************************************************************
 
 ***Archive Code***
 /* using if condition in d_count: 

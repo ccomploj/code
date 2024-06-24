@@ -163,7 +163,7 @@ loc 	vrc 	"higovr 	hiltcr lifeinr"										// healthcare utilization and insura
 	loc xtra2 	"bwc20r mstotr cogtotr"
 loc 	vrd  	"tr20r orientr `xtra2'"							// cognition (mostly only asked to 65+ and not proxy)
 loc 	vre		""												// financial and housing wealth
-loc		vrf 	""												// income and consumption
+loc		vrf 	"itoth"											// income and consumption
 loc 	vrg 	"hhreshh"										// family structure
 loc	 	vrh 	"workr lbrf_sr"									// employment history
 loc	 	vri 	"retempr"										// retirement (and expectations)
