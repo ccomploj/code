@@ -119,6 +119,27 @@ STOP
 
 	
 	
+		*** suggestion of bertrand *** 
+	loc ctrls "age male raeducl"
+	gen presentintplus1 = !mi(d_count) & !mi(F.d_count) // should work for all pairs
+	**
+		sum d_count, meanonly
+		loc d_countmax = r(max) // not correct diseasemax, but max observed so still correct here
+		di "`d_countmax'"
+	logit time_c1toc2 `ctrls' if d_count==1 & presentintplus1
+
+	forval c=1/`d_countmax' {
+*	logit timetonextdisease2 if d_count==1 
+	**time, so should use -reg-**
+	**raw margins** 
+	reg time_c1toc2  if d_count==`c' & presentintplus1,  
+	predict fit_`c', xb
+	
+	reg time_c1toc2 `ctrls' if d_count==`c' & presentintplus1,  // time_c#toc# considers iwym; ignores missing response, should ideally condition also on being present in both time periods (and having a count in those time periods)	; curr only uses definition of    ; compare this to ordered logit; is this sequential logit?; n
+	predict fit_`c', xb
+	}
+*	logit time_c2toc3 if d_count==2	& presentintplus1
+*	logit time_c3toc4 if d_count==3 & presentintplus1
 	
 	
 
@@ -168,4 +189,7 @@ gsem ( d_count <- _cons), family(ordinal) link(logit) lclass(C 2)
 // 	gsem (d_count_lead2 <-, ologit),  lclass(C 3) 	
 // 	gsem (d_count <-, ologit) (C <- male), lclass(C 3) 
 */
+
+
+
 

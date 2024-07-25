@@ -4,20 +4,20 @@ log close _all 	/*closes all open log files*/
 clear all		/*clears all data in memory*/
 
 ***define folder locations***
-loc data 		"SHARE" // SHARE | ELSA (note for ELSA: part5-subDiseases may be incorrect because other diseases are included in measure)
+loc data 		"ELSA" // SHARE | ELSA (note for ELSA: part5-subDiseases may be incorrect because other diseases are included in measure)
 loc datalist 	"HRS SHARE ELSA"
 *foreach data of local datalist{
 
 **basic paths if no user specified**
-loc	cv 	"G:/My Drive/drvData/`data'/"
+// loc	cv 	"G:/My Drive/drvData/`data'/"
+loc cv ""
 loc github_p5subdiseases "https://raw.githubusercontent.com/ccomploj/code/main/doFiles/personal/projectMM/projectMM-2-part5-subDiseases.do" // on all devices use github link
 
 **flexible to user**
 if "`c(username)'" == "P307344" { // UWP server
 loc cv 		"X:/My Documents/XdrvData/`data'/"
 }
-if "`c(username)'" == "User" { // my personal PC
-*loc	cv 		"G:/My Drive/drvData/`data'/"
+if "`c(username)'" == "casto" { // my personal PC
 loc	cv 		"C:/Users/User/Documents/RUG/`data'/"
 loc github_p5subdiseases "C:/Users/User/Documents/GitHub/code/doFiles/personal/projectMM/projectMM-2-part5-subDiseases.do" // on my device use offline file
 }
@@ -32,13 +32,6 @@ use 			"`h_data'/H_`data'_panel.dta", replace
 
 
 **define country-specific locals**
-if "`data'"=="CHARLS" {
-loc agethreshold 	"45"
-loc upperthreshold	"75"
-// loc ptestname 		"cesdr"
-// loc pthreshold		"3"
-*loc t 				"ruralh" // /*categorical variable to split by*/ 	
-}
 if "`data'"=="SHARE" {
 loc agethreshold 	"50" // select survey-specific lower age threshold
 loc upperthreshold	"85" // select survey-specific upper age threshold	
@@ -46,7 +39,7 @@ loc wavelast 		"8"  // select survey-specific last wave
 loc ptestname 		"eurod"
 loc pthreshold		"4"
 	drop if wave==3 // is not really a time period, there are no regular variables for this wave
-	keep 	if hacohort==1 | hacohort==2 
+// 	keep 	if hacohort==1 | hacohort==2 
 	drop 	if countryID=="GR" /*relatively imprecise survey*/
 }
 if "`data'"=="ELSA" {
@@ -54,8 +47,8 @@ loc agethreshold 	"50" // select survey-specific lower age threshold
 loc upperthreshold	"85" // select survey-specific upper age threshold	
 loc wavelast 		"9" 	// select survey-specific last wave
 loc ptestname 	"cesdr"
-**# Bookmark #1 choose threshold wisely
 loc pthreshold	"3"
+// 	keep 	if hacohort==1 // hacohort=1 is different in ELSA compared to SHARE and HRS
 }
 if "`data'"=="HRS" {
 loc agethreshold 	"51" // select survey-specific lower age threshold
@@ -63,10 +56,12 @@ loc upperthreshold	"85" // select survey-specific upper age threshold
 loc wavelast 		"14" 	// select survey-specific last wave
 loc ptestname 		"cesdr"
 loc pthreshold		"3"
-	keep 	if hacohort<=5 	
+// 	keep 	if hacohort<=5 	
 	keep if wave>=3 & wave<=13 // cognitive measures not consistently available 		
+**# Bookmark #1 need to see how many cohorts we should add in the end, ELSA results currently use cohorts until 2008. That is a problem when plotting over time
 }	
-loc t "male"
+
+
 **********************	
 **# Bookmark #1 already dropping irrelevant observations from MM-project. Ideally, I would move the above data selection to just before the (project-specific) sample selection below
 
@@ -87,6 +82,7 @@ rename  ageyr age
 egen 	inw_tot  = rowtotal(inw1-inw`wavelast')				// counts # of periods ID present
 egen 	inw_miss = anycount(inw1-inw`wavelast'), values(0) 	// counts # of periods ID *not* present
 tab 	inw_tot inw_miss 
+la var 	inw_tot "# of waves participated"
 
 **in current wave**
 gen 	inwt = (age<.) // treat sb w/ miss. age as not in wave; missing age often matches with inw
@@ -111,6 +107,7 @@ tab inw_first_yr
 
 gen 	dead = (iwstatr==5|iwstatr==6) if iwstatr<. 
 bys ID: egen everdead = max(dead) // =1 if ID ever dies 
+la var 	everdead "ever dies"
 
 **time since first observed (entry into survey)**
 *note: MUST generate BEFORE gap appears (e.g. before deleting wave 3 (Life-history) from the panel)*
@@ -226,7 +223,7 @@ tab iwstatr age_not`agethreshold'
 
 
 **label variables from A (if different label desired)**
-la var  age 		"age at interview"
+la var  age 		"age"
 la var 	raeducl 	"r educ"
 la de 	raeducll 	1 "1.low educ" 2 "2.secondary" 3 "3.university"
 la val 	raeducl raeducll
@@ -331,7 +328,7 @@ include  "`github_p5subdiseases'" // include github file
 // full sample
 count // saves N into r(N)
 gen		sfullsample = 1 	
-la var 	sfullsample "full sample (N=`r(N)')"
+la var 	sfullsample "sample: full (N=`r(N)')"
 
 	// loc 	temp 		"(inw_miss==0 | everdead==1)"	
 	// gen 	sbalanced 	= `temp'
@@ -340,12 +337,12 @@ la var 	sfullsample "full sample (N=`r(N)')"
 // selected sample
 loc 	temp 	"(everdead==1|inw_tot>=5) & agemin<70"
 gen 	sfull5 = `temp'
-la var 	sfull5 	"`temp'"
+la var 	sfull5 	"sample: selected (in5w or everdead, <70)"
 tab 	sfull5 inw_tot if everdead==0 // check if generated correctly 
 
 loc 	temp 			"sfull5 & d_anyatfirstobs==0"
 gen 	sfull5healthy = `temp' if d_anyatfirstobs<. /*if d_anyatfirstobs missing, we do not know if the ID was healthy or not at baseline, hence this should be missing*/
-la var 	sfull5healthy  "`temp'"
+la var 	sfull5healthy  "sample: selected + healthy-at-baseline"
 la de 	sfull5healthyl 0 "has disease at baseline" 1 "has no disease at baseline"
 la val 	sfull5healthy sfull5healthyl
 
@@ -427,7 +424,8 @@ sort 	ID wave
 save	"`h_data'H_`data'_panel2-MM.dta", replace // check if appeared in correct folder!
 *pause 
 
-	export delimited using "G:\My Drive\projects\projectMM\dataInCsv\H_`data'_g3.csv", replace // save in csv format (works only on my machine)
+	** export to CSV for R **
+	*export delimited using "G:\My Drive\projects\projectMM\dataInCsv\H_`data'_g3.csv", replace // save in csv format (works only on my machine)
 
 
 **********************************************************************************************

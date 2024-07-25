@@ -235,7 +235,7 @@ log close log
 gen 	myvar = (d_any==1 & wave==inw_first) if d_any<. /*if any D and time is equal to first observed time*/
 bys ID: egen d_anyatfirstobs = max(myvar)
 drop 	myvar
-la var 	d_anyatfirstobs "already has disease at baseline"
+la var 	d_anyatfirstobs "has disease at baseline"
 tab 	d_anyatfirstobs  d_any if wave==1 	/*checked correct generation*/
 sum 	d_anyatfirstobs 
 
@@ -297,6 +297,15 @@ replace  onsetage_uncens = . if d_anyatfirstobs>0 & !mi(d_anyatfirstobs)
 la var 	 onsetage_uncens 	"age of first onset (obs.) (uncens. part)"
 	* bro ID wave time tsinceonset timesinceonset onsetyear
 	
+	egen 	firstagegrp5 = cut(onsetage),    at (`agethreshold',55,60,65,70,75,120) // ,80, 	
+	recode  firstagegrp5 (`agethreshold' = 50)
+	replace firstagegrp5 = . if d_anyatfirstobs==1 
+	loc 	labelname "firstage:"
+	la de 	firstagegrp5l 	50  "`labelname' `agethreshold'-54" 55 "`labelname' 55-59" 60 "`labelname' 60-64" 65 "`labelname' 65-69" 70 "`labelname' 70-74" 75 "`labelname' 75+" 
+	la val 	firstagegrp5 firstagegrp5l
+	*tab firstagegrp5,m
+	*recode d_count_lead (99=10)
+	
 **# Bookmark #1 first onset age (of higher order count) (should do with radiag)
 	** first onset age (of higher order count) **
 	gen 	myvar 			= age if d_count==2 
@@ -323,10 +332,11 @@ drop 	myvar
 	drop  `d'ever 
 la var 	onset`d' "age at 1st onset (obs.) - `d'"
 loc 	onsetlist 	"`onsetlist' onset`d'" 
-// make generate uncensored part for each variable 
+/*/ make generate uncensored part for each variable 
 gen 	onset`d'_uncens = onset`d' 
 replace onset`d'_uncens = . if onset`d' == ageatfirstobs
 la var 	onset`d'_uncens "age at 1st onset (obs.) - `d' (uncens)"
+*/
 }
 li 		ID wave age onsetage onsetage_* in 1/2 
 codebook onset*, compact /*this is the first onset for each disease separately, but a different 
@@ -465,7 +475,7 @@ drop   d_count2
 ** countatfirstobs and countatonset ** 
 gen 	tempvar = d_count if inw_first==wave 		// count at baseline
 bys ID: egen countatfirstobs = max(tempvar) 
-recode 	countatfirstobs (0 = 0 "0 diseases at baseline") (1 = 1 "1 disease at baseline") (2/3 = 2 "2 or 3 diseases at baseline") (4/10 = 4 "4+ diseases at baseline"), gen(countatfirstobs2)
+recode 	countatfirstobs (0 = 0 "0 diseases at baseline") (1 = 1 "1 disease at baseline") (2/3 = 2 "2/3 diseases at baseline") (4/10 = 4 "4+ diseases at baseline"), gen(countatfirstobs2)
 drop 	tempvar countatfirstobs
 rename 	countatfirstobs2 countatfirstobs 
 gen 	tempvar = d_count if timesinceonset==0 // count at onset

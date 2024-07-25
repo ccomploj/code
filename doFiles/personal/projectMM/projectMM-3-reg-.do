@@ -1,11 +1,11 @@
 pause on
-*pause off
+pause off
 log close _all 	/*closes all open log files*/
 clear all		/*clears all data in memory*/
 
 
 ***choose data***
-loc data 		"SHARE"
+loc data 		"SHAREELSA"
 loc datalist 	"SHARE ELSA HRS"
 *foreach data of local datalist {
 
@@ -28,13 +28,6 @@ use 			"./`data'data/harmon/H_`data'_panel2-MM.dta", clear
 	pause
 
 **define country-specific locals**
-if "`data'"=="CHARLS" {
-loc agethreshold 	"45"
-loc upperthreshold	"75"
-// loc ptestname 	"cesdr"
-// loc pthreshold	"3"
-*loc t 				"ruralh" // /*categorical variable to split by*/ 	
-}
 if "`data'"=="SHARE" {
 loc agethreshold 	"50" // select survey-specific lower age threshold
 loc upperthreshold	"85" // select survey-specific upper age threshold	
@@ -83,7 +76,7 @@ drop if agemin<`agethreshold'
 *cd  	"$outpath/tab"
 
 *** definition of global vars ***
-loc sample "sfull"
+loc sample "sfull5"
 loc samplelabel: variable label `sample'
 set scheme s1color	
 
@@ -91,6 +84,8 @@ set scheme s1color
 ****************************************************************************************************
 *Part 7b*: Regression (general)
 ****************************************************************************************************	
+**# Bookmark #1 move to part5 
+	la var smokenr "curr.smoking"
 	
 /*** +++ what predicts having any disease? (logit by wave just to check consistency (not for paper)), then (xt)logit using pooled sample +++ ***
 ** logit by wave **
@@ -109,7 +104,7 @@ esttab logit*,  stats(N r2_p time) nobase eform // `esttab_opt'
 	loc    esttab_opt "la nobase nocons stats(N r2_p time) eform"
 	esttab logit`l'*, 									 `esttab_opt'  
 	esttab logit`l'* using "$outpath/reg/o_logit_d_any", `esttab_opt' tex replace
-	pause
+	STOP
 */
 
 /** xtlogit using all data **
@@ -130,6 +125,7 @@ STOP
 	tobit onsetage `ctrl', ll()
 	+
 	*/
+
 	
 	
 	/*** 2y-transition probabilites, conditional on previous value ***
@@ -210,52 +206,9 @@ loc timerlist  "1"
 	++
 	*/
 	
-/*** Linear Random Effect model (Mixed Model) for SHARE AND ELSA (need data "SHAREELSA") ***	
-	*relabel time for narrower table* 
-	preserve 
-	*keep if d_anyatfirstobs == 0
-	*keep if cohortmin==50
-	tab d_count
-	la var timesincefirstobs "time(sinceb)"
-	loc ctrls "male i.raeducl"
-eststo xtregSHARE: qui xtreg d_count c.timesincefirstobs i.cohortmin5 i.cohortmin5#c.timesincefirstobs `ctrls'	if sfull==1 & dataset=="SHARE", robust // vce(cl ID) 
-eststo xtregELSA:  qui xtreg d_count c.timesincefirstobs i.cohortmin5 i.cohortmin5#c.timesincefirstobs `ctrls'	if sfull==1 & dataset=="ELSA", robust // vce(cl ID) 
-
-loc esttab_opt "nobase compress la se(%9.2f) stats(N controls) mtitles("SHARE" "ELSA")" // r2
-	estadd loc controls "yes": xtregSHARE xtregELSA
-esttab xtregSHARE xtregELSA , `esttab_opt' 
-*esttab xtregSHARE xtregELSA  using "C:/Users/User/Documents/GitHub/2-projectMM-SHARE/files/t_regd_count-timesincefirstobs-xtregSHAREELSA", tex replace  `esttab_opt' note("Controls include `ctrls'") keep(timesincefirstobs *#c.timesincefirstobs)  // stats(N controls)
-
-** with age (instead of time) and cohort dummies **
-	loc interactions "male#c.age i.raeducl#c.age i.countatfirstobs i.countatfirstobs#c.age"
-	loc ctrls "`ctrls' `interactions'"
-eststo xtregSHARE:  xtreg  d_count c.age `ctrls'	if sfull==1 & dataset=="SHARE", robust fe i(rabyear) // fe due to cohort dummies // vce(cl ID) // c.age#c.age
-eststo xtregELSA: qui xtreg   d_count c.age `ctrls'	if sfull==1 & dataset=="ELSA",  robust fe i(rabyear) // fe due to cohort dummies  // vce(cl ID) 
-loc esttab_opt "nobase compress la se(%9.2f) stats(N r2 controls) mtitles("SHARE" "ELSA")"
-	estadd loc controls "yes": xtregSHARE xtregELSA
-esttab xtregSHARE* xtregELSA , `esttab_opt' 
-*esttab xtregSHARE xtregELSA  using "C:/Users/User/Documents/GitHub/2-projectMM-SHARE/files/t_regd_count-age-xtregSHAREELSA", tex replace  `esttab_opt' note("Controls include `ctrls'")  keep(age *#c.age)   // stats(N controls)
-STOP 
-*/
 
 
-	/*** Linear RE model with first onset ***
-		preserve
-			hist firstage 
-			hist firstage if d_anyatfirstobs==0
-		replace firstage = . if d_anyatfirstobs>0
 
-			loc firstagel: var label firstage 
-			la var firstage "`firstagel' - Healthy-at-baseline sample"
-			*gr export 	"$outpath/fig/main/g_hist_firstage.jpg", as(jpg) replace 
-		loc ctrls "male i.raeducl  male#c.age i.raeducl#c.age i.countatfirstobs i.countatfirstobs#c.age  c.firstage#c.age   " // i.firstage
-	eststo xtregSHARE: qui xtreg  d_count c.age `ctrls'	if sfull==1 & dataset=="SHARE", robust fe i(rabyear) // vce(cl ID) // c.age#c.age
-	eststo xtregELSA: qui xtreg  d_count c.age `ctrls'	if sfull==1 & dataset=="ELSA" , robust fe i(rabyear) // vce(cl ID) // c.age#c.age
-	loc esttab_opt "nobase compress la se(%9.2f) stats(N r2 controls) mtitles("SHARE" "ELSA")"
-	esttab xtregSHARE xtregELSA , `esttab_opt' 
-	esttab xtregSHARE xtregELSA  using "C:/Users/User/Documents/GitHub/2-projectMM-SHARE/files/t_regd_count-age-xtregSHAREELSA-firstage", tex replace  `esttab_opt' note("Controls include `ctrls'")  keep(age *#c.age)   // stats(N controls)
-	STOP
-	*/
 	
 
 ++++++		STOP // here to not overwrite current output
@@ -352,32 +305,6 @@ estimates dir
 STOP
 ++
 
-
-
-
-	*** suggestion of bertrand *** 
-	loc ctrls "age male raeducl"
-	gen presentintplus1 = !mi(d_count) & !mi(F.d_count) // should work for all pairs
-	**
-		sum d_count, meanonly
-		loc d_countmax = r(max) // not correct diseasemax, but max observed so still correct here
-		di "`d_countmax'"
-	logit time_c1toc2 `ctrls' if d_count==1 & presentintplus1
-
-	forval c=1/`d_countmax' {
-*	logit timetonextdisease2 if d_count==1 
-	**time, so should use -reg-**
-	**raw margins** 
-	reg time_c1toc2  if d_count==`c' & presentintplus1,  
-	predict fit_`c', xb
-	
-	reg time_c1toc2 `ctrls' if d_count==`c' & presentintplus1,  // time_c#toc# considers iwym; ignores missing response, should ideally condition also on being present in both time periods (and having a count in those time periods)	; curr only uses definition of    ; compare this to ordered logit; is this sequential logit?; n
-	predict fit_`c', xb
-	}
-*	logit time_c2toc3 if d_count==2	& presentintplus1
-*	logit time_c3toc4 if d_count==3 & presentintplus1
-	
-
 	
 *** +++ what predicts the count? +++ ***
 	tab d_count wave 
@@ -391,7 +318,7 @@ STOP
 timer on 1 				// counts the duration of file computation	
 log using 	"$outpath/logs/log-t-regd_count-cohort.txt", text replace name(log) 
 	*sample 5 // select a ## % random subsample to speed up computation
-loc sample 		"sfull  & d_count<8" // & d_count<8
+loc sample 		"sfull5  & d_count<8" // & d_count<8
 loc agectrls 	 "age" // age c.age##c.age, leaving out cross term solves the issue
 loc ctrls	 	"i.male married i.raeducl i.cohortmin5" // i.wave 
 loc y 			"d_count"
@@ -399,72 +326,8 @@ sum `y' `ctrls' if `sample'==1 & wave==1
 
 
 
-
-
-	
-
 ****************************************************************************************************
 *Appendix*
 ****************************************************************************************************	
-	
-** should we estimate a zero-inflated ordered probit? **
-*https://www.stata.com/features/overview/zero-inflated-ordered-probit/
 
-/*Yes, you can predict the category 0 in an ordered probit model. The ordered probit model is designed to handle ordinal dependent variables, so it can certainly predict the lowest category (0 in your case).
-However, if you have a large number of 0s in your data (i.e., zero-inflation), a standard ordered probit model might not be the best choice. In this case, you might want to consider a zero-inflated ordered probit (ZIOP) model1. The ZIOP model is used for ordered response variables when the data exhibit a high fraction of observations at the lowest end of the ordering1.
-In Stata, you can use the zioprobit command to fit a ZIOP model1. This command applies to ordinal data, where the numeric value of the lowest category need not be zero1. So, you could fit a 0-inflated model with your data1.
-To predict the probabilities for each category in an ordered probit model, you can use the cumulative distribution function (CDF) of the standard normal distribution2. The formula for the predicted probability of y = 0 is:
-P(y=0∣x)=Φ(α−βx)
-where Φ denotes the CDF of the standard normal distribution, α is the threshold parameter for category 0, β is the vector of coefficients, and x is the vector of predictors2.
-I hope this helps! Let me know if you have any other questions. 😊
-*/
-
-
-/*
-*/
-
-	/*** sequential logit ***
-	*log using 	"$outpath/logs/log-t-regd_count-age-seqlogit`data'.txt", text replace name(seqlogit) 
-	set seed 500
-	// tab d_count, gen(d_count)
-	preserve
-		keep if d_count<7
-		sample 10
-	eststo seqlogit: seqlogit d_count age male i.raeducl if `sample'==1 if d_count==1, vce(cluster ID) tree(0:1 2 3 4 5 6, 1:2 3 4 5 6, 2: 3 4 5 6, 3: 4 5 6, 4: 5 6, 5:6) ofinterest(raeducl) over(c.age) or 
-	*seqlogitdecomp age, table // at(coh 1.5 south 0 paeduc 12) table
-	seqlogitdecomp, area // at(male 0 educ_vocational 0 educ_university 0)
-	*log close seqlogit
-	timer 		off  1
-	timer 		list 1	
-	STOP
-	*/
-	
-	
-		/*** multinomial logit ***
-	*https://www.stata.com/features/overview/panel-data-multinomial-logit/
-	sample 1
-	count 
-	*log using 	"$outpath/logs/log-t-regd_count-age-mlogit`data'.txt", text replace name(mlogit) 
-		xtset ID
-		keep if d_count_lead<4
-	eststo mlog1: xtmlogit d_count_lead  `ctrls' age  if `sample'==1 , base(1) nolog rrr vsquish re // vce(cluster ID) & d_count==1 covariance(unstructured) rrr // fe for conditional fixed effects 
-	
-	margins raeducl, at (age=(50(5)85))
-	marginsplot, by(_predict) 
-	log close mlogit
-	++
-	predict p1 p2 p3 p4 p5 p6 p7 p8 p9	
-	*predict p1 p2 p3 p4 p5 p6 p7 p8 p9 p10 p11
-	twoway (line p1 age if raeducl==1) (line p1 age if raeducl==2) (line p1 age if raeducl==3) 
-	twoway (line p2 age if raeducl==1) (line p2 age if raeducl==2) (line p2 age if raeducl==3)	
-	*margins 
-	*marginsplot	
-	*esttab mlog1 using "$outpath/t-regd_count-cohort-mlogit.tex", b se nobase nogaps replace
-	*esttab mlog1 using "$outpath/t-regd_count-cohort-mlogit.html", b se nobase nogaps replace
-	STOP
-		* should do this for every count before transition, for every ____, also do a marginsplot
-		
-		marginsplot 
-		
-	*/
 	

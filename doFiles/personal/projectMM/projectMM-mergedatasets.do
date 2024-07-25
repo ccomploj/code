@@ -12,7 +12,8 @@ if "`c(username)'" == "P307344" { // UWP server
 loc cv 		"X:/My Documents/XdrvData/"
 }
 else {
-loc	cv 		"G:/My Drive/drvData/" // own PC
+*loc	cv 		"G:/My Drive/drvData/" // own PC
+loc	cv 		"C:/Users/User/Documents/RUG/"
 }
 cd  		"`cv'"	
 
@@ -35,15 +36,15 @@ append 		using "`tempdata'", force
 
 **# Bookmark #1: this only applies to first merged dataset
 	label drop time // time label does not match accurately across countries
-	drop if wave==3    & dataset=="SHARE"
-	replace wave = wave-1 if dataset=="SHARE"
+	drop if wave==3    & dataset=="SHARE" // not a time period, only life history
 	drop wave // wave is no longer relevant now
 
 	
 egen ID 	= group(dataset IDold)	
 xtset ID time
 loc data 	"SHAREELSA"
-save  		"./`data'/`data'data/harmon/H_`data'_panel2-MM.dta", replace
+*save  		"./`data'/`data'data/harmon/H_`data'_panel2-MM.dta", replace
+save  		"./SHARE/SHAREdata/harmon/H_`data'_panel2-MM.dta", replace
 
 tempfile 	tempdata2
 save 		"`tempdata2'", replace
@@ -61,7 +62,9 @@ drop ID
 egen ID 	= group(dataset IDold)	
 xtset 		ID time
 loc data 	"SHAREELSAHRS"
-save  		"./`data'/`data'data/harmon/H_`data'_panel2-MM.dta", replace
+*save  		"./`data'/`data'data/harmon/H_`data'_panel2-MM.dta", replace
+save  		"./SHARE/SHAREdata/harmon/H_`data'_panel2-MM.dta", replace
+
 
 		bys dataset: tab agegrp10 d_any if age>50, col nofreq
 		bys dataset: tab agegrp10 demen if age>50, col nofreq

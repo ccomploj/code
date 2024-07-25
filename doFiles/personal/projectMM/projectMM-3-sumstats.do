@@ -18,22 +18,18 @@ loc outloc 	"`cv'" // to save locally
 *loc outloc "\\Client\C$\Users\User\Documents\GitHub\2-projectMM-`data'\" // from UWP save directly to PC (only works with full version of Citrix)
 }
 else {
-loc	cv 		"G:/My Drive/drvData/`data'/" // own PC
-loc	outloc 	"C:/Users/User/Documents/GitHub/2-projectMM-`data'" 	
+*loc cv 		"G:/My Drive/drvData/`data'/" // own PC
+loc	cv 		"C:/Users/User/Documents/RUG/`data'/"
+loc	outloc 	"C:/Users/User/Documents/GitHub/2-projectMM-`data'" // do not overwrite existing output in the compiled output	
 }
 gl 	outpath 	"`outloc'/files" /*output folder location*/
 loc saveloc 	"main" // main | supplement /*saving location*/
+loc altsaveloc  "allfiles" // saving location of all plots/subplots
 cd  			"`cv'"	
 use 			"./`data'data/harmon/H_`data'_panel2-MM.dta", clear	
+	pause
 
 **define country-specific locals**
-if "`data'"=="CHARLS" {
-loc agethreshold 	"45"
-loc upperthreshold	"75"
-// loc ptestname 		"cesdr"
-// loc pthreshold		"3"
-*loc t 				"ruralh" // /*categorical variable to split by*/ 	
-}
 if "`data'"=="SHARE" {
 loc agethreshold 	"50" // select survey-specific lower age threshold
 loc upperthreshold	"85" // select survey-specific upper age threshold	
@@ -86,16 +82,26 @@ cd  	"$outpath/tab"
 
 count
 codebook ID, compact
-codebook ID if sfull, compact
-codebook ID if sbalanced, compact
+codebook ID if sfullsample, compact
+codebook ID if sfull5, compact
+*codebook ID if sbalanced, compact
 
 tab 	iwstatr wave  		// full sample 
 	
-	sum 	d_anyever d_anyever_g2
+		**check why there is right-censoring in onsets**
+		sum d_anyever d_anyever_g2
+		sum d_anyever d_anyever_g2 if sfull5==1
+		sum d_anyever d_anyever_g2 if everdead==0
+		sum age agemax if d_anyever==0,de
+		sum age agemax if d_anyever==0 & everdead==0,de
+		*hist age if d_anyever==0
+		*hist agemax if d_anyever == 0 
+		*bro ID wave age d_any d_count d_anyever if d_anyever==0
+		/*most ppl never developing a disease drop out of the sample early, and it is not(?) 
+		because they die early*/
 	
 	
 	
-	tab sfull everdead 
 	
 	tab inw_tot d_anyever
 	tab inw_tot d_anyever_g2
@@ -109,10 +115,10 @@ tab 	iwstatr wave  		// full sample
 	tab d_count wave if post==1
 
 	** are the samples well defined?**
-	tab 	everdead sfull	// all people who ever die are included
-	tab 	sneverdead dead,m
-	tab 	sfull d_anyatfirstobs, col // ideally, people dropped in sfull should not differ in having disease at baseline
-	tab 	sfull shealthyatfirstobs, m 
+	tab 	everdead sfull5	// all people who ever die are included
+	*tab 	sneverdead dead,m
+	tab 	sfull5 d_anyatfirstobs, col // ideally, people dropped in sfull should not differ in having disease at baseline
+	*tab 	sfull5 shealthyatfirstobs, m 
 
 	
 	/* summarize each key variable separately
@@ -144,12 +150,7 @@ tab 	iwstatr wave  		// full sample
 	
 
 
-	** generate average followup time **
-	gen myvar = time if inwt==1 // var takes value of time only if present in wave
-	bys ID: egen timemin = min(myvar)
-	bys ID: egen timemax = max(myvar)
-	gen followup = timemax - timemin 
-	sum followup if dataset=="SHARE" & sfull==1
+
 
 	
 	
@@ -157,9 +158,9 @@ tab 	iwstatr wave  		// full sample
 ***overview of data***
 **final sample**
 qui log using 	"$outpath/logs/log-samplefinal.txt", text replace name(log) 
-tab hacohort wave 	if sfull,m
-tab iwstatr wave 	if sfull,m
-sum agemin 			if sfull, 
+tab hacohort wave 	if sfull5,m
+tab iwstatr wave 	if sfull5,m
+sum agemin 			if sfull5, 
 tab diff_d_count
 qui log close log
 
@@ -170,8 +171,8 @@ tabstat d_*, statistics(count mean sd min max) columns(statistics) varwidth(20)
 qui log using 	"$outpath/logs/log-t_diseaselist.txt", text replace name(log) 
 *codebook d_* timetonextdisease2, compact 
 codebook diff_*,compact // assuming the first disease starts with hibp in the dataset
-sum d_anyatfirstobs if sfull & wave==inw_first & agemin==50  // ppl w/ >1 conditions at baseline
-sum d_anyatfirstobs if sfull & wave==inw_first & inrange(agemin,50,65) // ppl w/ >1 conditions at baseline
+sum d_anyatfirstobs if sfull5 & wave==inw_first & agemin==50  // ppl w/ >1 conditions at baseline
+sum d_anyatfirstobs if sfull5 & wave==inw_first & inrange(agemin,50,65) // ppl w/ >1 conditions at baseline
 qui log close log
 	*sum d_* if inw_first==wave // which diseases are most common to be at first obs
 	*sum d_* if inw_first==wave & inrange(age,50,54) // which diseases are most common to be at first obs	
@@ -192,7 +193,7 @@ keep if inwt==1 | dead==1 /*-listwise- drops obs if any of the variables is miss
 	
 loc frmt				"tex"
 loc continuous_meanonly	"iwyr rabyear radyear dead d_anyatfirstobs    male d_any" // /*mean only*/
-loc continuous 			"age `continuous_meanonly' d_count onsetage onsetage_g2 " // timetonextdisease2 time_onsettodeath time_c* 
+loc continuous 			"age `continuous_meanonly' d_count onsetage onsetage_g2 " //  
 loc continuous2_alld	"onsetd* radiag*" //   
 loc categorical			"i.raeducl i.agegrpmin10" //  i.raeducl i.agegrpmin10  married | i.mstatr
 loc columns 			"wave"
@@ -212,7 +213,7 @@ loc 	opt_table 		"nototals stat(frequency) stat(percent) sformat("%s%%" percent)
 	}
 	di "`hacohortl'"
 
-loc 	sample 		"sfull" // 
+loc 	sample 		"sfull5" // 
 *foreach sample in 	"sfull" { //"shealthy" "shealthyatfirstobs"  /*comment out line if single sample*/
 loc 	samplelabel: variable label `sample' /*adds var label to local*/
 loc 	notes 		""

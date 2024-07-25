@@ -3,6 +3,7 @@ pause off
 log close _all 	/*closes all open log files*/
 clear all		/*clears all data in memory*/
 
+**# Bookmark #1 note: in HRS, _uncens variables are not OK since I drop waves 1 and 2 only later!!
 
 
 ***choose data***
@@ -18,7 +19,6 @@ loc outloc 	"`cv'" // to save locally
 *loc outloc "\\Client\C$\Users\User\Documents\GitHub\2-projectMM-`data'\" // from UWP save directly to PC (only works with full version of Citrix)
 }
 else {
-*loc cv 		"G:/My Drive/drvData/`data'/" // own PC
 loc	cv 		"C:/Users/User/Documents/RUG/`data'/"
 loc	outloc 	"C:/Users/User/Documents/GitHub/2-projectMM-`data'" 	
 }
@@ -29,46 +29,24 @@ cd  			"`cv'"
 use 			"./`data'data/harmon/H_`data'_panel2-MM.dta", clear	
 
 **define country-specific locals**
-if "`data'"=="CHARLS" {
-loc agethreshold 	"45"
-loc upperthreshold	"75"
-// loc ptestname 	"cesdr"
-// loc pthreshold	"3"
-*loc t 				"ruralh" // /*categorical variable to split by*/ 	
-}
 if "`data'"=="SHARE" {
 loc agethreshold 	"50" // select survey-specific lower age threshold
-loc upperthreshold	"85" // select survey-specific upper age threshold	
-loc wavelast 		"8" 	// select survey-specific last wave
-// loc ptestname 	"eurod"
-// loc pthreshold	"4"
-	drop if wave==3 // is not really a time period, there are no regular variables for this wave
-	keep 	if hacohort==1 | hacohort==2 
-	drop 	if countryID=="GR" /*relatively imprecise survey*/
+**# Bookmark #1 do not drop in full sample
+	*keep 	if hacohort==1 | hacohort==2 
 }
 if "`data'"=="ELSA" {
 loc agethreshold 	"50" // select survey-specific lower age threshold
-loc upperthreshold	"85" // select survey-specific upper age threshold	
-loc wavelast 		"9" 	// select survey-specific last wave
-// loc ptestname 	"cesdr"
-// loc pthreshold	"4"
+// loc wavelast 		"9" 	// select survey-specific last wave
 }
 if "`data'"=="HRS" {
 loc agethreshold 	"51" // select survey-specific lower age threshold
-loc upperthreshold	"85" // select survey-specific upper age threshold	
-loc wavelast 		"14" 	// select survey-specific last wave
-// loc ptestname 		"cesdr"
-// loc pthreshold		"4"
-	keep 	if hacohort<=5 	
+	// loc wavelast 		"14" 	// select survey-specific last wave
+	*keep 	if hacohort<=5 	
 	keep if wave>=3 & wave<=13 // cognitive measures not consistently available 		
 }	
 if "`data'"=="SHAREELSA" {
 loc agethreshold 	"50" // select survey-specific lower age threshold
-loc upperthreshold	"85" // select survey-specific upper age threshold	
-loc wavelast 		"9" 	// select survey-specific last wave
-// loc ptestname 		"cesdr"
-// need to do correct this accordingly
-// loc pthreshold		"3"
+// loc wavelast 		"9" 	// select survey-specific last wave
 	drop if agemin<50  & dataset=="SHARE"
 	drop if agemin<50  & dataset=="ELSA"
 	*drop if wave==3    & dataset=="SHARE" // already dropped
@@ -77,18 +55,17 @@ loc wavelast 		"9" 	// select survey-specific last wave
 drop if agemin<`agethreshold'	
 	*STOP /*comment to continue running file*/
 **********************
-set graphics on 
-*set graphics off /*disables graphics (but also -graph combine- commands) */
 cd  "$outpath/fig"
+
 
 
 ****************************************************************************************************
 *Part 7a*: Vizualization (Do File Setup, variable and local definitions) 
 ****************************************************************************************************	
 *** define locals to apply to entire file ***
-gl sample 		"sfullsample" // sfullsample, sbalanced, sfull5 (choose what is best)
-gl samplelabel: variable label $sample
-loc sample 			"sfull5" // copy these lines if a specific subsample shall apply to specific plot
+// 	gl sample 		"sfullsample" // sfullsample, sbalanced, sfull5 (choose what is best)
+// 	gl samplelabel: variable label $sample
+loc sample 		"sfull5" // copy these lines if a specific subsample shall apply to specific plot
 loc samplelabel: variable label `sample'
 set scheme s1color
 gl opt_global 		"" // settings to apply to all graphs 
@@ -99,81 +76,39 @@ gl  diseaselist 	"d_hibp d_diab d_heart d_lung d_depr d_osteo d_cancr d_strok d_
 *** define additional variables ***
 *** age groups ***
 gen 	agegrp 	= age
-replace agegrp 	= `upperthreshold' if agegrp>`upperthreshold' & agegrp<. /*group few very old*/
+replace agegrp 	= 85 if agegrp>85 & agegrp<. /*group few very old*/
 la var  agegrp 	"age"
 *tabstat age, by(agegrp) stats(min max)
 
 
-
-*** generate duration with c conditions ***
-	* this generates duration of CONSECUTIVE periods
-	* problems:
-	* some people switch 2-1-2-1-2-1, duration here jumps back to 1 
-gen duration = 0 if d_count>0 & !mi(d_count) // only when count is 1 and not missing 
-sum d_count, meanonly
-loc d_count_max = r(max) // maximum disease count across all i
-forval i=1/`d_count_max'{
-bys ID (time): replace duration = cond(d_count==`i',   cond(diff_d_count==0, duration[_n-1]+1,1),duration)
-	}
-*replace duration = . if mi(d_count) // if count missing, duration should be missing (this line should make 0 changes)
-la var duration 			"(consecutive) t with c conditions"
-
-	**set duration to missing if left-censored (do not know the 'true' duration)**
-	bys ID: egen d_count_min = min(d_count)
-	**# Bookmark #3 problem if count is 2-0-1-1-1-1-, then 1 is taken as min and the first time period is not missing duration
-		*replace duration = . if d_count_min==d_count // do not know if entered survey already with condition
-	gen		 duration_uncens = duration if d_count_min!=d_count
-	la var 	 duration_uncens	"(consecutive) t with c conditions (uncensored)"
-
 	
-** check duration correctly generated **
-sum duration* 		// max duration should not be larger than time interval 
-tab duration time	// should 
-sum time, meanonly 
-loc timediff = (r(max)-r(min))/2
-di "`timediff'" // should equal to the maximum of duration above
-		*	bro ID wave d_count* diff_d_count* duration if ID==10013010
-		*	bro ID wave d_count* diff_d_count* duration if ID==10063010
-	*li ID time d_count duration in 1/50 if !mi(d_count)
-		sum duration*
-	**# Bookmark #3 check this for SHARE. Sth with duration is generated incorrectly when there is a gap
-		*bro ID wave d_count_min d_count duration duration_uncens	
-		*++
-		*/
-
-	/**count from first onset onwards for durations, ignoring "recovery" **	
-	*bys ID (time): replace duration = cond(d_count==`i'|d_count==`i'-1,   cond(diff_d_count==0|diff_d_count==-1, duration[_n-1]+1,1),duration) // if sb goes from 3 to 2 to 3, the first 3 is considered in calcuation of duration
-	// 	gen 	d_count2 = d_count
-	// 	replace d_count2 = d_count - diff_d_count if diff_d_count < 0
-	// 	*tab d_count d_count2
-	// 	*sort ID time
-	// 	bys ID: gen 	diff_d_count2 = d_count2 - L.d_count2
-	// 	bro ID wave d_count* diff_d_count* duration if ID==10013010
-	// 	*/
-	
-** income groups **
+/** income groups **
 loc temp "5"
 xtile 	qitoth = itoth, nq(`temp')
 la var 	qitoth "quantile (`temp') of itoth"
 *pctile  pctile = itoth, nq(3) genp(perc)
 *xtile 	incomegroups2 = itoth, cutpoints(pctile) // same, but can be based on another variable
 *pctile pct = mpg [w=weight], nq(10) genp(percent) // could add weights
+*/
+
+	** install packages **
+	*net install transcolorplot , from(http://www.vankerm.net/stata)
+	*net describe transcolorplot
 
 ****************************************************************************************************
 *Part 7b*: Vizualization (Plots)
 ****************************************************************************************************
-/*** +++++++++++++++++++ histograms +++++++++++++++++++ ***
-** variable distributions ** 
+/*** +++ distribution (hist) of main variables +++ ***
 loc sample 	"sfull5" // copy these lines if a specific subsample shall apply to specific plot
 foreach sample in "sfullsample" "sfull5" {
 preserve 
-loc samplelabel: variable label `sample'
+loc slabel: variable label `sample'
 loc histlist ""
 bys ID: egen d_countmax = max(d_count)
 la var 		 d_countmax "# diseases (max. before death)"
 loc 	y "duration"
 foreach y in "d_count" "d_countmax" "ageatfirstobs" "onsetage" "onsetage_uncens" {
-*loc ylabel: variable label `y'
+	di "`slabel'"
 hist `y'	if `sample'==1, name(h`y', replace) title(`ylabel') note("`slabel'")
 gr export 	"$outpath/fig/`altsaveloc'/g_hist_`sample'_`y'.jpg", replace quality(100) 
 loc histlist "`histlist' h`y'" 
@@ -193,15 +128,37 @@ STOP
 ***********************************************************************
 local 	templist "$diseasecodelist" // always check chosen diseases are up to date
 foreach y of local templist {
-la var radiag`y' 	"s.r. onset `y'"
-la var onsetd_`y'	"obs. onset: `y'"
-la var onsetd_`y'_uncens	"obs. onset: `y' (uncens)" // too long in combined graph
+la var radiag`y' 	"sr.onset `y'"
+la var onsetd_`y'	"obs.onset: `y'"
+// la var onsetd_`y'_uncens	"obs.onset: `y' (uncens)" // too long in combined graph
 }
 
-/*** histogram of onset ***
+*** histogram of onset ***
 **# Bookmark #1 plot of sfull5healthy is unnecessary here for the radiag vars (same for density below), can also add to notes of each grapth the number of observations present in each distribution
-loc opt_local "" // scheme(s2mono) : not used bc not fitting
-//  loc sample 		"sfullsample" // copy these lines if a specific subsample shall apply to specific plot
+loc opt_local "" // scheme(s2mono) : not used bc does not fit
+loc sample 		"sfullsample" // copy these lines if a specific subsample shall apply to specific plot
+	loc sample 		"sfull5" // copy these lines if a specific subsample shall apply to specific plot
+	
+	loc opt_local "" // scheme(s2mono) : not used bc does not fit
+	
+	capture program drop myhistogram
+	program define myhistogram 
+		args varname
+			loc templist "hibp diab heart lung"
+		foreach y of local templist {
+			di "`y'"
+			hist `varname'
+		}	
+	end
+	myhistogram onsetd_hibp
+	
+	++
+	di "`histlist'"
+	gr combine `histlist', title("histogram: first onset by disease (self-reported)" "`samplelabel'") name(h1`sample', replace) `opt_local'
+// 	gr export "`outpath'/fig/main/g_hist_`sample'_radiagonsetalld.pdf", replace 
+++
+
+
 foreach sample in "sfull5" "sfull5healthy" {
 preserve
 loc samplelabel: variable label `sample'
@@ -270,6 +227,9 @@ STOP
 loc sample 			"sfull5healthy" 
 	foreach sample in "sfull5" "sfull5healthy" {
 	preserve 
+	foreach y of local templist {
+	la var onsetd_`y'	"onset: `y'"
+	}
 	loc kdenlistmale 		""
 	loc kdenlistfemale 		""
 	loc kdenlist_obsmale 	""
@@ -293,18 +253,48 @@ la var 	density`y'_obs`sex' "`onsetd_`y'label'"
 di "`kdenlistmale'"
 twoway `kdenlistmale', 	 xla(0(10)80) 	title("male") name(k1male, replace)
 twoway `kdenlistfemale', xla(0(10)80) 	title("female") name(k1female, replace)
-gr combine k1male k1female, title("density: first onset by disease (self-reported)"  "`samplelabel'") ycommon name(k1bysex, replace)
+gr combine k1male k1female, title("density: first onset by disease (self-reported)"  "`samplelabel', `data'") ycommon name(k1bysex, replace)
 gr export 	"$outpath/fig/main/g_kden_`sample'_radiagonsetalld_bysex.pdf", replace 
 twoway `kdenlist_obsmale',  	title("male") name(k2male, replace)
 twoway `kdenlist_obsfemale', 	title("female") name(k2female, replace)
-gr combine k2male k2female, title("density: first onset by disease (observed)"  "`samplelabel'") ycommon name(k2bysex, replace)
+gr combine k2male k2female, title("density: first onset by disease (observed)"  "`samplelabel', `data'") ycommon name(k2bysex, replace)
 gr export 	"$outpath/fig/main/g_kden_`sample'_onsetalld_bysex.pdf", replace 
 restore 
 	}
 STOP
 */
 
-	*** density of higher order first onset ***	
+	/*** density of higher order onset ***	
+	** generate higher order onset (self-reported) ** 
+	sum radiag* 
+	sum onsetage_g2 // 1st onset 
+	des onsetage_g2
+
+	// now define the 2nd onset age (using radiag)
+// 	loc  diseasecodelist "$diseasecodelist" 
+	di 	"`diseasecodelist'"
+	
+	loc 	radiaglist "" 
+	foreach v of global diseasecodelist {
+    gen second_onset_age_`v' = radiag`v' if radiag`v' > onsetage_g2 
+}
+	egen onsetage_g2_2th = rowmin(second_onset_age_*)
+
+	foreach v of global diseasecodelist {
+    gen third_onset_age_`v' = radiag`v' if radiag`v' > onsetage_g2_2th 
+}
+	egen onsetage_g2_3th = rowmin(third_onset_age_*)
+
+	sum onsetage_g2 second_* third_*
+	drop second_* third_* 
+	// now define if the disease first emerged at the same time as the 2nd (3rd) disease (for each disease a variable)
+	foreach v of global diseasecodelist {
+	gen radiag2th`v' = radiag`v'  if radiag`v'  == onsetage_g2_2th 
+	gen radiag3th`v' = radiag`v'  if radiag`v'  == onsetage_g2_3th 
+	}
+		*bro ID wave onsetage_g2* radiag*
+
+
 	
 	** generate higher order onset (observed) **
 	sum onsetd_*
@@ -312,23 +302,27 @@ STOP
 	
 		** conditional on being healthy at baseline, what is the age at which the 2nd, the 3rd disease is first observed (and which disease is it)** 
 // 					loc 	radiaglist "" 
-				foreach v of global diseasecodelist {
-				gen second_onset_age_`v' = onsetd_`v' if onsetd_`v' > onsetage 
-			}
-				egen onsetage_2th = rowmin(second_onset_age_*)
+			foreach v of global diseasecodelist {
+			gen second_onset_age_`v' = onsetd_`v' if onsetd_`v' > onsetage 
+		}
+			egen onsetage_2th = rowmin(second_onset_age_*)
+			*bro ID wave onsetage onsetd_* second_onset_age*
 
-				foreach v of global diseasecodelist {
-				gen third_onset_age_`v' = onsetd_`v' if onsetd_`v' > onsetage2d 
-			}
-				egen onsetage_3th = rowmin(third_onset_age_*)		
-				drop second_onset_age_* third_onset_age* 
+// 			foreach v of global diseasecodelist {
+// 			gen third_onset_age_`v' = onsetd_`v' if onsetd_`v' > onsetage2d 
+// 		}
+// 			egen onsetage_3th = rowmin(third_onset_age_*)		
+			drop second_onset_age_* third_onset_age* 
 				
 	// now define if the disease first emerged at the same time as the 2nd (3rd) disease 
 	foreach v of global diseasecodelist {
 	gen onset2thd_`v' = onsetd_`v'  if onsetd_`v'  == onsetage_2th 
 	gen onset3thd_`v' = onsetd_`v'  if onsetd_`v'  == onsetage_3th 
 	}
-
+	*bro ID wave onset*
+	*++
+	
+	
 	*** density (non sex-specific) ***
 		loc i "2" // 2 3 
 			loc sample 		"sfull5healthy"  // do only for healthy sample
@@ -354,40 +348,10 @@ STOP
 	*/
 	
 	
-	
-	** generate higher order onset (self-reported) ** 
-	sum radiag* 
-	sum onsetage_g2 // 1st onset 
-	des onsetage_g2
+
 
 	
-	// now define the 2nd onset age (using radiag)
-// 	loc  diseasecodelist "$diseasecodelist" 
-	di 	"`diseasecodelist'"
-	
-	loc 	radiaglist "" 
-	foreach v of global diseasecodelist {
-    gen second_onset_age_`v' = radiag`v' if radiag`v' > onsetage_g2 
-}
-	egen onsetage_g2_2th = rowmin(second_onset_age_*)
-
-	foreach v of global diseasecodelist {
-    gen third_onset_age_`v' = radiag`v' if radiag`v' > onsetage_g2_2th 
-}
-	egen onsetage_g2_3th = rowmin(third_onset_age_*)
-
-	sum onsetage_g2 second_* third_*
-// 	bro ID wave onsetage_g2 radiag* second_onsetage_g2 if d_count>3
-
-	// now define if the disease first emerged at the same time as the 2nd (3rd) disease 
-	foreach v of global diseasecodelist {
-	gen radiag2th`v' = radiag`v'  if radiag`v'  == onsetage_g2_2th 
-	gen radiag3th`v' = radiag`v'  if radiag`v'  == onsetage_g2_3th 
-	}
-	
-// 	bro ID wave onsetage_g2* radiag2ndhibp radiag*
-	
-	*** density (non sex-specific) ***
+	/*** density (non sex-specific) ***
 		loc i "3" // 2 3 
  	loc sample 		"sfull5"  
 	loc samplelabel: variable label `sample'
@@ -496,6 +460,8 @@ STOP
 loc y 		"d_count"
 loc ylist	"pubpenr d_any d_count d_count_index" // 
 loc t 		"male"
+loc sample 		"sfullsample" // copy these lines if a specific subsample shall apply to specific plot
+	loc slabel: variable label `sample'
 loc x 		"agegrp" // age | agegrp |  time
 	loc xlabel : variable label `x'	/*uses variable label of x*/
 	loc tlabel1 : label (`t') 1		/*uses value 	label of t*/
@@ -535,14 +501,14 @@ twoway 	///
 	||  lfit 	`y'_mean `x'	if `x'>=60 & `t'==0 , lc(`col2') /// 
 */ legend(order(3 "`tlabel1'" 4 "`tlabel0'" )) ///
 `opt_global' ytitle("`ylabel'") yla(, ang(h))  ///
- xla(`agethreshold'(5) `upperthreshold') xsc(r(`agethreshold' `upperthreshold')) ytitle("N observations", axis(2)) xline(70, lcolor(gray) lwidth(vthin)) ///  /*uncomment for age-group graph*/ ///
+ xla(`agethreshold'(5) 85) xsc(r(`agethreshold' 85)) ytitle("N observations", axis(2)) xline(70, lcolor(gray) lwidth(vthin)) note("`slabel'") ///  /*uncomment for age-group graph*/ ///
 /// yscale(range(0 2000) axis(2)) /// /*adjust scale of 2nd axis*/ 
 /*leave this line empty*/
 gr export 	"$outpath/fig/main/g_crude_byagegrp-male_`y'.jpg", replace `jpghighquality'
 restore	
 }
 pause
-*STOP 
+STOP 
 */	
 
 
@@ -591,9 +557,51 @@ STOP
 	*/
 
 
+*******************************************
+*** +++ Disease count over time +++ *** 
+*******************************************
+preserve
+if dataset=="SHARE" {
+keep 	if hacohort==1 | hacohort==2 
+}
+if dataset=="ELSA" {
+keep 	if hacohort==1  
+}
+if dataset=="HRS" {
+keep 	if hacohort<5 
+}
+qui log using 	"$outpath/logs/log-agegrpmin5b.txt", text replace name(log) 
+/*this log is to show that the generation of agegrpmin5b is correct*/
+clonevar 	agegrpmin5b = agegrpmin5
+	replace 	agegrpmin5b = .m if agegrpmin5>65
+replace 	agegrpmin5b = .m if agegrpmin5!=agegrp5 /*if age is larger than entry cohort age*/	
+la de 		agegrpmin5bl 50 "ageatfirstobs & age: `agethreshold'-54" 55 "ageatfirstobs & age: 55-59" 60 "ageatfirstobs & age: 60-64" 65 "ageatfirstobs & age: 65-69" .m "current age larger than agegrpmin5"
+la val 		agegrpmin5b agegrpmin5bl
+bys agegrpmin5b: sum age /*agegrpmin5 only contains age<=agegrpmin5*/
+qui log close log 
+*tab age agegrpmin5 if agegrpmin5b>=. // shows that all missing observations are larger than cohort group
+
+loc 	y 			"d_count"
+loc 	ylabel: 	var label `y'
+loc 	timevar 	"time" // age | time | timesincefirstobs_yr | time | timesincefirstobs
+loc 	sample 		"sfullsample"
+loc samplelabel:	var label `sample'
+loc 	xla 		"" /*keep this empty for raw plot*/
+loc 	cat 		"agegrpmin5b"
+loc 	opt_marginsplot "ytitle("Predicted (`ylabel')")" // noci  
+loc 	ctrls  		"`ctrl'"
+loc 	reg  		reg `y' `timevar'##`cat' `ctrls' if `sample'==1 
+qui `reg'
+qui margins `timevar'#`cat' 
+marginsplot, `opt_marginsplot'  name(g`cat'_`cohort', replace) `xla'   title("`ylabel' over calendar time")  note("Sample: `samplelabel' | Controls: `ctrls' (none)" "Model: `reg'")  xla(, ang(20))
+gr export 	"$outpath/fig/main/g_reg_by`timevar'-`cat'_`sample'_`y'.jpg", replace 
+restore	
+pause 
+*/	
+
 
 /*******************************************
-*** +++ Disease count over age/time +++ *** 
+*** +++ Disease count over age +++ *** 
 *******************************************
 
 **recode age and timesincefirstobs if too few observations fall in this category and SEs large (for agemin<=70 sample**
@@ -630,8 +638,8 @@ qui `reg'
 timer on 1
 qui margins `timevar'#`cat' 
 //qui margins `cat', at(age=(`agethreshold'(1)90)) // this is a lot slower but does the same in this case
-marginsplot,  `opt_marginsplot'   `xla' title("Crude Data `cohortlabel'") note("Sample: `samplelabel' | Controls: `ctrls' (none)" "Model: `reg'") name(g`cat'_`cohort', replace) // by(agegrpmin5) 
-*gr export 	"$outpath/fig/main/g_reg_by`timevar'-`cat'_`sample'_`y'.jpg", replace	quality(100)
+marginsplot,  `opt_marginsplot'   `xla' title("Crude Data (`data')") note("Sample: `samplelabel' | Controls: `ctrls' (none)" "Model: `reg'") name(g`cat'_`cohort', replace) // by(agegrpmin5) 
+gr export 	"$outpath/fig/main/g_reg_by`timevar'-`cat'_`sample'_`y'.jpg", replace	quality(100)
 timer off 1 
 timer list 1
 	pause
@@ -648,7 +656,7 @@ timer list 1
 	}
 	*/
 
-/*by covariate levels ((b) separate sub-plots per cohort)*
+*by covariate levels ((b) separate sub-plots per cohort)*
 loc 	 cat 		"male"
 loc 	 catlist 	"male raeducl countatfirstobs"	
 foreach  cat of local catlist {	
@@ -661,13 +669,13 @@ loc 	 ctrls  "`ctrl'"
 loc 	 reg  	reg `y' `timevar'##`cat' `ctrls' if `sample'==1 & agegrpmin5==`cohort'
 qui `reg'
 qui margins `timevar'#`cat'
-marginsplot, `opt_marginsplot'  `xla' `xlarotate' title("Crude Data `cohortlabel'") note("Sample: `samplelabel' | Controls: `ctrls' (none)" "Model: `reg'") name(g`cat'_`cohort', replace)  // by(agegrpmin5)
+marginsplot, `opt_marginsplot'  `xla' `xlarotate' title("Crude Data (`data')") note("Sample: `samplelabel' | Controls: `ctrls' (none)" "Model: `reg'") name(g`cat'_`cohort', replace)  // by(agegrpmin5)
 *gr export 	"$outpath/fig/main/g_reg_by`timevar'-`cat'_`sample'_d_count_`cohort'.jpg", replace quality(100)
 } 
 }
 */
 
-	*by mortality*
+	/*by mortality*
 	**# Bookmark #1 can do separately for all countatfirstobs levels (otherwise, include this to plot (b) above)
 **# Bookmark #1 I think this does this by all groups, hence code stops for >65
 **# Bookmark #1 in ELSA have no radage apparently, check this
@@ -719,22 +727,21 @@ loc 	ctrls  		"`ctrl'"
 loc 	reg  		xtreg `y' `timevar'##`cat' `ctrls' if `sample'==1 
 qui `reg'
 qui margins `timevar'#`cat'
-marginsplot, `opt_marginsplot'   `xla' `xlarotate'  title("Crude Data `cohortlabel'")  note("Sample: `samplelabel' | Controls: `ctrls' (none)" "Model: `reg'") name(g`cat'_`cohort', replace)
-*gr export 	"$outpath/fig/main/g_reg_by`timevar'-`cat'_`sample'_d_count.jpg", replace
+marginsplot, `opt_marginsplot'   `xla' `xlarotate'  title("Crude Data (`data')")  note("Sample: `samplelabel' | Controls: `ctrls' (none)" "Model: `reg'") name(g`cat'_`cohort', replace)
+gr export 	"$outpath/fig/main/g_reg_by`timevar'-`cat'_`sample'_d_count.jpg", replace
 	**# Bookmark #6 if i want to show that time of entry does not matter, i can show that accumulation is parallel for different inw_first groups. However, do this in a separate graph; for this, use inw_first as a category. For this: use *replace inw_first=. if inw_first>8 (only in HRS)
 pause
 */
 
-
-	/** +++ (a) graph over age by first onset time +++ *** (and maybe also do by timesincefirstobs), timesincefirstobs does not make sense until i group categories by time, not by agegrps anymore
-**# Bookmark #1 plot same plot also by categories of firstage_mm
+/*** +++++++++++++++++++ graph over age by first onset age +++ *** (and maybe also do by timesincefirstobs), timesincefirstobs does not make sense until i group categories by time, not by agegrps anymore
+**# Bookmark #1 plot same plot also by categories of firstage_mm  +++++++++++++++++++ ***
 * do also with d_count_lead 
 	*preserve // bc replace firstage
-	egen 	firstagegrp5 = cut(onsetage),    at (`agethreshold',55,60,65,70,75, 120) // ,80, 	
+	egen 	firstagegrp5 = cut(onsetage),    at (`agethreshold',55,60,65,70,75,120) // ,80, 	
 	recode  firstagegrp5 (`agethreshold' = 50)
 	replace firstagegrp5 = . if d_anyatfirstobs==1 
 	loc 	labelname "firstage:"
-	la de 	firstagegrp5l 	50  "`labelname' `agethreshold'-54" 55 "`labelname' 55-59" 60 "`labelname' 60-64" 65 "`labelname' 65-69" 70 "`labelname' 70-74" 75 "`labelname' 75+"  
+	la de 	firstagegrp5l 	50  "`labelname' `agethreshold'-54" 55 "`labelname' 55-59" 60 "`labelname' 60-64" 65 "`labelname' 65-69" 70 "`labelname' 70-74" 75 "`labelname' 75+" 
 	la val 	firstagegrp5 firstagegrp5l
 	*tab firstagegrp5,m
 	*recode d_count_lead (99=10)
@@ -767,8 +774,7 @@ loc cohortlabel: label (`cohortvar') `cohort'
 	qui `reg'
 	qui margins `timevar'#`cat'
 	marginsplot, `opt_marginsplot'  `xla' `xlarotate' title("Crude Data, by age of first onset (`cohortlabel')") legend(order(`labellist')) note("Sample: `samplelabel' | Controls: `ctrls' (none)" "Model: `reg'")  name(g`cat'_`cohort', replace)  // by(agegrpmin5) // 
-	gr export 	"$outpath/fig/main/g_by`timevar'-`cat'_`sample'_`y'_`cohort'.jpg", replace `jpghighquality'
-		*gr export 	"C:\Users\User\Documents\GitHub\2-projectMM-SHARE\files\figELSA/g_reg_by`timevar'-`cat'_`sample'_`y'.jpg", replace // also copy into presentation location
+	gr export 	"$outpath/fig/main/g_by`timevar'-`cat'_`sample'_`y'_`cohort'.jpg", replace quality(100)
 }
 	pause
 		restore 
@@ -776,34 +782,7 @@ loc cohortlabel: label (`cohortvar') `cohort'
 
 
 
-/*** +++++++++++++++++++ graph over time +++++++++++++++++++ ***
-preserve
-qui log using 	"$outpath/logs/log-agegrpmin5b.txt", text replace name(log) 
-/*this log is to show that the generation of agegrpmin5b is correct*/
-clonevar 	agegrpmin5b = agegrpmin5
-replace 	agegrpmin5b = .m if agegrpmin5!=cohort5 /*if age is larger than entry cohort age*/	
-la de 		agegrpmin5bl 50 "ageatfirstobs & age: `agethreshold'-54" 55 "ageatfirstobs & age: 55-59" 60 "ageatfirstobs & age: 60-64" 65 "ageatfirstobs & age: 65-69" .m "current age larger than agegrpmin5"
-la val 		agegrpmin5b agegrpmin5bl
-bys agegrpmin5b: sum age /*agegrpmin5 only contains age<=agegrpmin5*/
-qui log close log 
-*tab age agegrpmin5 if agegrpmin5b>=. // shows that all missing observations are larger than cohort group
 
-loc 	y 			"d_count"
-loc 	ylabel: 	var label `y'
-loc 	timevar 	"time" // age | time | timesincefirstobs_yr | time | timesincefirstobs
-loc 	xla 		"" /*keep this empty for raw plot*/
-// loc 	xlarotate	"xla(, ang(20))" /*only applies to marginsplot*/
-loc 	cat 		"agegrpmin5b"
-loc 	opt_marginsplot "ytitle("Predicted (`ylabel')")" // noci  
-loc 	ctrls  		"`ctrl'"
-loc 	reg  		reg `y' `timevar'##`cat' `ctrls' if `sample'==1 
-qui `reg'
-qui margins `timevar'#`cat' 
-marginsplot, `opt_marginsplot'  name(g`cat'_`cohort', replace) `xla'   title("`ylabel' over calendar time")  note("Sample: `samplelabel' | Controls: `ctrls' (none)" "Model: `reg'")  xla(, ang(20))
-gr export 	"$outpath/fig/main/g_reg_by`timevar'-`cat'_`sample'_`y'.jpg", replace 
-restore	
-pause 
-*/
 	
 
 
@@ -811,277 +790,25 @@ pause
 
 
 
-	*** +++ 2-y transition probability +++ ***
-	*preserve 
-	gen 	d_count2 = d_count
-	replace d_count2 = 99 if dead==1 
-	la de  	d_count2l 99 "dead" // add dead label to 99
-	la val 	d_count2 d_count2l
-	tab 	d_count2 
-**# Bookmark #2 need to set d_count2 to missing after first period dead
-	tab 	d_count d_count_lead, nofreq row matcell(test)
-	mat li test 
-	xttrans d_count2
-	**start plot**
-	forval gamma=0/4{ // only from 4 starting states
-		sum d_count if d_count!=99, meanonly 
-		loc d_countmax = r(max)
-		*loc    j=2
-		forval j=0/`d_countmax'{
-	gen trans_`gamma'to`j' = (d_count == `gamma' & d_count_lead == `j') if !mi(d_count) & !mi(d_count_lead) & d_count==`gamma' // indicator of WHETHER transiting to specific condition
-	tab trans_`gamma'to`j' d_count
-	}
-	gen trans_`gamma'todead = (d_count == `gamma' & d_count_lead == 99) if !mi(d_count) & !mi(d_count_lead) & d_count==`gamma' // indicator of WHETHER transiting to specific condition	
-	}
-	sum trans_*	
-	
-	**
-	/**using logistic fit (only single outcome allowed (I think, unless able to combine margins to a single marginsplot) - the solution is to predict the margins for the ordered logit)**
-	logit trans_1to2 c.age if sfull==1
-	margins , at(age=(51(10)90))
-	marginsplot 
-	*/
-	
-	**crude plotting: transition by age**
-	loc 	col "gs10"
-	loc 	x "age"
-	loc 	gamma=2
-	forval gamma=0/4{
-	preserve
-	collapse (mean) y1 = trans_`gamma'to1 (mean) y2 = trans_`gamma'to2 (mean) y3 = trans_`gamma'to3 (mean) y4 = trans_`gamma'to4 (mean) y5 = trans_`gamma'to5 (mean) y6 = trans_`gamma'to6 (mean) dead = trans_`gamma'todead   if age<85, by(`x')
-		local labellist  `labellist' `counter' `"d_count=`valuel'"'   
-		loc labellist 1  `"trans_`gamma'to1"' 2 `"trans_`gamma'to2"' 3 `"trans_`gamma'to3"' 4 `"trans_`gamma'to4"' 5 `"trans_`gamma'to5"' 6 `"trans_`gamma'to6"' 7 `"trans_`gamma'todead"'
-		mac list _labellist 
-	twoway 	(scatter y1 `x') (scatter y2 `x') (scatter y3 `x') (scatter y4 `x') (scatter y5 `x') (scatter y6 `x') (scatter dead `x')  (lowess y1 `x', lcolor(`col'))  (lowess y2 `x', lcolor(`col'))  (lowess y3 `x', lcolor(`col'))  (lowess y4 `x', lcolor(`col')) (lowess y5 `x', lcolor(`col')) (lowess y6 `x', lcolor(`col')) (lowess dead `x', lcolor(`col')) ///
-      , title("2-year transition probability: `gamma' to j") xla(50(5)85)  name(g_`gamma', replace)  legend(cols(3) ///
-	 order(`labellist')) // ) //  
-	*gr export 	"$outpath/fig/main/g_by`x'_transp_`gamma'toj.jpg", replace `jpghighquality'
-	restore
-	}
-	STOP
-	*/	
-	
-	/**crude plotting: transition by duration in state**
-	loc 	col "gr10"
-	loc 	x "duration"
-loc cohortvar "cohort"
-loc cohort 		"50"
-	loc 	gamma=1
-forval gamma=0/4{
-**foreach cohort in 50 60 70 80{
-*loc cohortlabel: label (`cohortvar') `cohort'
-	preserve
-*	keep if `cohortvar'==`cohort'
-	collapse (mean) y1 = trans_`gamma'to1 (mean) y2 = trans_`gamma'to2 (mean) y3 = trans_`gamma'to3 (mean) y4 = trans_`gamma'to4 (mean) y5 = trans_`gamma'to5 (mean) y6 = trans_`gamma'to6 (mean) dead = trans_`gamma'todead   if age<85, by(`x' cohort)
-	twoway 	(connected y1 `x') (connected y2 `x') (connected y3 `x') (connected y4 `x') (connected y5 `x') (connected y6 `x') (connected dead `x') ///
-      ,  by(cohort, title("2-year transition probability by `x': `gamma' to j")) name(g_`gamma', replace) legend(cols(3)) 			
-	gr export 	"$outpath/fig/main/g_by`x'_transp_`gamma'toj.jpg", replace `jpghighquality'
-	restore	
-}	
-}
-	++
-	
+
 	
 	
 	
 	
 	
 
-*** +++ show if there is any duration dependence +++ ***
-
-	
-	
-	*bys d_count: tab d_count_lead if sfull==1 & age<=90
-	loc y 		"d_count_lead"
-	loc x 		"duration"
-	loc 	i=1
-	*forval  i=1/4{
-	*preserve 
-		set seed 200
-		*sample 10
-		loc sample "sfull"
-// 		**labellist needs to be located here after preserving data (some levels are not in some plots)
-// 		keep if d_count==`i'
-// 		loc counter   "1"
-// 		loc labellist "" /*need to delete local if in loop*/		
-// 		loc z 		 "d_count_lead"
-// 		levelsof `z', local(levels)
-// 		foreach l of local levels{
-// 		loc 	valuel : label (`z') `l'				
-// 		local labellist  `labellist' `counter' `"lead=`valuel'"'   
-// 		loc counter = `counter'+1	
-// 		}	
-
-// levelsof 	cohort, local(levels)
-// loc 		cohort "50"
-// *foreach  cohort of   local levels {
-// loc cohortlabel : label (agegrpmin5) `cohort'
-// loc cohortlabel "(`cohortlabel')"  /*add parentheses if subplots*/
-		ologit 	 d_count_lead i.duration if `sample'==1 & cohort==50 & d_count==`i', 
-*		predict pr2b, pr equation(#1) // same as equation(0), bc that is the first equation		
-		predict phat0, 	pr equation(0)
-		predict phat, 	pr outcome(0)
-		predict pr1b, 	pr outcome(1)
-		predict prdead, pr equation(99)		
-*		predict pr4b, pr equation(4,5)	
-		predict phat1, pr // what does this line do? Simply predicts the outcomes in the same order as varnames are specified
-	*	predict pr0 pr1 pr2 pr3 pr4 pr99, pr // same as -predict phat1b, pr outcome(#) [or equation(#)]-
-
-		sort age
-		*bro age pr0
-			*twoway line pr0 age // weigh graph **
-	qui margins `x'	, predict(outcome(0)) 
-	marginsplot, name(gr0, replace) noci
-	qui margins `x'	, predict(outcome(1)) 
-	marginsplot, name(gr1, replace) noci
-	qui margins `x'	, predict(outcome(2)) 
-	marginsplot, name(gr2, replace) noci
-	*qui margins `x'	, expression(predict(outcome(3)) + predict(outcome(4)) + predict(outcome(5))) 
-	*marginsplot, name(gr3, replace) noci
-	qui margins `x'	, predict(outcome(99))  
-	marginsplot, name(grdead, replace) noci
-		qui margins `x'	,   
-		marginsplot, name(grall, replace) noci
-	gr combine gr0 gr1 gr2 grdead , name(combined, replace)
-
-	, title("Predicted `y' by `x', count before transition: `i'") note("Sample: `samplelabel' | Controls: `ctrls' (none)" "Model: `reg'" "")  legend(order(`labellist') cols(3)) recast(line) recastci(rarea) name(g`i') // ylabel(#2) //  yscale(range(0 1))  
-	gr export 	"$outpath/fig/main/g_ologit_by`x'_`y'_`i'.jpg", replace `jpghighquality'
-	restore
-	}	
-	pause
-	*STOP
-	*/	
 
 
 
-tab d_count_lead, gen(d_count_lead_) // for stacked bar chart
-**correct  numbering of dummy variables: -tab,gen()- names first category 0 as 1 instead of 0**
-sum d_count_lead if d_count_lead!=99 , meanonly
-loc d_count_lead_max = r(max) +1 // +1 for 'dead' dummy 
-forval i=1/`d_count_lead_max'{
-loc j = `i'-1
-rename d_count_lead_`i' d_count_lead_`j' // rename dummy to the actual value
-}
-sum d_count_lead*
 
 
 
-		
-/*** plot duration dependence: d_count_lead by duration ***
-*loc y "d_count_lead"
-loc x 	  "duration" // d_count
-loc ctrls ""
-loc startcount = 1
-
-loc cohortvar "cohort"
-loc cohort 		"50"
-*foreach cohort in 50 60 70 80{
-loc cohortlabel: label (`cohortvar') `cohort'
-**bar graph**
-	** adapt legend (i.e. include "dead") ** 
-	*tab  duration d_count_lead 
-	*tab  duration d_count_lead if sfull==1 & d_count==`startcount'
-	qui sum d_count_lead if `sample'==1 & d_count_lead!=99, meanonly // exclude value of "dead"
-	loc d_count_lead_max  = r(max) // maximum d_count_lead excluding dead status
-	loc d_count_lead_dead = r(max)+2 // +2 bc first level of d_count_lead is 0	
-	loc labellist 	""
-	loc counter 	"1"
-	forval i = 0/`d_count_lead_max'{
-	loc labellist  	`labellist' `counter' `"d_count_lead=`i'"' 
-	loc counter = 	`counter'+1	
-	}
-	loc labellist `labellist' `d_count_lead_dead' `"dead at t+1"' // add dead status to legend
-	mac list _labellist	 // should not use -display-, but mac list 
-	preserve
-	la de  d_countl2 1 "count before transition: 1" 2 "count before transition: 2" 3 "count before transition: 3" 4 "count before transition: 4" 5 "count before transition: 5" 6 "count before transition: 6"
-	la val d_count d_countl2
-	*keep if countatfirstobs==0
- 	keep if d_count<=6 // only do for first 4 startcounts
-graph bar (mean) d_count_lead_* if `sample'==1  & `cohortvar'==`cohort', over(`x') name(g_trans`cohort', replace) stack  legend(order(`labellist') col(3)) by(d_count, title("2y transition, by # periods spent with C conditions" "(`cohortlabel')") note("Only observations before a transition are used")) ytitle(" probability")  // note("Disease count by number of periods spent with C conditions") // xla(,label("Number of Periods with `startcount' conditions")) // over(d_count)	
-gr export 	"$outpath/fig/main/g_barby`x'_`sample'_`cohort'.jpg", replace `jpghighquality'
-restore 
-*/
-// 	loc x "duration"
-// 	loc i = 1
-// 	forval i=1/4{
-// 	loc reg 	ologit 	 d_count_lead i.`x' if `sample'==1 & age<=90 & `cohortvar'==`cohort' & d_count==`i' & countatfirstobs==0, 
-// 	eststo m1: qui `reg'
-// 	qui margins `x'	// no dydx
-// 	marginsplot, title("Predicted `y' by `x', count before transition: `i'") note("Sample: `samplelabel' | Controls: `ctrls' (none)" "Model: `reg'" "")  legend( cols(3)) noci //  recast(line) recastci(rarea) // ylabel(#2) //  yscale(range(0 1))  legend(order(`labellist'):: should not use labellist here bc the legend mislabels then if e.g. outcome 2 is missing
-// 	*gr export 	"$outpath/fig/main/g_ologit_by`x'_`y'_`i'.jpg", replace `jpghighquality'
-// 	}	
-	** archive code: use if plot separate plots **
-	*qui sum d_count_lead if `sample'==1 & d_count_lead!=99 & d_count == `startcount', meanonly 
-	*forval startcount = 1/4 { // no 0 bc there is no duration with 0 conditions
-*graph bar (mean) d_count_lead_* if `sample'==1 & d_count==`startcount' & cohort==`cohort', over(`x') name(g_trans`startcount', replace) stack title("# diseases before transition: `startcount' | `cohortlabel'")  legend(order(`labellist'))  // do separate for each age cohort // xla(,label("Number of Periods with `startcount' conditions")) // over(d_count)	
-	*gr combine g_trans1 g_trans2 g_trans3 g_trans4,
-	*}
-*pause
-*/				
-
-
-// note: currently people might jump back to earlier count and duration drops again; can try to enforce strictly increasing data
-// 		// ?? not working with gaps when a period missing but present in dataset (e.g. in SHARE), but this is not a problem if the missing time period is dropped
-
-/**	ologit**
-*loc reg 	xtologit `y' i.`x' if `sample'==1, nolog vce(cl ID)  // c.age#c.age  male married i.raeducl*, 
-loc reg 	ologit `y' i.`x'  if `sample'==1 & d_count==`startcount', nolog vce(cl ID) // c.age#c.age  male married i.raeducl*
-`reg'
-margins i.`x' // , dydx(`x')	
-*margins , dydx(`x')	
-marginsplot, note("Notes: Sample: `samplelabel'" "Controls: `ctrls' (none)" "Command: `reg'") name(mh1, replace) 
-gr export 	"$outpath/fig/main/g_ologit_by`x'_`y'_`startcount'.jpg", replace `jpghighquality'
-	loc ctrls "male married i.raeducl*"
-	loc reg 	ologit `y' i.`x' `ctrls' if `sample'==1  & d_count==`startcount', nolog vce(cl ID) // c.age#c.age  male married i.raeducl*
-	`reg'
-	margins `x' // , dydx(`x')	
-	marginsplot, note("Notes: Sample: `samplelabel'" "Controls: `ctrls' (none)" "Command: `reg'") name(mh2, replace) 
-	gr export 	"$outpath/fig/main/g_ologit_by`x'_`y'_`startcount'_adj.jpg", replace `jpghighquality'	
-*/
-
-*mtable	
-
-
-
-	*** +++ "prevalence of" prob of exiting to another state +++ ***
-			/** generate exit probabilities as variables ** 
-				**should be identical to the probabilities predicted from within the ologit model**
-			loc i "1"
-			*forval i=1/4{
-			*gen prc2givenc1	= 2 if d_count==1
-			tab d_count_lead if d_count==1,  // sum(raeducl) // plot
-			*tab does not work*
-				gen myvar1=1 if d_count==1 & d_count_lead==2 
-				gen myvar2=1 if d_count==1 
-					bys age: egen myvar1n = _n if myvar1==1
-				gen prd1tod2 = myvar1/myvar2 
-				+
-			*}
-			*/
 	
 
 
 	
 	
-	/*** ++ ordered logit with duration dependence (will move later to reg file due to duration variable) ++ ***
-	** cs data **
-	*preserve 
-	recode  d_count_lead (99 = . ) // do not model mortality in ordered logit
-	replace duration_uncens = 5 if duration_uncens>5 & !mi(duration_uncens) // setting maximum duration dependence T
-	*hist duration_uncens
-	ologit d_count_lead c.age c.age#c.age c.age#c.d_count c.age#c.age#c.d_count , vce(cl ID)
-	*log using 		"$outpath/logs/log-t-regd_count-age-ologitduration.txt", text replace name(ologitduration) 
-	ologit d_count_lead i.d_count i.duration_uncens c.age c.age#c.age c.age#c.d_count c.age#c.age#c.d_count if sfull==1, vce(cl ID)
-	*log close ologitduration
-		margins , dydx(duration_uncens) at(age=(`agethreshold'(5)90) countatfirstobs=0)
-		marginsplot, label(order 1 "")	
-	++
-	
-	** panel data **
-	xtologit
-	
-	++
-	*/	
+
 	
 	
 ++++

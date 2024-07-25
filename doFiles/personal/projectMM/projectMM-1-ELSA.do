@@ -91,8 +91,9 @@ rename r`i'iwindm iwmr`i'
 tab 	cohort_er1 cohort_er2	,m
 tab 	cohort_er1 cohort_er4	,m
 tab 	cohort_er3 cohort_er6	,m
-gen 	hacohort = 1 if inrange(cohort_er1,1,11) | inrange(cohort_er2,1,11) | inrange(cohort_er3,1,11) | inrange(cohort_er4,1,11) | inrange(cohort_er5,1,11) | inrange(cohort_er6,1,11) | inrange(cohort_er7,1,11) | inrange(cohort_er8,1,11) | inrange(cohort_er9,1,11)  
-keep if hacohort==1
+loc 	v "11"
+gen 	hacohort = 1 if inrange(cohort_er1,1, `v') | inrange(cohort_er2,1,`v') | inrange(cohort_er3,1,`v') | inrange(cohort_er4,1,`v') | inrange(cohort_er5,1,`v') | inrange(cohort_er6,1,`v') | inrange(cohort_er7,1,`v') | inrange(cohort_er8,1,`v') | inrange(cohort_er9,1,`v')  
+// keep if hacohort==1
 la de 	hacohortl 1 "ELSA cohorts 1-11 (not comparable to HRS)"
 la val  hacohort hacohortl
 
