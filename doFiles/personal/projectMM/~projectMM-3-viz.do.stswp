@@ -19,8 +19,8 @@ loc outloc 	"`cv'" // to save locally
 *loc outloc "\\Client\C$\Users\User\Documents\GitHub\2-projectMM-`data'\" // from UWP save directly to PC (only works with full version of Citrix)
 }
 else {
-loc	cv 		"C:/Users/User/Documents/RUG/`data'/"
-loc	outloc 	"C:/Users/User/Documents/GitHub/2-projectMM-`data'" 	
+loc	cv 		"C:/Users/`c(username)'/Documents/RUG/`data'/"
+loc	outloc 	"C:/Users/`c(username)'/Documents/GitHub/2-projectMM-`data'" 	
 }
 gl 	outpath 	"`outloc'/files" /*output folder location*/
 loc saveloc 	"main" // main | supplement /*saving location*/
@@ -31,8 +31,6 @@ use 			"./`data'data/harmon/H_`data'_panel2-MM.dta", clear
 **define country-specific locals**
 if "`data'"=="SHARE" {
 loc agethreshold 	"50" // select survey-specific lower age threshold
-**# Bookmark #1 do not drop in full sample
-	*keep 	if hacohort==1 | hacohort==2 
 }
 if "`data'"=="ELSA" {
 loc agethreshold 	"50" // select survey-specific lower age threshold
@@ -41,19 +39,17 @@ loc agethreshold 	"50" // select survey-specific lower age threshold
 if "`data'"=="HRS" {
 loc agethreshold 	"51" // select survey-specific lower age threshold
 	// loc wavelast 		"14" 	// select survey-specific last wave
-	*keep 	if hacohort<=5 	
 	keep if wave>=3 & wave<=13 // cognitive measures not consistently available 		
 }	
-if "`data'"=="SHAREELSA" {
-loc agethreshold 	"50" // select survey-specific lower age threshold
-// loc wavelast 		"9" 	// select survey-specific last wave
-	drop if agemin<50  & dataset=="SHARE"
-	drop if agemin<50  & dataset=="ELSA"
-	*drop if wave==3    & dataset=="SHARE" // already dropped
-	drop if hacohort>2 & dataset=="SHARE"  
-}	
-drop if agemin<`agethreshold'	
-	*STOP /*comment to continue running file*/
+	if "`data'"=="SHAREELSA" {
+	loc agethreshold 	"50" // select survey-specific lower age threshold
+	// loc wavelast 		"9" 	// select survey-specific last wave
+		drop if agemin<50  & dataset=="SHARE"
+		drop if agemin<50  & dataset=="ELSA"
+		*drop if wave==3    & dataset=="SHARE" // already dropped
+		drop if hacohort>2 & dataset=="SHARE"  
+	}	
+	STOP /*comment to continue running file*/
 **********************
 cd  "$outpath/fig"
 
@@ -123,7 +119,7 @@ STOP
 */
 
 
-***********************************************************************
+/***********************************************************************
 *** +++ Histogram/Density of onset, for each disease separately +++ *** 
 ***********************************************************************
 local 	templist "$diseasecodelist" // always check chosen diseases are up to date

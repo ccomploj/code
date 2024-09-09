@@ -17,8 +17,8 @@ loc outloc 	"`cv'" // to save locally
 }
 else {
 *loc cv 		"G:/My Drive/drvData/`data'/" // own PC
-loc	cv 		"C:/Users/User/Documents/RUG/`data'/"
-loc	outloc 	"C:/Users/User/Documents/GitHub/2-projectMM-`data'" // do not overwrite existing output in the compiled output	
+loc	cv 		"C:/Users/`c(username)'/Documents/RUG/`data'/"
+loc	outloc 	"C:/Users/`c(username)'/Documents/GitHub/2-projectMM-`data'" // do not overwrite existing output in the compiled output	
 }
 gl 	outpath 	"`outloc'/files" /*output folder location*/
 loc saveloc 	"main" // main | supplement /*saving location*/
@@ -29,9 +29,6 @@ use 			"./`data'data/harmon/H_`data'_panel2-MM.dta", clear
 
 **define country-specific locals**
 if "`data'"=="SHARE" {
-loc agethreshold 	"50" // select survey-specific lower age threshold
-loc upperthreshold	"85" // select survey-specific upper age threshold	
-loc wavelast 		"8" 	// select survey-specific last wave
 // loc ptestname 	"eurod"
 // loc pthreshold	"4"
 	drop if wave==3 // is not really a time period, there are no regular variables for this wave
@@ -39,40 +36,20 @@ loc wavelast 		"8" 	// select survey-specific last wave
 	drop 	if countryID=="GR" /*relatively imprecise survey*/
 }
 if "`data'"=="ELSA" {
-loc agethreshold 	"50" // select survey-specific lower age threshold
-loc upperthreshold	"85" // select survey-specific upper age threshold	
-loc wavelast 		"9" 	// select survey-specific last wave
-// loc ptestname 	"cesdr"
-// loc pthreshold	"4"
 }
 if "`data'"=="HRS" {
-loc agethreshold 	"51" // select survey-specific lower age threshold
-loc upperthreshold	"85" // select survey-specific upper age threshold	
-loc wavelast 		"14" 	// select survey-specific last wave
-// loc ptestname 	"cesdr"
-// loc pthreshold	"4"
-	keep 	if hacohort<=5 	
-	keep if wave>=3 & wave<=13 // cognitive measures not consistently available 		
+// 	keep 	if hacohort<=5 	
+// 	keep if wave>=3 & wave<=13 // cognitive measures not consistently available 		
 }	
 if "`data'"=="SHAREELSA" {
-loc agethreshold 	"50" // select survey-specific lower age threshold
-loc upperthreshold	"85" // select survey-specific upper age threshold	
-loc wavelast 		"9" 	// select survey-specific last wave
-// loc ptestname 	"cesdr"
-// need to do correct this accordingly
-// loc pthreshold	"3"
-	drop if agemin<50  & dataset=="SHARE"
-	drop if agemin<50  & dataset=="ELSA"
-	*drop if wave==3    & dataset=="SHARE" // already dropped
-	drop if hacohort>2 & dataset=="SHARE"  
+// 	drop if hacohort>2 & dataset=="SHARE"  
 }	
-drop if agemin<`agethreshold'	
 **********************
 
 
-****************************************************************************************************
+***************************************************************************************************
 *Part 7a*: Regression (define .do file)
-****************************************************************************************************	
+***************************************************************************************************
 *cd  	"$outpath/tab"
 
 *** definition of global vars ***
@@ -81,31 +58,12 @@ loc samplelabel: variable label `sample'
 set scheme s1color	
 
 
-****************************************************************************************************
+***************************************************************************************************
 *Part 7b*: Regression (general)
-****************************************************************************************************	
+***************************************************************************************************
 **# Bookmark #1 move to part5 
 	la var smokenr "curr.smoking"
 	
-/*** +++ what predicts having any disease? (logit by wave just to check consistency (not for paper)), then (xt)logit using pooled sample +++ ***
-** logit by wave **
-levelsof time, local(levels)
-foreach l of local levels{
-eststo logit`l': qui logit d_any c.age  male marriedr i.raeducl*  if time==`l', or 
-estadd loc time  "`l'" 
-}
-esttab logit*,  stats(N r2_p time) nobase eform // `esttab_opt'
-	*export results using wave 1 only*
-	sum time, meanonly 
-	loc l = r(min)
-	eststo logit`l': qui logit d_any c.age  male i.raeducl* marriedr  if time==`l', or 
-	eststo logit`l'ctrls: qui logit d_any c.age  male i.raeducl* marriedr retempr smokenr if time==`l', or 
-	estadd loc time  "`l'", replace: logit*
-	loc    esttab_opt "la nobase nocons stats(N r2_p time) eform"
-	esttab logit`l'*, 									 `esttab_opt'  
-	esttab logit`l'* using "$outpath/reg/o_logit_d_any", `esttab_opt' tex replace
-	STOP
-*/
 
 /** xtlogit using all data **
 eststo 	xtlogitRE: qui xtlogit d_any 		c.age male married i.raeducl* if `sample'==1, or re vce(cl ID)  
@@ -326,8 +284,28 @@ sum `y' `ctrls' if `sample'==1 & wave==1
 
 
 
-****************************************************************************************************
+**************************************************************************************************
 *Appendix*
-****************************************************************************************************	
+**************************************************************************************************	
 
+
+/*** +++ what predicts having any disease? (logit by wave just to check consistency (not for paper)), then (xt)logit using pooled sample +++ ***
+** logit by wave **
+levelsof time, local(levels)
+foreach l of local levels{
+eststo logit`l': qui logit d_any c.age  male marriedr i.raeducl*  if time==`l', or 
+estadd loc time  "`l'" 
+}
+esttab logit*,  stats(N r2_p time) nobase eform // `esttab_opt'
+	*export results using wave 1 only*
+	sum time, meanonly 
+	loc l = r(min)
+	eststo logit`l': qui logit d_any c.age  male i.raeducl* marriedr  if time==`l', or 
+	eststo logit`l'ctrls: qui logit d_any c.age  male i.raeducl* marriedr retempr smokenr if time==`l', or 
+	estadd loc time  "`l'", replace: logit*
+	loc    esttab_opt "la nobase nocons stats(N r2_p time) eform"
+	esttab logit`l'*, 									 `esttab_opt'  
+	esttab logit`l'* using "$outpath/reg/o_logit_d_any", `esttab_opt' tex replace
+	STOP
+*/
 	

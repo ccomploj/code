@@ -27,32 +27,17 @@ loc saveloc 	"main" // main | supplement /*saving location*/
 loc altsaveloc  "allfiles" // saving location of all plots/subplots
 cd  			"`cv'"	
 use 			"./`data'data/harmon/H_`data'_panel2-MM.dta", clear	
-	pause
+	pause // press q+enter to continue after pause or turn off pauses above
 
 **define country-specific locals**
 if "`data'"=="SHARE" {
 loc agethreshold 	"50" // select survey-specific lower age threshold
-loc upperthreshold	"85" // select survey-specific upper age threshold	
-loc wavelast 		"8" 	// select survey-specific last wave
-// loc ptestname 		"eurod"
-// loc pthreshold		"4"
-	drop if wave==3 // is not really a time period, there are no regular variables for this wave
-	keep 	if hacohort==1 | hacohort==2 
-	drop 	if countryID=="GR" /*relatively imprecise survey*/
 }
 if "`data'"=="ELSA" {
 loc agethreshold 	"50" // select survey-specific lower age threshold
-loc upperthreshold	"85" // select survey-specific upper age threshold	
-loc wavelast 		"9" 	// select survey-specific last wave
-// loc ptestname 		"cesdr"
-// loc pthreshold		"4"
 }
 if "`data'"=="HRS" {
 loc agethreshold 	"51" // select survey-specific lower age threshold
-loc upperthreshold	"85" // select survey-specific upper age threshold	
-loc wavelast 		"14" 	// select survey-specific last wave
-// loc ptestname 		"cesdr"
-// loc pthreshold		"4"
 	keep 	if hacohort<=5 	
 	keep if wave>=3 & wave<=13 // cognitive measures not consistently available 		
 }	
@@ -60,19 +45,12 @@ if "`data'"=="SHAREELSA" {
 loc agethreshold 	"50" // select survey-specific lower age threshold
 loc upperthreshold	"85" // select survey-specific upper age threshold	
 loc wavelast 		"9" 	// select survey-specific last wave
-// loc ptestname 		"cesdr"
-// need to do correct this accordingly
-// loc pthreshold		"3"
 	drop if agemin<50  & dataset=="SHARE"
 	drop if agemin<50  & dataset=="ELSA"
 	*drop if wave==3    & dataset=="SHARE" // already dropped
 	drop if hacohort>2 & dataset=="SHARE"  
 }	
-loc t "male"
-drop if agemin<`agethreshold'	
-**********************
 
-pause 			// press q+enter to continue after pause or turn off pauses above
 
 ***************************************************************************************************
 *Part 6*: Analysis (sample selection and sumstats and simple regressions)
@@ -254,6 +232,7 @@ STOP
 */ 
 
 /*** summary statistics method 3: using -esttab- *** 
+loc t "male"
 *note: here we test for significant differences in vars between samples*
 loc 	mainvars  	"`continuous_meanonly' raeducl    " /*cannot use factor variables (`categorical' (=i.raeduc)) here, and other restrictions*/
 loc 	t 			"male" /*Need to addjust code if want multiple columns*/

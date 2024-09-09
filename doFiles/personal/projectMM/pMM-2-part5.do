@@ -3,31 +3,33 @@ pause off
 log close _all 	/*closes all open log files*/
 clear all		/*clears all data in memory*/
 
-***define folder locations***
-loc data 		"ELSA" // SHARE | ELSA (note for ELSA: part5-subDiseases may be incorrect because other diseases are included in measure)
-loc datalist 	"HRS SHARE ELSA"
+***choose data***
+loc data "SHARE"
+loc datalist 	"SHARE HRS ELSA"
 *foreach data of local datalist{
 
+
+***define folder locations***
+
+
 **basic paths if no user specified**
-// loc	cv 	"G:/My Drive/drvData/`data'/"
 loc cv ""
-loc github_p5subdiseases "https://raw.githubusercontent.com/ccomploj/code/main/doFiles/personal/projectMM/projectMM-2-part5-subDiseases.do" // on all devices use github link
+loc github_p5subdiseases "https://raw.githubusercontent.com/ccomploj/code/main/doFiles/personal/projectMM/pMM-2-part5-subDiseases.do" // on all devices use github link
 
 **flexible to user**
 if "`c(username)'" == "P307344" { // UWP server
 loc cv 		"X:/My Documents/XdrvData/`data'/"
 }
-if "`c(username)'" == "casto" { // my personal PC
-loc	cv 		"C:/Users/User/Documents/RUG/`data'/"
-loc github_p5subdiseases "C:/Users/User/Documents/GitHub/code/doFiles/personal/projectMM/projectMM-2-part5-subDiseases.do" // on my device use offline file
+else {
+loc	cv 		"C:/Users/`c(username)'/Documents/RUG/`data'/"
+*loc github_p5subdiseases "C:/Users/`c(username)'/Documents/GitHub/code/doFiles/personal/projectMM/pMM-2-part5-subDiseases.do" // on my device use offline file
 }
-
 loc h_data 		"`cv'`data'data/harmon/" 		  // harmonized data folder location
 loc out 		"`cv'`data'output/"				  // output folder location
-
 cd 				"`cv'"
 pwd
 
+*** read data ***
 use 			"`h_data'/H_`data'_panel.dta", replace
 
 
@@ -38,41 +40,40 @@ loc upperthreshold	"85" // select survey-specific upper age threshold
 loc wavelast 		"8"  // select survey-specific last wave
 loc ptestname 		"eurod"
 loc pthreshold		"4"
-	drop if wave==3 // is not really a time period, there are no regular variables for this wave
-// 	keep 	if hacohort==1 | hacohort==2 
-	drop 	if countryID=="GR" /*relatively imprecise survey*/
+gen cohortselection = (hacohort==1|hacohort==2) // will be added to selected sample later below
+drop if wave==3 // is not really a time period, there are no regular variables for this wave
+drop if countryID=="GR" /*relatively imprecise survey*/
 }
 if "`data'"=="ELSA" {
 loc agethreshold 	"50" // select survey-specific lower age threshold
 loc upperthreshold	"85" // select survey-specific upper age threshold	
 loc wavelast 		"9" 	// select survey-specific last wave
-loc ptestname 	"cesdr"
-loc pthreshold	"3"
-// 	keep 	if hacohort==1 // hacohort=1 is different in ELSA compared to SHARE and HRS
+loc ptestname 		"cesdr"
+loc pthreshold		"3"
+gen cohortselection = (hacohort==1) // hacohort=1 is different in ELSA compared to SHARE and HRS
 }
 if "`data'"=="HRS" {
 loc agethreshold 	"51" // select survey-specific lower age threshold
 loc upperthreshold	"85" // select survey-specific upper age threshold	
-loc wavelast 		"14" 	// select survey-specific last wave
+loc wavelast 		"14" // select survey-specific last wave
 loc ptestname 		"cesdr"
 loc pthreshold		"3"
-// 	keep 	if hacohort<=5 	
+**# Bookmark #1 but should i not add cohortselection already in the full sample?
+gen cohortselection = (hacohort<=5) // will be added to selected sample later below
 	keep if wave>=3 & wave<=13 // cognitive measures not consistently available 		
-**# Bookmark #1 need to see how many cohorts we should add in the end, ELSA results currently use cohorts until 2008. That is a problem when plotting over time
 }	
 
 
-**********************	
-**# Bookmark #1 already dropping irrelevant observations from MM-project. Ideally, I would move the above data selection to just before the (project-specific) sample selection below
+
 
 
 ***log entire file***
 log using 	"`out'/logdo`data'-2-harmonPart5.txt", text replace name(logDofile) // ends w/ -log close logDofile- || in dataoutput location	
 	
-****************************************************************************************************
+***************************************************************************************************
 *Part 5*: Generate study-specific variables while in 'long' format 
 **note: recode/relabel/rename variables from dataset and generate new variables**
-****************************************************************************************************
+***************************************************************************************************
 ***rename key variables ***
 rename  ageyr age 
 
@@ -170,17 +171,11 @@ la var 		 agemin "age when first observed"
 clonevar 	 ageatfirstobs = agemin
 
 **define agegroups (choice of definition depends on survey sampling eligibility)**
-**# Bookmark #1 renamed: cohort = agegrp10, cohort5 = agegrpmin
-// egen 		cohort 		= cut(age),    at (`agethreshold',60,70,80,120) 	
-// egen 		cohort5 	= cut(age),    at (`agethreshold',55,60,65,70,75,80,120)
-// egen 		cohortmin 	= cut(agemin), at (`agethreshold',60,70,80,120)
-// egen 		cohortmin5 	= cut(agemin), at (`agethreshold',55,60,65,70,75,80,120) 
 egen 		agegrp10 	= cut(age),    at (`agethreshold',60,70,80,120) 	
 egen 		agegrp5 	= cut(age),    at (`agethreshold',55,60,65,70,75,80,120)
 egen 		agegrpmin10	= cut(agemin), at (`agethreshold',60,70,80,120)
 egen 		agegrpmin5 	= cut(agemin), at (`agethreshold',55,60,65,70,75,80,120) 
-**# Bookmark #3
-recode agegrp10 	(`agethreshold' = 50)  // recode threshold to same number for figure file naming
+recode agegrp10 	(`agethreshold' = 50) // recode threshold to same number for file naming 
 recode agegrp5 	  	(`agethreshold' = 50) 
 recode agegrpmin10  (`agethreshold' = 50)  
 recode agegrpmin5 	(`agethreshold' = 50) 
@@ -189,9 +184,9 @@ la de 		agegrp10l 	50  "ages `agethreshold'-59" 60 "ages 60-69" 70 "ages 70-79" 
 la de 		agegrp5l 	50  "ages `agethreshold'-54" 55 "ages 55-59" 60 "ages 60-64" 65 "ages 65-69" 70 "ages 70-74" 75 "ages 75-79" 80 "ages 80+"        
 la de 		agegrpminl  50  "ageatfirstobs: `agethreshold'-59" 60 "ageatfirstobs: 60-69" 70 "ageatfirstobs: 70-79" 80 "ageatfirstobs: 80+"       
 la de 		agegrpmin5l 50 "ageatfirstobs: `agethreshold'-54" 55 "ageatfirstobs: 55-59" 60 "ageatfirstobs: 60-64" 65 "ageatfirstobs: 65-69" 70 "ageatfirstobs: 70-74" 75 "ageatfirstobs: 75-79" 80 "ageatfirstobs: 80+"       
-la val 		agegrp10 	agegrp10l // labels value labels
+la val 		agegrp10 	agegrp10l   // labels value labels
 la val 		agegrp5 	agegrp5l
-la val 		agegrpmin10 agegrpminl // labels value labels
+la val 		agegrpmin10 agegrpminl  // labels value labels
 la val 		agegrpmin5 	agegrpmin5l // labels value labels
 la var 		agegrp10	"current-age group (10-year)"
 la var 		agegrp5 	"current-age group (5-year)"
@@ -324,7 +319,15 @@ use 	"`h_data'H_`data'_panel2.dta", clear // load earlier dataset
 include  "`github_p5subdiseases'" // include github file
 
 	
-***generate subsamples***
+***select samples***
+**# ageinelig individuals
+	sum agemin ageatfirstobs
+	
+	drop if age<`agethreshold'
+// 	drop if agemin<`agethreshold'	// remove younger spouses of age-elig individuals. But how to drop them? Drop just the observations or also all the younger people across all waves? For now, I drop the observations and keep them in if they then become age-eligible. Ideally, I should recode them
+	
+	
+
 // full sample
 count // saves N into r(N)
 gen		sfullsample = 1 	
@@ -337,8 +340,13 @@ la var 	sfullsample "sample: full (N=`r(N)')"
 // selected sample
 loc 	temp 	"(everdead==1|inw_tot>=5) & agemin<70"
 gen 	sfull5 = `temp'
+*la var 	sfull5 "`temp'"
 la var 	sfull5 	"sample: selected (in5w or everdead, <70)"
 tab 	sfull5 inw_tot if everdead==0 // check if generated correctly 
+**# Bookmark #1
+	// exclude the sampling cohorts that are decided to be excluded
+	replace sfull5 = 0 if cohortselection == 0
+	bys everdead: tab sfull5 inw_tot, m
 
 loc 	temp 			"sfull5 & d_anyatfirstobs==0"
 gen 	sfull5healthy = `temp' if d_anyatfirstobs<. /*if d_anyatfirstobs missing, we do not know if the ID was healthy or not at baseline, hence this should be missing*/
@@ -413,7 +421,6 @@ count 	if wave		==1 //
 count 	if hacohort	==1 // 
 count 	if inw1		==1	// 
 codebook ID, compact 	// 79,420 IDs
-*keep 	if agemin<70 /*exclude all observations from people who are very old when first observed*/
 codebook ID, compact
 log close logSampleselection
 

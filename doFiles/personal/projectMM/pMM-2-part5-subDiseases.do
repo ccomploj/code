@@ -2,6 +2,7 @@
 *note: locals used in this file NEED to be defined inside this file if included using -do-. If included using -include-, this issue is not present.
 
 **# Bookmark #1: important! Check that in your main do file the following operations occur in a previous step:
+**#(note for ELSA: part5-subDiseases may be incorrect because other diseases are included in measure)
 
 *rename 	hiper osteoer // hipe is used in replacement of osteoer
 
@@ -76,7 +77,7 @@ drop `var'er2 rx`var'r2
 ***either-or condition***
 ** r has disease: either "ever told by doctor" or "currently taking med for"**
 local eitherorcodes "osteo" 
-	loc eitherord_list ""
+	loc eitherordlist ""
 foreach var of local eitherorcodes { 
 gen 	d_`var' = 	`var'er==1 | rx`var'r==1    if `var'er<. | rx`var'r<. 
 	*gen 	d2_`var' = 	`var'er==1           	if `var'er<. /*to check that d_`var' gives the same result. if someone does not have the disease, they should not report taking medications for it*/
@@ -85,7 +86,7 @@ gen 	d_`var' = 	`var'er==1 | rx`var'r==1    if `var'er<. | rx`var'r<.
 	*loc   varlabel: var la `var'
 	*local extracted_label = substr("`varlabel'", 11, .) // use this if full disease name
 la var 	d_`var'	 	"'ever had'|using meds: `var'" // 
-loc eitherord_list	"`eitherord_list' d_`var'" /*creates a local macro that appends new var at each iteration*/
+loc eitherordlist	"`eitherordlist' d_`var'" /*creates a local macro that appends new var at each iteration*/
 }
 *l ID wave d_osteo* osteo* rxosteo* if ID==958
 
@@ -136,9 +137,10 @@ gen d_`var' = rx`var'r==1       if rx`var'r<.  // `var'er==1 		// |
 **"any disease", # of diseases missing, # of diseases present, multimorbidity***
 	*loc 	alldiseasesd 	""
 	*loc 	alldiseasecodes ""
-loc 	alldiseasesd "`eitherord_list' `onlyeverhadlist' `onlymedlist'"
+loc 	alldiseasesd "`eitherordlist' `onlyeverhadlist' `onlymedlist'"
 	gl 	alldiseasesd "`alldiseasesd'" /*copy local into global for later use (outside of this do file)*/
 loc 	alldiseasecodes "`eitherorcodes' `onlyeverhad' `onlymed'"
+	gl 	alldiseasecodes "`alldiseasecodes'"
 di 		"`alldiseasesd'" /*(!) check all diseases are shown: if one local is empty, this is simply ignored!*/
 di 		"`alldiseasecodes'"
 codebook `alldiseasesd', compact
@@ -173,7 +175,6 @@ table 	(var) wave, statistic(mean d_any d_miss d_count d_count_geq2) stat(max d_
 loc 	d_countmax = wordcount("`alldiseasesd'") // total number of chosen/considered diseases
 gen 	d_count_index = d_count / `d_countmax'
 sum 	d_count_index, de 
-**# Bookmark #2 replace index as 1 if dead
 replace d_count_index = 1 if dead==1 // this is similar to Borella Bullano, De Nardi (2024) Clustering.
 la var 	d_count_index 		"disease index (=count/total diseases)"
 

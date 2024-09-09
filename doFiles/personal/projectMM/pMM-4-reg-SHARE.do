@@ -5,7 +5,7 @@ clear all		/*clears all data in memory*/
 
 
 ***choose data***
-loc data 		"SHARE"
+loc data 		"SHARE" // but we store everything in SHARE, but use SHAREELSA data
 loc datalist 	"SHARE ELSA"
 *foreach data of local datalist {
 
@@ -16,9 +16,8 @@ loc outloc 	"`cv'" // to save locally
 *loc outloc "\\Client\C$\Users\User\Documents\GitHub\2-projectMM-`data'\" // from UWP save directly to PC (only works with full version of Citrix)
 }
 else {
-*loc cv 		"G:/My Drive/drvData/`data'/" // own PC
-loc	cv 		"C:/Users/User/Documents/RUG/`data'/"
-loc	outloc 	"C:/Users/User/Documents/GitHub/2-projectMM-`data'" // do not overwrite existing output in the compiled output	
+loc	cv 		"C:/Users/`c(username)'/Documents/RUG/`data'/"
+loc	outloc 	"C:/Users/`c(username)'/Documents/GitHub/2-projectMM-`data'" // do not overwrite existing output in the compiled output	
 }
 gl 	outpath 	"`outloc'/files" /*output folder location*/
 loc saveloc 	"main" // main | supplement /*saving location*/
@@ -28,19 +27,18 @@ use 			"./`data'data/harmon/H_SHAREELSA_panel2-MM.dta", clear
 	*pause
 
 **define country-specific locals**
+tab hacohort dataset
 if "`data'"=="SHARE" {
-	drop if agemin<50  & dataset=="SHARE"
-	drop if agemin<50  & dataset=="ELSA"
-	drop if hacohort>2 & dataset=="SHARE"  
-	drop if hacohort>2 & dataset=="ELSA"  
+// 	drop if hacohort>2 & dataset=="SHARE"  
+// 	drop if hacohort>2 & dataset=="ELSA"  
 }	
 **********************
 cd  	"$outpath/tab"
 
 
-****************************************************************************************************
+***********************************************************************************************
 *Part 7a*: Regression (define .do file)
-****************************************************************************************************	
+***********************************************************************************************	
 *** define global vars ***
 loc sample "sfull5"
 loc samplelabel: variable label `sample'
@@ -57,7 +55,6 @@ ssc install seqlogit
 search st0359 // DH model (xtdhreg)
 findit mdraws // DH model required package
 */
-
 
 *** additional variables *** 
 tab raeducl, gen(raeduclcat) // separate variables needed for regoprob2
@@ -82,9 +79,37 @@ rename  raeduclcat3 educ_university
 	// // 	label	value  region regionl
 
 
-****************************************************************************************************
+***************************************************************************************************
 *Part 7b*: Regression (general)
-****************************************************************************************************	
+***************************************************************************************************
+
+
+
+/*** +++ what predicts having any disease? (logit by wave just to check consistency (not for paper)), then (xt)logit using pooled sample +++ ***
+/** logit by wave **
+levelsof time, local(levels)
+foreach l of local levels{
+eststo logit`l': qui logit d_any c.age  male marriedr i.raeducl*  if time==`l', or 
+estadd loc time  "`l'" 
+}
+esttab logit*,  stats(N r2_p time) nobase eform // `esttab_opt'
+*/
+		la var d_count_geq2 "has 2+ diseases"
+	*export results using only one wave*
+	sum time, meanonly 
+	loc l = r(min)
+loc l = 2004
+eststo logit`l': 		qui logit d_any c.age  male i.raeducl* marriedr  if time==`l', or 
+eststo logit`l'ctrls: 	qui logit d_any c.age  male i.raeducl* marriedr retempr smokenr if time==`l', or 
+eststo logit`l'mm: 		qui logit d_count_geq2 c.age  male i.raeducl* marriedr  if time==`l', or 
+eststo logit`l'mmctrls: 	qui logit d_count_geq2 c.age  male i.raeducl* marriedr retempr smokenr if time==`l', or 
+estadd loc time  "`l'", replace: logit*
+loc    esttab_opt "la nobase nocons stats(N r2_p time) eform"
+esttab logit`l'*, 									 `esttab_opt'  
+esttab logit`l'* using "$outpath/reg/o_logit_d_any", `esttab_opt' tex replace
+STOP
+*/
+
 
 
 
@@ -113,19 +138,38 @@ esttab xtregSHARE xtregELSA , `esttab_opt'
 
 ** with age (instead of time) and cohort dummies **
 	*loc interactions "male#c.age i.raeducl#c.age i.countatfirstobs i.countatfirstobs#c.age"
-loc 	ctrls "age male i.raeducl i.countatfirstobs"
-eststo xtregSHARE: qui xtreg  d_count  `ctrls'	if sfull5==1 & dataset=="SHARE", robust fe i(rabyear) 
-eststo xtregELSA:  qui xtreg  d_count  `ctrls'	if sfull5==1 & dataset=="ELSA",  robust fe i(rabyear) // vce(cl ID) 
+		la var d_count "\# diseases"
+loc 	ctrls 	"age male i.raeducl i.countatfirstobs"
+eststo xtreg: 	qui xtreg  d_count  `ctrls'	if sfull5==1, robust fe i(rabyear) 
 
-loc 	ctrls "age male i.raeducl i.countatfirstobs male#c.age i.raeducl#c.age i.countatfirstobs#c.age"
-eststo xtregSHARE2: qui xtreg  d_count  `ctrls'	if sfull5==1 & dataset=="SHARE", robust fe i(rabyear) 
-eststo xtregELSA2:  qui xtreg  d_count  `ctrls'	if sfull5==1 & dataset=="ELSA",  robust fe i(rabyear)
-	estadd loc controls "yes": *
-loc esttab_opt "nobase compress la se(%9.2f) stats(N r2 controls) mtitles("SHARE" "SHARE" "ELSA" "ELSA")"
-esttab xtregSHARE* xtregELSA* , `esttab_opt' 
-esttab xtregSHARE* xtregELSA*  using "C:/Users/User/Documents/GitHub/2-projectMM-SHARE/files/reg/t_regd_count-age-xtregSHAREELSA", tex replace  `esttab_opt' //  keep(age *#c.age)   // stats(N controls)
+loc 	ctrls 	"age male i.raeducl i.countatfirstobs male#c.age i.raeducl#c.age i.countatfirstobs#c.age"
+eststo xtreg2: 	qui xtreg  d_count  `ctrls'	if sfull5==1, robust fe i(rabyear) 
+
+loc 	ctrls 	"age male i.raeducl i.countatfirstobs c.age#c.age"
+eststo xtreg3: 	qui xtreg  d_count  `ctrls'	if sfull5==1, robust fe i(rabyear) 
+
+	estadd loc 	controls "yes": *
+loc esttab_opt 	"nobase compress la se(%9.2f) stats(N r2 controls)"
+esttab xtreg* , `esttab_opt' 
+esttab xtreg*  using "$outpath/reg/t_regd_count-age-xtregSHAREELSA", tex replace  `esttab_opt'  //  keep(age *#c.age)   // stats(N controls)
 STOP 
 */
+
+	/** (SHARE and ELSA separately) with age (instead of time) and cohort dummies **
+		*loc interactions "male#c.age i.raeducl#c.age i.countatfirstobs i.countatfirstobs#c.age"
+	loc 	ctrls "age male i.raeducl i.countatfirstobs"
+	eststo xtregSHARE: qui xtreg  d_count  `ctrls'	if sfull5==1 & dataset=="SHARE", robust fe i(rabyear) 
+	eststo xtregELSA:  qui xtreg  d_count  `ctrls'	if sfull5==1 & dataset=="ELSA",  robust fe i(rabyear) // vce(cl ID) 
+
+	loc 	ctrls "age male i.raeducl i.countatfirstobs male#c.age i.raeducl#c.age i.countatfirstobs#c.age"
+	eststo xtregSHARE2: qui xtreg  d_count  `ctrls'	if sfull5==1 & dataset=="SHARE", robust fe i(rabyear) 
+	eststo xtregELSA2:  qui xtreg  d_count  `ctrls'	if sfull5==1 & dataset=="ELSA",  robust fe i(rabyear)
+		estadd loc controls "yes": *
+	loc esttab_opt "nobase compress la se(%9.2f) stats(N r2 controls) mtitles("SHARE" "SHARE" "ELSA" "ELSA")"
+	esttab xtregSHARE* xtregELSA* , `esttab_opt' 
+	esttab xtregSHARE* xtregELSA*  using "C:/Users/User/Documents/GitHub/2-projectMM-SHARE/files/reg/t_regd_count-age-xtregSHAREELSA", tex replace  `esttab_opt' //  keep(age *#c.age)   // stats(N controls)
+	STOP 
+	*/
 
 ************************************
 ** Linear model with age of onset **
