@@ -3,11 +3,9 @@ set more off
 clear all
 log close _all			// closes all log files
 pause on				// turns pauses on (a pause does not interrupt local memory)
-*pause off				// deactivates -pause- (press q to continue after a pause)
+pause off				// deactivates -pause- (press q to continue after a pause)
 set maxvar 15000
 timer on 1 				// counts the duration of file computation
-
-
 ***packages needed for file to run***
 *	ssc install isvar 
 
@@ -24,27 +22,36 @@ timer on 1 				// counts the duration of file computation
 *note: there are two types of variables in the g2aging data: time-varying and time-invariant. 
 
 
-
 ****************************************************************************************************
 *PART 1*: Adapt this section to the specific HRS-type harmonized dataset from the g2aging
 *note: you do not have to change any other section except "Part 1", and the variables in "Part 3"
 ****************************************************************************************************
 ***define folder locations***
 loc data 	"SHARE"
-loc cv 		"X:/My Documents/XdrvData/`data'/" 	// main folder location (adjust to HRS or other)
+if "`c(username)'" == "P307344" { // UWP server
+loc cv 		"X:/My Documents/XdrvData/`data'/"
+}
+else {
+loc	cv 		"C:/Users/`c(username)'/Documents/RUG/`data'/"
+}	
 loc h_data 	"`cv'`data'data/harmon/"			// harmonized data folder location
 loc out 	"`cv'`data'output/"					// output folder location (e.g. for output)
+cd "`cv'"
+pwd
 												
 ***Bringing in Core Data***
 **Harmonized data**
 use "`h_data'H_SHARE_f.dta"					  // choose dataset
 
-**End of Life Survey** /*(not required to use for file to run)*/ 
-*loc x_eol "raxmonth raxyear radage" /*merge eol vars*/
-*merge 1:1 mergeid using "`h_data'H_SHARE_EOL_c.dta", keepusing(`x_eol')
+/**End of Life Survey** /*(not required to use for file to run)*/ 
+loc 	x_eol "raxyear raxmonth radage radmarr radmarrp" /*merge eol vars*/
+merge 	1:1 mergeid using "`h_data'H_SHARE_EOL_c.dta", keepusing(`x_eol')
+*/
 
 **other data**
 *[append other datasets (e.g. from individual waves of HRS-type study) using the available identifiers]
+
+*pause // browse the data using -browse- ; to continue after a pause, type "q" and enter
 
 **generate survey-specific identifiers**
 gen 	countryID 	= substr(mergeid, 1,2) 
@@ -66,6 +73,9 @@ loc wavelast 	"8"			// change this to the # of the last available wave (e.g. 8 i
 
 
 pause // to continue after a pause, type "q" and enter; browse the data using -browse-
+
+***log entire file***
+// log using 	"`out'/logdoSHARE-1-harmon.txt", text replace name(logDofile) // ends w/ -log close logDofile-
 
 ****************************************************************************************************
 *Part 2*: Overview of dataset
@@ -109,7 +119,7 @@ rename 	(s(##)*) (*[2]s#[1])	// spouse (2-digit wave)
 rename 	(s(#)*) (*[2]s#[1])	 	// spouse
 *describe r* h* hh* s*  , simple	  
 
-*pause
+pause
 
 ***select variables of interest (by section in harmon manual)***
 **note: select first (a) time-varying variables. Below at (b) you can select time-invariant variables.
@@ -119,7 +129,8 @@ rename 	(s(#)*) (*[2]s#[1])	 	// spouse
 ***(a) time-variant variables***
 loc 	xtra	"hhresphh cplh iwyr iwmr iwstatr iwstats"		// general response info in vra
 loc 	vra 	"mstatr nhmlivr ruralh ageyr     `xtra'"		// demographics, identifiers, weights
-loc 	disease ""
+	loc 	disease 	""
+	loc 	d_agediag	"radiaghibp"
 loc 	vrb 	"shltr iadlar `disease'"						// health
 loc 	vrc 	"higovr"										// healthcare utilization and insurance
 loc 	vrd  	""												// cognition
@@ -137,8 +148,10 @@ loc 	vrp 	""												// (childhood)
 loc 	vrq		"satlifezr"										// psychosocial 
 loc 	vrlist	`vra' `vrb' `vrc' `vrd' `vre' `vrf' `vrg' `vrh' `vri' `vrj' `vrl' `vrm' `vro' `vrp' `vrq'
 ***(b) time-invariant variables***
-loc 	xa 		"inw? rabyear rabmonth radyear radmonth ragender raeducl `x_eol'"		
-loc 	xb 		""
+unab inwlist: inw* // creates local macro with variables starting with inw* that actually exist 
+*di "`inwlist'"
+loc 	xa 		"hacohort `inwlist' rabyear rabmonth radyear radmonth ragender raeducl `x_eol'"		
+loc 	xb 		"`d_agediag'"
 loc 	xc 		""
 loc 	xlist	`xa' `xb' `xc' 
 
@@ -150,12 +163,16 @@ loc		keeplist "`keeplist' `vr'`i'" // append each variable with wave indicator t
 }
 }
 di 		"`keeplist'"
+	loc keeplist "`keeplist' `xlist'"    
+
 **keep only locals that are existing variables (e.g. missing mstat3-var causes errors) (details at [a1])**
 isvar 	`keeplist'  	// keeps only local macros that actually exist, stored as "r(varlist)"; see top of file
 display "`r(varlist)'"
 loc 	vrlistset "`r(varlist)'"
-loc 	keeplist2 "" 	// other survey-specific variables (e.g. eligibility to pension program)
-keep 	`idlist' `vrlistset' `xlist' `keeplist2'
+	gl	vrlistset "`r(varlist)'"
+*display "`vrlistset'"
+loc 	specificvars "" 	// add survey-specific special variables (e.g. eligibility to a pension program)
+keep 	`idlist' `vrlistset' `specificvars'
 
 ***store variable labels from -wide- format (I) to copy into -long- reshaped dataset later (II)***	
 ***(I) store labels***
@@ -186,10 +203,21 @@ loc namelabellist "`namelabellist' ``name'label'"
 }
 di "`namelabellist'" /*list of unique var labels (which are at (II) assigned to the new variable varname*/
 
+**add to a local the list of time-constant variables (xlist) that do *not* exist in particular survey (such as SHARE/HRS) (e.g.radiagxxxx) (to generate an empty placeholder in reshape (the operation below) - this creates an empty placeholder variable below)**
+di "`xlist'"
+foreach v of local xlist { 
+capture confirm variable `v' // , exact /*checks if variable exists*/
+if _rc{
+local vnotexist "`v'" /*only use label of variable if that variable (wave) exists*/
+*di "`vnotexist'"
+loc xlistnotexist "`xlistnotexist' `vnotexist'"	
+}
+}
+di "`xlistnotexist'"
 
 ***reshape operation***
 **reshape 'wide' to 'long' format**
-reshape long `vrlist', i(`ID') j(wave) 
+reshape long `vrlist' `xlistnotexist', i(`ID') j(wave) 
 
 **(II) apply variable labels from wide format before**
 foreach name of local vrlist{
