@@ -74,8 +74,7 @@ loc wavelast 	"9"			// change this to the # of the last available wave (e.g. 8 i
 *pause // to continue after a pause, type "q" and enter; browse the data using -browse-
 
 	
-**# Bookmark #1 need to adapt this and move below the sample selection of sample cohorts
-***correction to vars to general G2aging***
+***correction to vars to specific use / not directly comparable to G2aging/HRS***
 forvalues i=1/`wavelast' {
 rename r`i'cohort_e cohort_er`i'		
 rename r`i'iwindy iwyr`i'
@@ -85,14 +84,19 @@ tab 	cohort_er1 cohort_er2	,m
 tab 	cohort_er1 cohort_er4	,m
 tab 	cohort_er3 cohort_er6	,m
 loc 	v "11"
-gen 	hacohort = 1 if inrange(cohort_er1,1, `v') | inrange(cohort_er2,1,`v') | inrange(cohort_er3,1,`v') | inrange(cohort_er4,1,`v') | inrange(cohort_er5,1,`v') | inrange(cohort_er6,1,`v') | inrange(cohort_er7,1,`v') | inrange(cohort_er8,1,`v') | inrange(cohort_er9,1,`v')  
-// keep if hacohort==1
-la de 	hacohortl 1 "ELSA cohorts 1-9 (not comparable to HRS)"
+gen 	hacohort = 1 if inrange(cohort_er1,1, `v') | inrange(cohort_er2,1,`v') | inrange(cohort_er3,1,`v') | inrange(cohort_er4,1,`v') | inrange(cohort_er5,1,`v') | inrange(cohort_er6,1,`v') | inrange(cohort_er7,1,`v') 
+recode  hacohort (.=6)
+tab 	hacohort,m
+*tab inw_first hacohort,m // (only works after running part5 - to check that not relevant "cohorts" are dropped)
+la de 	hacohortl 1 "ELSA cohorts 1-7 (not comparable to HRS)" 6 "all other cohorts" // 1-7 is until 2006
 la val  hacohort hacohortl
 
 
 ***log entire file***
 log using 	"`out'/logdo`data'-1-harmon.txt", text replace name(logDofile) // ends w/ -log close logDofile-
+
+
+
 
 *************************************************************************************************
 *Part 2*: Overview of dataset
@@ -347,3 +351,39 @@ log close logDofile /*logs file to specified folder if log active*/
 *Appendix*
 *************************************************************************************************
 *[a1]  https://www.statalist.org/forums/forum/general-stata-discussion/general/1365048-keep-command-variable-not-found
+
+
+
+/*
+RwIWINDM and RwIWINDY indicate the household interview month and year, respectively. RwIWINDF is a flag
+variable which flags interview dates when they are missing either month or year information. A code of 0
+indicates that both month and year information was correct. A code of 1 indicates that the interview
+month was not available. A code of 2 indicates that the interview year was missing, possibly in addition
+to a missing interview month. RwIWINDM, RwIWINDY, and RwIWINDF are set to plain missing (.) for
+respondents who did not respond to the current wave.
+*/
+
+/*
+INWwSC indicates whether an individual responded to a particular wave's self-completion survey. A code of 
+0 indicates the respondent is not considered part of the self-completion sample but participated in the 
+current wave. Exclusion from the self-completion sample can be due to many factors, including not being 
+applicable for the self-completion survey, not returning a self-completion survey to ELSA, and a returned 
+self-completion survey with the majority of questions unanswered. A code of 1 indicates the respondent's 
+self-completion questionnaire was received by ELSA with the majority of questions answered. INWwSC is 
+assigned plain missing (.) if the respondent did not participate in the current interview. 
+ 
+INWwN indicates whether an individual participated in the nurse interview. A code of 0 indicates the 
+respondent did not participate in the nurse interview but participated in the current wave. Exclusion 
+from the nurse interview can be due to many factors, including not yet joining the sample, not being 
+eligible to participate, inability to contact the respondent, being ill, or other reasons. A code of 1 
+indicates the respondent did participate in the nurse interview. Please note that INW8N indicates whether 
+the respondent participated in the nurse interviews in Wave 8 or Wave 9, as these samples were split 
+across the two waves but are intended to be analyzed together. INWwN is assigned plain missing (.) if the 
+respondent did not participate in the current interview. 
+ 
+INWwLH indicates whether an individual participated in the Wave 3 life history interview. A code of 0 
+indicates the respondent did not participate in the Wave 3 life history interview. Exclusion from the 
+life history interview can be due to many factors, including not yet joining the sample, inability to 
+contact the respondent, being in an institution, or other reasons. A code of 1 indicates the respondent 
+did participate in the life history interview at least partially.
+*/

@@ -1,0 +1,19 @@
+General Overview of Methods: 
+- Technology and Big Data Are Changing Economics: Mining Text to Track Methods
+https://www.aeaweb.org/articles?id=10.1257/pandp.20201058
+
+Overview of RD methods:
+- Regression Discontinuity Designs in Economics: https://www.aeaweb.org/articles?id=10.1257/jel.48.2.281
+- DONUT REGRESSION DISCONTINUITY DESIGNS https://arxiv.org/pdf/2308.14464
+
+Applications 
+
+- RD: 
+Understanding the effect of retirement on health: Mechanisms and heterogeneity
+https://www-sciencedirect-com.proxy-ub.rug.nl/science/article/pii/S0167629615000545
+
+
+Online Resources:
+- Refresh Econometrics: https://www.youtube.com/@SpartacanUsuals/playlists
+- Econometric Tools: https://sites.google.com/site/econometricsacademy/econometrics-models
+- Coding examples and detailed slides (PhD level): https://github.com/Mixtape-Sessions

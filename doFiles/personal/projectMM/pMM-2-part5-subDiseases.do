@@ -43,7 +43,12 @@ di 	"`agethreshold' `h_data'"
 		*sum `lower_quartile'
 			_pctile cognitionstd, p(20)
 			local 	qtile = r(r1)
+			di "`qtile'"
 		generate demener = cognitionstd < `qtile' if !mi(cognitionstd)
+**# Bookmark #2 need to edit to onset being midpoint between 1st onset provided that at next OBSERVED period is still present (i do this below after generating d_demen I think this is better.). No, need to do here because onsetage will be based on this variable, not d_demener. Well, it no longer matters. The original definition of d_CODE came because it was a flexible generation of disease OR medication. This is no longer the case, so it no longer matters. However, for consistency, should recode demener and simply regenerate the same variable below as d_demen
+	sort ID wave
+	// bys ID (wave): replace demener = 0 if f.demener==0 & f.dead==0 // this is not complete, but should solve the problem except when there are gaps between time periods
+		
 	la var 	cognition_total "Cognition Total"
 	*la var cognitionstd 	"std(total cognition)"
 	la var  demener  		"has dementia"	
@@ -56,14 +61,16 @@ di 	"`agethreshold' `h_data'"
 		
 **# Bookmark #3 check once more, also think why even recode medication use as absorbing. this no longer makes sense, absorbing is done for osteoporosis because in SHARE we only have medication on it...
 **# Bookmark #1 20241505: I have removed osteo from list due to SHARE missing osteoer
-***correct disease list (carry forward report as absorbing after onset)**
+**# Bookmark #3 might have to double check that carry forward is working correctly when there are gaps
+
+***to correct disease list (set as absorbing after onset, carry forward earlier report)**
 local carryforwardlist "hibp diab heart lung  cancr strok arthr demen" // hiper psych (if disease is missing, block works nevertheless), osteo
 foreach var of local carryforwardlist{
 rename 		rx`var'r 	rx`var'r2 	
 rename 		  `var'er  	  `var'er2  
 clonevar	rx`var'r =  rx`var'r2
 clonevar  	  `var'er  =  `var'er2
-bys ID: 	replace rx`var'r = max(rx`var'r[_n-1], rx`var'r)   if inwt==1 // medication use !mi(rx`var'r): does not work well bc variable will be 0 if "ever had" is 0 and "medication" is missing
+bys ID: 	replace rx`var'r = max(rx`var'r[_n-1], rx`var'r)  if inwt==1 // medication use !mi(rx`var'r): does not work well bc variable will be 0 if "ever had" is 0 and "medication" is missing
 bys ID: 	replace `var'er  = max(  `var'er[_n-1],  `var'er) if inwt==1  // ever had: "onlyeverhad"	(should not replace in most surveys)
 	**if someone does not have the disease, they should not report taking medications for it**
 	recode rx`var'r (1=0) if !mi(rx`var'r) &  `var'er==0 /*only is recoded in ELSA and SHARE. This is due to
@@ -74,7 +81,7 @@ drop `var'er2 rx`var'r2
 }
 
 	
-***either-or condition***
+***either-or condition (ever had or medication use) ***
 ** r has disease: either "ever told by doctor" or "currently taking med for"**
 local eitherorcodes "osteo" 
 	loc eitherordlist ""
@@ -107,9 +114,8 @@ loc eitherordlist	"`eitherordlist' d_`var'" /*creates a local macro that appends
 	drop d_hibp2-d_hibp4 /*from this part, it is clear that d_hibp4 (=loop) is the correct of the variable*/
 	*/
 	
+**# Bookmark #1 Dementia is not used as "doctor diagnosed" because definition difficult to make comparable across countries. Option B: could use different tests (but even then those are not consistent across time always)
 
-**# Bookmark #2 Note: left out kidney in first analysis in SHARE because this is available only from w6-w8, messing up d_miss
-**# Bookmark #1 Dementia is excluded because definition difficult to make comparable across countries. Option B: could use different tests (but even then those are not consistent across time always)
 **only ever had (these diseases have no medication)**
 loc onlyeverhad 	"hibp diab heart lung 	depr   cancr strok arthr demen"	 // demen kidney psych
 	loc onlyeverhadlist ""
@@ -145,23 +151,29 @@ di 		"`alldiseasesd'" /*(!) check all diseases are shown: if one local is empty,
 di 		"`alldiseasecodes'"
 codebook `alldiseasesd', compact
 
-egen 	d_any 	= rowmax(`alldiseasesd') // Observation (ID-wave) has any of the above diseases
-la var 	d_any 		"any disease"
-
 egen 	d_miss 	= rowmiss(`alldiseasesd') /*counts number of diseases "missing" for each observation (row)*/
-replace d_miss 	= . if d_any>=. /*set count to (.) if no response to any disease (or dead) */
-la var 	d_miss 		"# miss.diseases"
+// replace d_miss 	= . if mi(d_count) // if mi(d_any) /*set count to (.) if no response to any disease (or dead) */
+la var 	d_miss 		"# missing diseases"
 tab 	d_miss wave,m 
-li 		ID wave age `alldiseasesd' d_any d_miss     in 1/3
+*bro ID wave d_*
+li 		ID wave age `alldiseasesd' d_miss     in 1/3
+**# Bookmark #1 could add a variable for which disease is actually missing, maybe some diseases are based on age-threshold, hence they are always missing. need to check this.
 
-su 		d_miss, meanonly
-local 	d_missmin = r(min) // number of chosen diseases, max of variable
-egen 	d_count = rowtotal(`alldiseasesd') if d_miss==`d_missmin', missing /*(row) sum of the variables in varlist
-													:only for obs w/ no missing D (among those considered)*/
+su 		d_miss, meanonly 
+local 	d_missmin = r(min) // for some dataset, one disease might always be missing bc not available 
+egen 	d_count = rowtotal(`alldiseasesd') if d_miss==`d_missmin', missing /*(row) sum of the variables in varlist: only for obs w/ no missing D 
+		(count should be missing only if all diseases *considered* are missing)*/
 la var 	d_count 	"# diseases"					
 tab 	d_count wave,m
 tab 	d_count d_miss,m 
+
+gen 	d_any = (d_count>0) if !mi(d_count)
+// egen 	d_any 	= rowmax(`alldiseasesd')  // Observation (ID-wave) has any of the above diseases (this is wrong.: having 0 on d_any should only be defined if there is a nonmissing disease count)
+// recode d_any=. if mi(d_count) // at most, could recode d_any to missing in such a case.
+la var 	d_any 		"any disease"
 li 		ID wave age `alldiseasesd' d_any d_count     in 1/3
+
+
 
 
 **multimorbidity**
@@ -240,6 +252,12 @@ la var 	d_anyatfirstobs "has disease at baseline"
 tab 	d_anyatfirstobs  d_any if wave==1 	/*checked correct generation*/
 sum 	d_anyatfirstobs 
 
+**>=2 diseases at baseline (= when first observed)**
+gen 	myvar = (d_count>=2 & wave==inw_first) if d_count<. /*if has MM and time is equal to first observed time*/
+bys ID: egen d_count_geq2atfirstobs = max(myvar)
+la var 	d_count_geq2atfirstobs ">=2 diseases at baseline"
+drop 	myvar
+
 
 **age of first onset (g2aging version - self-reported age at first diagnosis) (if available)**
 di 	"`alldiseasecodes'"
@@ -279,8 +297,8 @@ la var 	onsetyear 	"year of first onset (observed) (censored)"
 drop	myvar 
 sort 	ID wave
 li 		ID wave age d_any onsetyear in 1/16 /*check correct generation*/
-clonevar onsetyear_uncens = onsetyear
-replace  onsetyear_uncens = . if d_anyatfirstobs>0 & !mi(d_anyatfirstobs)
+// clonevar onsetyear_uncens = onsetyear // (NOT OKAY maybe IN HRS SINCE WAVES DROPPED)
+// replace  onsetyear_uncens = . if d_anyatfirstobs>0 & !mi(d_anyatfirstobs)
 la var 	 onsetyear "year of first onset (observed) (uncensored)"
 
 
@@ -293,19 +311,18 @@ la var 	onsetage 		"age of first onset (obs.) (censored)"
 drop 	myvar
 sort 	ID wave
 li 		ID wave age d_any onsetage in 1/16 /*check correct generation*/
-clonevar onsetage_uncens = onsetage
-replace  onsetage_uncens = . if d_anyatfirstobs>0 & !mi(d_anyatfirstobs)
-la var 	 onsetage_uncens 	"age of first onset (obs.) (uncens. part)"
+// clonevar onsetage_uncens = onsetage
+// replace  onsetage_uncens = . if d_anyatfirstobs>0 & !mi(d_anyatfirstobs)
+// la var 	 onsetage_uncens 	"age of first onset (obs.) (uncens. part)"
 	* bro ID wave time tsinceonset timesinceonset onsetyear
 	
-	egen 	firstagegrp5 = cut(onsetage),    at (`agethreshold',55,60,65,70,75,120) // ,80, 	
-	recode  firstagegrp5 (`agethreshold' = 50)
-	replace firstagegrp5 = . if d_anyatfirstobs==1 
-	loc 	labelname "firstage:"
-	la de 	firstagegrp5l 	50  "`labelname' `agethreshold'-54" 55 "`labelname' 55-59" 60 "`labelname' 60-64" 65 "`labelname' 65-69" 70 "`labelname' 70-74" 75 "`labelname' 75+" 
-	la val 	firstagegrp5 firstagegrp5l
-	*tab firstagegrp5,m
-	*recode d_count_lead (99=10)
+	egen 	onsetagegrp5 = cut(onsetage),    at (`agethreshold',55,60,65,70,120) // ,80, 	
+	recode  onsetagegrp5 (`agethreshold' = 50)
+	replace onsetagegrp5 = . if d_anyatfirstobs==1 
+	loc 	labelname "onsetage:"
+	la de 	onsetagegrp5l 	50  "`labelname' `agethreshold'-54" 55 "`labelname' 55-59" 60 "`labelname' 60-64" 65 "`labelname' 65-69" 70 "`labelname' 70+" // 75 "`labelname' 75+" 
+	la val 	onsetagegrp5 onsetagegrp5l
+	*tab onsetagegrp5,m
 	
 **# Bookmark #1 first onset age (of higher order count) (should do with radiag)
 	** first onset age (of higher order count) **
@@ -347,7 +364,7 @@ codebook onset*, compact /*this is the first onset for each disease separately, 
 */								
 
 
-**first onset DATE for each disease "count"**
+/**first onset DATE for each disease "count"**
 di 		   "`d_countmax'" /*max. count of diseases defined above*/
 forval 	j=1/`d_countmax' { /*use maximum count of disease list*/
 gen 		 myvar	= iwym if d_count>=`j' & !mi(d_count) /*iw date if C disease(s) present: only uses obs with no missing count*/
@@ -357,7 +374,7 @@ drop 		 myvar
 la var 		 onsetdate_c`j' "first date of iw with (>=`j') diseases"
 }
 li 			ID wave dead d_count iwym onsetdate_c* in 100/116, compress nola /*check*/
-
+*/
 
 
 *****************
@@ -368,14 +385,14 @@ li 			ID wave dead d_count iwym onsetdate_c* in 100/116, compress nola /*check*/
 gen 	tsinceonset = time - onsetyear if inwt==1
 la var 	tsinceonset "time (periods) since first disease"	
 
-gen 	timesinceonset = iwym - onsetdate_c1 if (iwym - onsetdate_c1>=0)
-la var 	timesinceonset "time (months) since first disease"	
+// gen 	timesinceonset = iwym - onsetdate_c1 if (iwym - onsetdate_c1>=0)
+// la var 	timesinceonset "time (months) since first disease"	
 
 **duration since onset (AGE)** 
-gen 	agesinceonset = age - onsetage 
-la var 	agesinceonset "age since onset"
+gen 	yearssinceonset = age - onsetage 
+la var 	yearssinceonset "years since onset"
 
-sum  tsinceonset timesinceonset agesinceonset
+sum  tsinceonset yearssinceonset
 *bro ID wave time tsinceonset timesinceonset onsetyear
 
 /**duration from c to c+1[+ / or more]** 
@@ -479,40 +496,14 @@ bys ID: egen countatfirstobs = max(tempvar)
 recode 	countatfirstobs (0 = 0 "0 diseases at baseline") (1 = 1 "1 disease at baseline") (2/3 = 2 "2/3 diseases at baseline") (4/10 = 4 "4+ diseases at baseline"), gen(countatfirstobs2)
 drop 	tempvar countatfirstobs
 rename 	countatfirstobs2 countatfirstobs 
-gen 	tempvar = d_count if timesinceonset==0 // count at onset
-bys ID: egen countatonset = max(tempvar) 
-replace countatonset =. if age<onsetage 		// if first onset not experienced yet, should not include
-recode 	countatonset (1/2 = 1 "1 or 2 diseases at onset") (3/4 = 2 "3 or 4 diseases at onset") (5/15 = 3 "5 or more at onset"), gen(countatonset2)
-drop 	tempvar countatonset
-rename 	countatonset2 countatonset 
+la var countatfirstobs "# diseases when first observed"
 
-
-
-*** Additional Variables ***
-** post indicator after first onset (observed) **
-gen post = (iwym - onsetdate_c1 > 0) if !mi(iwym - onsetdate_c1) // first date observed with d_any==1 is set to 0 
-*bro ID wave age firstage firstdate_c1 iwym post* d_any timesincefirstonset // if d_anyever==0
-*tab timesincefirstonset post ,m
-
-
-
-** pre-treatment variables (before onset) ** 
-	// currently using same time period to not lose observations
-	loc baselinevars "workr marriedr"
-	foreach v of local baselinevars{
-	gen 	myvar =  `v' 	if timesinceonset == 0
-	bys ID: egen `v'_baseline = max(myvar)
-	drop myvar
-	}
-
-
-*/
-pause 	
-
-
-
-		gen 	timesincefirstobs_yr = timesincefirstobs if time==iwyr
-
+// gen 	tempvar = d_count if timesinceonset==0 // count at onset
+// bys ID: egen countatonset = max(tempvar) 
+// replace countatonset =. if age<onsetage 		// if first onset not experienced yet, should not include
+// recode 	countatonset (1/2 = 1 "1 or 2 diseases at onset") (3/4 = 2 "3 or 4 diseases at onset") (5/15 = 3 "5 or more at onset"), gen(countatonset2)
+// drop 	tempvar countatonset
+// rename 	countatonset2 countatonset 
 
 
 

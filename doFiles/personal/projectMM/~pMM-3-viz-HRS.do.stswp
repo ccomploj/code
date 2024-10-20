@@ -1,8 +1,4 @@
 
-	** install packages **
-	*net install transcolorplot , from(http://www.vankerm.net/stata)
-	*net describe transcolorplot
-
 
 *** generate duration with c conditions ***
 

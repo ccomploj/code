@@ -289,6 +289,15 @@ sum `y' `ctrls' if `sample'==1 & wave==1
 **************************************************************************************************	
 
 
+	** pre-treatment variables (before onset) ** 
+	// currently using same time period to not lose observations
+	loc baselinevars "workr marriedr"
+	foreach v of local baselinevars{
+	gen 	myvar =  `v' 	if timesinceonset == 0
+	bys ID: egen `v'_baseline = max(myvar)
+	drop myvar
+	}
+
 /*** +++ (full code) what predicts having any disease? (logit by wave just to check consistency (not for paper)), then (xt)logit using pooled sample +++ ***
 ** logit by wave **
 levelsof time, local(levels)

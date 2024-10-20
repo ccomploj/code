@@ -53,10 +53,10 @@ merge 	1:1 mergeid using "`h_data'H_SHARE_EOL_c.dta", keepusing(`x_eol')
 
 *pause // browse the data using -browse- ; to continue after a pause, type "q" and enter
 
-**generate survey-specific identifiers**
+**generate survey-specific identifiers (explore your dataset first)**
 gen 	countryID 	= substr(mergeid, 1,2) 
 gen 	id  		= hhid + pn 				// note id is not unique
-egen	panelid 	= group(countryID id)	
+// egen	panelid 	= group(countryID id)	/*relevant for SHARE*/
 
 ***define identifiers*** 	// find these using -browse- 
 loc cntry  		"countryID" // insert country ID if multi-country dataset

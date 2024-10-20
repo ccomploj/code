@@ -50,11 +50,10 @@ use 	"`h_data'H_SHARE_f.dta"  			// choose dataset
 loc 	x_eol "raxyear raxmonth radage radmarr radmarrp" /*merge eol vars*/
 merge 	1:1 mergeid using "`h_data'H_SHARE_EOL_c.dta", keepusing(`x_eol')
 
-*pause // browse the data using -browse- ; to continue after a pause, type "q" and enter
-
 **other data**
 *[append other datasets (e.g. from individual waves of HRS-type study) using the available identifiers]
 
+*pause // browse the data using -browse- ; to continue after a pause, type "q" and enter
 
 
 **generate specific identifiers**
@@ -92,6 +91,7 @@ pause // to continue after a pause, type "q" and enter; browse the data using -b
 
 ***log entire file***
 log using 	"`out'/logdoSHARE-1-harmon.txt", text replace name(logDofile) // ends w/ -log close logDofile-
+
 
 
 
@@ -306,8 +306,10 @@ rename  	`ID' ID
 xtset 		ID wave
 **# Bookmark #1 could add this to github:
 	***rename key variables (moved from part 5) ***
-	rename 	inw7c inw7
-	order 	inw7, before(inw8) // need to reorder for inw_tot
+	*rename 	inw7c inw7
+		*order 	inw7*, before(inw8) 
+	order 	inw7c, before(inw8) // need to reorder for inw_tot
+**# Bookmark #1 what were the other surveys inw7, or the sc? should i include any actually?
 	rename 	lbrf_sr lbrfr /*lbrf question slightly differ in S compared to HRS*/
 	***generate alternative for "wave", as survey year***
 	**generate time**
@@ -322,7 +324,7 @@ xtset 		ID wave
 	replace osteoer = . 
 	
 	
-	
+
 save		"`h_data'H_`data'_panel.dta", replace // check if appeared in correct folder!
 
 pause
@@ -374,10 +376,10 @@ log close logDofile /*logs file to specified folder if log active*/
 	*RAXYEAR is assigned special missing value .i if the proxy reported a year of death beyond the end of life interview date. 
 	*RADYEAR and RADMONTH are based on questions asked as part of the exit interview each wave starting with Wave 2. When respondents don't know or refuse to answer, RADYEAR is assigned special missing values .d or .r, respectively. RADYEAR is assigned special missing value .i for impossible responses to death year. RADYEAR is assigned special missing .x if the respondent has not yet passed away.
 
-**inw
-*INWw indicates whether an individual responded to a particular wave. INWw is derived from the interview_wW variable in the SHARE tracker file. Respondents identified as having either a full or partial interview either in person or through a proxy are considered to have responded. 
+
+/*INWw indicates whether an individual responded to a particular wave. INWw is derived from the interview_wW variable in the SHARE tracker file. Respondents identified as having either a full or partial interview either in person or through a proxy are considered to have responded. 
 *INWwSC indicates whether an individual responded to a particular wave's drop-off/self-completion questionnaire. A code of 0 indicates the respondent is not included in the SHARE drop-off/self-completion questionnaire file for that wave. A code of 1 indicates that the respondent at least partially completed the drop-off/self-completion questionnaire and is included in drop-off/self-completion questionnaire file. 
 *INWwSC is assigned plain missing (.) if the respondent did not participate in the current wave. INWwLH indicates whether an individual responded to a particular wave's life history questionnaire. A code of 0 indicates the respondent is not included in the SHARELIFE life history questionnaire file. A code of 1 indicates that the respondent at least partially completed the life history questionnaire and is included in life history questionnaire file. The life history questionnaire was given in Wave 3 and Wave 7. Those respondents who did not respond to the Wave 3 SHARELIFE life history questionnaire were given the life history questionnaire in Wave 7 and those who participated in the SHARELIFE questionnaire in Wave 3 were given the full questionnaire in Wave 7.
-*INW7C indicates whether an individual responded to the Wave 7 condensed questionnaire. A code of 0 indicates the respondent was not given or did not complete the SHARE Wave 7 condensed questionnaire file. A code of 1 indicates that the respondent was given and at least partially completed a condensed version of the Wave 7 questionnaire. At Wave 7, respondents who completed the SHARELIFE questionnaire were given a condensed version of the SHARE questionnaire, which covered a portion of the questions of the regular SHARE questionnaire.
+*INW7C indicates whether an individual responded to the Wave 7 condensed questionnaire. A code of 0 indicates the respondent was not given or did not complete the SHARE Wave 7 condensed questionnaire file. A code of 1 indicates that the respondent was given and at least partially completed a condensed version of the Wave 7 questionnaire. At Wave 7, respondents who completed the SHARELIFE questionnaire were given a condensed version of the SHARE questionnaire, which covered a portion of the questions of the regular SHARE questionnaire.*/
 
 		

@@ -45,7 +45,8 @@ pwd
 ***Bringing in Core Data***
 **Harmonized data**
 use 	   "`h_data'randhrs1992_2020v1"  	// main dataset
-loc g2vars "r*rxpsych r*orient raeducl radiag* r*rec* rafrhrtatt" // choose substrings of variables needed
+	loc g2varsg "h*grchild h*kcnt" // module g
+loc g2vars "r*rxpsych r*orient raeducl radiag* r*rec* rafrhrtatt    `g2varsg'" // choose substrings of variables needed
 merge 1:1 hhidpn using "`h_data'H_HRS_d.dta", keepusing(`g2vars') // add additional vars from g2aging dataset
 
 **End of Life Survey** /*(not required to use for file to run)*/ 
@@ -89,7 +90,7 @@ log using 	"`out'logdo`data'-1-harmon.txt", text replace name(logDofile) // ends
 	
 	
 	
-	
+
 	
 	
 	
@@ -148,7 +149,7 @@ loc 	xtra	"hhresphh cplh iwendyr iwendmr iwstatr iwstats"	// general response in
 loc 	vra 	"mstatr nhmlivr agey_br     `xtra'"		// demographics, identifiers, weights
 	loc 	d_everhad "hibper diaber cancrer lunger hearter stroker arthrer  hiper kidneyer   psycher osteoer" //  
 	*loc 	d_sincelw "hrtattr strokr cancrr hipr" /*these are already incorporated in d_everhad*/
-	loc 	d_agediag "radiaghibp radiagdiab radiagcancr radiaglung radiagheart radiagstrok radiagarthr  radiaghip radiagpsych radiagdepr radiagosteo  radiagkidney" // radiagpsych /*these are time-invariant*/
+	loc 	d_agediag "radiaghibp radiagdiab radiagcancr radiaglung radiagheart radiagstrok radiagarthr  radiaghip radiagpsych radiagdepr radiagosteo  radiagkidney radiagsomethingtest" // radiagpsych /*these are time-invariant*/
 	loc 	d_medictn "rxhibpr rxdiabr rxheartr rxlungr rxpsychr rxosteor rxcancrr rxstrokr rxarthrr"	
 	loc 	d_agediagXtra "rafrhrtatt radiagchf radiaghrtr radiagangin" // this is 'similar' to radiag
 	loc 	d_recentdiagXtra "reccancrr rechrtattr recstrokr" 
@@ -159,7 +160,8 @@ loc 	vrc 	"higovr 	hiltcr lifeinr"										// healthcare utilization and insura
 loc 	vrd  	"tr20r orientr `xtra2'"							// cognition (mostly only asked to 65+ and not proxy)
 loc 	vre		""												// financial and housing wealth
 loc		vrf 	"itoth"											// income and consumption
-loc 	vrg 	"hhreshh"										// family structure
+	loc fertility  "grchildh kcnth childh livbror livsisr"
+loc 	vrg 	"hhreshh `fertility'"							// family structure
 loc	 	vrh 	"workr lbrf_sr"									// employment history
 loc	 	vri 	"retempr"										// retirement (and expectations)
 loc 	vrj 	"pubpenr pubpens"								// pension
@@ -175,7 +177,7 @@ loc 	vrlist	`vra' `vrb' `vrc' `vrd' `vre' `vrf' `vrg' `vrh' `vri' `vrj' `vrl' `v
 ***(b) time-invariant variables***
 unab inwlist: inw* // creates local macro with variables starting with inw* that actually exist 
 *di "`inwlist'"
-loc 	xa 		"hacohort `inwlist' rabyear rabmonth radyear radmonth ragender raeducl `x_eol' radage_y"		
+loc 	xa 		"hacohort `inwlist' rabyear rabmonth radyear radmonth ragender raeducl `x_eol' radage_y  raevbrn"		
 loc 	xb 		"`d_agediag' `d_agediagXtra'"
 loc 	xc 		""
 loc 	xlist	`xa' `xb' `xc' `xd' `xe' `xf' `xg' `xh' `xi' `xj' `xk' `xl' `xm' `xo' `xp' `xq'
@@ -230,9 +232,7 @@ loc namelabellist "`namelabellist' ``name'label'"
 *di "`namelabellist'"
 
 
-
-**# Bookmark #3 add to github
-**add to a local the list of time-constant variables that do *not* exist in particular survey (e.g.radiag) (to generate an empty placeholder in reshape)**
+**add to a local the list of time-constant variables (xlist) that do *not* exist in particular survey (such as SHARE/HRS) (e.g.radiagxxxx) (to generate an empty placeholder in reshape - this is useful to have the empty variable created)**
 *di "`xlist'"
 foreach v of local xlist { 
 capture confirm variable `v' // , exact /*checks if variable exists*/
@@ -270,7 +270,7 @@ tab wave
 	***generate alternative for "wave", as survey year***
 	**generate time**
 	tab wave
- 	recode wave (1 = 1992 "1992 wave") (2 = 1994 "1994 wave") (3 = 1996 "1996 wave") (4 = 1998 "1998 wave") (5 = 2000 "2000 wave") (6 = 2002 "2002 wave") (7 = 2004 "2004 wave") (8 = 2006 "2006 wave") (9 = 2008 "2008 wave") (10 = 2010 "2010 wave") (11 = 2012 "2012 wave") (12 = 2014 "2014 wave") (13 = 2016 "2016 wave") (14 = 2018 "2018 wave") , gen(time)
+ 	recode wave (1 = 1992 "1992 wave") (2 = 1994 "1994 wave") (3 = 1996 "1996 wave") (4 = 1998 "1998 wave") (5 = 2000 "2000 wave") (6 = 2002 "2002 wave") (7 = 2004 "2004 wave") (8 = 2006 "2006 wave") (9 = 2008 "2008 wave") (10 = 2010 "2010 wave") (11 = 2012 "2012 wave") (12 = 2014 "2014 wave") (13 = 2016 "2016 wave") (14 = 2018 "2018 wave") (15 = 2020 "2020 wave") , gen(time)
 	la var 	time "Survey Year (Wave)"
 	**relabel wave to survey-specific value-labels**
 	*la de 	wavel 1 "2004 wave" 2 "2006/07 wave" 3 "2008/09 wave" 4 "2011/12 wave" 5 "2013 wave" 6 "2015 wave" 7 "2017 wave" 8 "2019/20 wave" , replace
