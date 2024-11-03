@@ -58,7 +58,7 @@ gl  diseaselist 	"d_hibp d_diab d_heart d_lung d_depr d_osteo d_cancr d_strok d_
 ***************************************************************************************************
 
 
-/***********************
+************************
 *** overview of data ***
 ************************
 codebook ID, compact
@@ -163,26 +163,10 @@ qui log close log
 
 
 		*check if availability of any of the diseases is based on age*
-
-
-
-		/*** how many are missing at least once in a sequence from earliest interview until latest interview (without being dead of course) *** 
-		tab 	sfullsample
-		*drop if age>=. // think carefully if i want to drop these
-		tab 	sfullsample
-		tab 	maxfollowup 
-			replace followup = . if inwt==0 // make sure followup is missing if not present in that wave
-			replace followup = . if time < inw_first_yr
-// 		gen missingatleastonce = (!inrange(followup, inw_first_yr, inw_last_yr// does not work
-		gen missingatleastonce = (followup==. & inw_first_yr<time & inw_last_yr>time)
-		tab missingatleastonce,m
-		bys ID: egen missingatleastoncemax = max(missingatleastonce)
-		drop if time<inw_first_yr | time>inw_last_yr // keeps only the missings in between
-		bro ID wave time followup age missingatleastoncemax
-			drop if age>=.
-			tab sfullsample missingatleastoncemax
-		*/
 */
+
+
+
 
 **************************
 *** Summary Statistics ***
@@ -218,7 +202,6 @@ sum `continuous' `categorical' if `sample'
 dtable  `continuous' `categorical' if `sample', `opt_dtable' continuous(, stat(count mean sd)) continuous(`continuous_meanonly', stat(count mean))  // title(sometitle) export(myfile.docx, replace)
 collect style tex, nobegintable /*keeps only fragment without \begin{table}*/
 collect export "$outpath/tab/`saveloc'/sumstats/o_sumstat_bywave`sample'", as(`frmt') tableonly replace  
-]]
 **same table, but now for all disease onsets**
 dtable  if `sample', `opt_dtable' continuous(`continuous2_alld', stat(count mean sd)) 
 collect style tex , nobegintable /*keeps only fragment without \begin{table}*/
@@ -231,7 +214,31 @@ STOP
 
 
 
+**************************
+*** Other tables ***
+**************************	
+**# Bookmark #1 doing it with age here, but actually should do with d_count as d_count may be missing even though he participated
+*** how many are missing at least once in a sequence from earliest interview until latest interview (without being dead of course) *** 
+use 			"`cv'/`data2'data/harmon/H_`data'_panel2-MM.dta", clear	// need to use full dataset with missing ages
+tab 	sfullsample
+tab 	sfullsample
+tab 	followupmax 
+gen myvar = (d_count==. & inw_first_yr < time & inw_last_yr > time) //  // & followup==. 
+// 	gen myvar2 = (d_count==. & followup==. & inw_first_yr < time & inw_last_yr > time) //  // & followup==. 	
+// gen myvar2 = (followup==. & inrange(time, inw_first_yr, inw_last_yr))
+bys ID: egen missingatleastonce = max(myvar)
+bys ID: egen missingcountbtwwaves = total(myvar == 1)
+bro ID wave time followup age myvar* inw_first_yr inw_last_yr missingatleastonce missingcountbtwwaves
 
+drop if mi(age)
+// drop if time<inw_first_yr | time>inw_last_yr // keeps only the missings in between
+qui log using "tablogs/t-sequencemissings.txt", text replace name(log)
+// within a health sequence, how many times between first and last interview is the count missing
+tab missingatleastonce,m 
+tab inw_tot missingcountbtwwaves, row nofreq 
+qui log close log
+STOP
+*/
 
 
 

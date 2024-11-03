@@ -7,23 +7,57 @@ clear all		/*clears all data in memory*/
 
 ***choose data***
 *set everything into SHARE output, but dataset used only from SHAREELSA
-loc data "SHARE"  
+loc data "SHAREELSA"   // use SHAREELSA data
 
+	* actually this path was the same since this had SHAREELSA dataset
+	// ***define folder locations***
+	// if "`c(username)'" == "P307344" { // UWP server
+	// loc cv 		"X:/My Documents/XdrvData/`data'/"
+	// loc outloc 	"`cv'" // to save locally 
+	// }
+	// else {
+	// loc	cv 		"C:/Users/`c(username)'/Documents/RUG/`data'/"
+	// loc	outloc 	"C:/Users/`c(username)'/Documents/GitHub/2-projectMM-`data'" // do not overwrite existing output in the compiled output	
+	// }
+	// gl 	outpath 	"`outloc'/files" /*output folder location*/
+	// loc saveloc 	"main" // main | supplement /*saving location*/
+	// loc altsaveloc  "allfiles" // saving location of all plots/subplots
+	// cd  			"`cv'"	
+	// use 			"./`data'data/harmon/H_SHAREELSA_panel2-MM.dta", clear	
+
+
+	**define country-specific locals**
+	loc data2 "`data'" // use same path unless otherwise specified
+	if "`data'"=="SHARE" {
+	}
+	if "`data'"=="ELSA" {
+	}
+	if "`data'"=="HRS" {
+	}
+	if "`data'"=="SHAREELSA" {
+		loc data2 "SHARE" // use output location and path of SHARE if combined dataset is used. (should not do if separate datasets, if that is the case should move to other do file)
+	}	
 
 ***define folder locations***
 if "`c(username)'" == "P307344" { // UWP server
 loc cv 		"X:/My Documents/XdrvData/`data'/"
 loc outloc 	"`cv'" // to save locally 
+*loc outloc "\\Client\C$\Users\User\Documents\GitHub\2-projectMM-`data'\" // from UWP save directly to PC (only works with full version of Citrix)
 }
 else {
-loc	cv 		"C:/Users/`c(username)'/Documents/RUG/`data'/"
-loc	outloc 	"C:/Users/`c(username)'/Documents/GitHub/2-projectMM-`data'" // do not overwrite existing output in the compiled output	
+loc	cv 		"C:/Users/`c(username)'/Documents/RUG/`data2'/"
+loc	outloc 	"C:/Users/`c(username)'/Documents/GitHub/2-projectMM-`data2'" // do not overwrite existing output in the compiled output	
 }
 gl 	outpath 	"`outloc'/files" /*output folder location*/
 loc saveloc 	"main" // main | supplement /*saving location*/
 loc altsaveloc  "allfiles" // saving location of all plots/subplots
 cd  			"`cv'"	
-use 			"./`data'data/harmon/H_SHAREELSA_panel2-MM.dta", clear	
+use 			"./`data2'data/harmon/H_`data'_panel2-MM.dta", clear	
+
+
+
+
+
 
 ***********
 cd  	"$outpath/tab"
@@ -36,26 +70,26 @@ gl  diseaselist 	"d_hibp d_diab d_heart d_lung d_depr d_osteo d_cancr d_strok d_
 	tab hacohort
 	
 
-
+*** generate new variables of SHARE and ELSA ***	
 *** generate new variables ***	
 
 ** d_anyatfirstobs among young age cohort**
-gen  d_any50to55 	= d_anyatfirstobs if inrange(age,50,54) // double check, should be identical 
+gen  d_any50to55 	= d_anyatfirstobs if inrange(age,50,54) 
 la var d_any50to55 "has disease (aged 50-54)"
 
 ** d_count_geq2 among young age cohort**
-gen d_count_geq2_50to55 = d_count_geq2 if inrange(age,50,54) // double check, should be identical 
+gen d_count_geq2_50to55 = d_count_geq2 if inrange(age,50,54) 
 sum d_count_geq2_50to55
 la var d_count_geq2_50to55 ">=2 diseases (aged 50-54)"
 
 
 qui log using 	"$outpath/logs/log-tdmissbycountry.txt", text replace name(log) 
 tab countryID sfull5,m row nofreq 
-tab countryID inw_tot if sfull5
+tab countryID inw_tot if sfull5 // selected sample
+tab countryID inw_first if sfullsample // fullsample
 tab countryID d_miss if time==2017 // it seems that 2017 has many countries that are missing 1 disease (wave 7). Should double check this wave
 log close log
 
-/*** generate new variables of SHARE and ELSA ***	
 * simple summary statistics to compare N *
 qui log using 	"$outpath/logs/log-tsumstat.txt", text replace name(log) 
 bys dataset: sum `vars'
@@ -135,6 +169,7 @@ collect export "$outpath/tab/main/sumstats/tprevalenced_`sample'_SHAREELSA", as(
 	
 
 ** profile plot, prevalence of D by age ** 
+preserve
 collapse (mean) `templist', by(agegrp5 male)
 foreach v of varlist `templist' {
 di "`v'"

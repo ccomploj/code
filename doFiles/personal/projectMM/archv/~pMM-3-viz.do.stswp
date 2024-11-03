@@ -44,8 +44,8 @@ cd  	"$outpath/tab"
 gl  diseasecodelist "hibp diab heart lung depr osteo cancr strok arthr demen" // psych
 gl  diseaselist 	"d_hibp d_diab d_heart d_lung d_depr d_osteo d_cancr d_strok d_arthr d_demen"
 **# Bookmark #1 I drop the cohortselection in all files except vizualization (when plotting against time)
-	*drop if cohortselection==0 
-	drop if mi(age) // these are missing observations/time periods
+	drop if cohortselection==0 
+	drop if mi(age) // these are missing observations/time periods (should not drop these for survival plot)
 	tab hacohort
 
 
@@ -56,7 +56,7 @@ gl  diseaselist 	"d_hibp d_diab d_heart d_lung d_depr d_osteo d_cancr d_strok d_
 *** define locals to apply to entire file ***
 // 	gl sample 		"sfullsample" // sfullsample, sbalanced, sfull5 (choose what is best)
 // 	gl samplelabel: variable label $sample
-gl sample 			"sfull5" // copy these lines if a specific subsample shall apply to specific plot
+gl sample 			"sfullsample" // copy these lines if a specific subsample shall apply to specific plot
 gl opt_global 		"" // settings to apply to all graphs 
 set scheme s1color
 
@@ -87,19 +87,22 @@ foreach  cohort of   local levels {
 qui 	sum time, meanonly 
 loc 	timerange = r(max)-r(min)+5 /*maximum time an id is observed (5 added for agemingrp)*/
 di 		"`timerange'"
-replace age = `cohort'+`timerange' if age >`cohort'+`timerange' & age<. & agegrpmin5==`cohort' 
+replace age = `cohort'+`timerange' if agegrpmin5==`cohort'  & age >`cohort'+`timerange'-5 & age<.
 replace timesincefirstobs 	= `timerange'-5 if timesincefirstobs<. & timesincefirstobs>`timerange'-5
 replace followup_iwyr 		= `timerange'-5 if followup_iwyr<. & followup_iwyr>`timerange'-5
 } 
 
-
 /***************************************************************************************************
 *Part 7b*: Vizualization (Plots)
 ***************************************************************************************************
-*** +++ distribution (hist) of main variables +++ ***
+
+/************************************************
+*** +++ Histogram (hist) of main variable +++ *** 
+*************************************************
 loc sample 	"sfullsample" // copy these lines if a specific subsample shall apply to specific plot
 foreach sample in "sfullsample" "sfull5" {
 preserve 
+drop if mi(age) // this is a panel dataset, when plotting a distribution the missing observations are used multiple times, that is not the idea.
 loc slabel: variable label `sample'
 loc histlist ""
 bys ID: egen d_countmax = max(d_count)
@@ -117,15 +120,34 @@ gr combine `histlist', title("`slabel'")
 gr export 	"$outpath/fig/main/g_hist_`sample'_combined.pdf", replace
 restore
 }
-STOP
+*STOP
+
+
+
+**bar chart with ever had condition within ID **
+**# Bookmark #2 could do the same with combinations of diseases
+di "$diseaselist"
+foreach d of global diseaselist {
+loc barlist "`barlist' `d'" 
+}
+di "`barlist'"
+
+preserve 
+collapse (max) `barlist', by(ID)
+di "`barlist'"
+graph bar `barlist', title("% of IDs who ever (across time) report each disease" "(`data')")
+gr export 	"$outpath/fig/`saveloc'/g_bar_alld.jpg", replace quality(100)
+*could add here a stacked plot that shows: % of ppl with value 1, 0, and third category missing*
+restore 
+STOP 
 */
 
 
-/*******************************************
+
+
+******************************************
 *** +++ Disease count over age +++ *** 
 *******************************************
-
-
 	
 *** +++ graph over age +++ ***
 loc 	y 			"d_count"
@@ -133,9 +155,9 @@ loc 	ylabel: 	var label `y'
 loc 	sample 		$sample 
 loc 	samplelabel: variable label `sample' 	
 loc 	cat  		"agegrpmin5" // male, raeducl, countatfirstobs
-loc 	timevar 	"age" /*use age dummies*/
-*loc 	xla 		"xla(50(5)90)" /*needed for separate sub-plots*/
-loc 	opt_marginsplot "ytitle("Mean `ylabel'")  yscale(range(0 .))" // noci  
+loc 	timevar 	"agegrp" /*use age dummies*/
+loc 	xla 		"xla(50(5)90)" /*needed for separate sub-plots*/
+loc 	opt_marginsplot "ytitle("Mean `ylabel'")  yscale(range(0 .)) noci" // noci  
 loc 	ctrls  "`ctrl'"
 	/** xtline (crude data: identical to predictions (profile plots) from margins, but without CI) **
 	*preserve // cannot preserve data twice in stata
@@ -153,21 +175,21 @@ qui margins `timevar'#`cat'
 // qui margins `cat', at(age=(`agethreshold'(10)90)) // this is a lot slower but does the same in this case
 marginsplot,  `opt_marginsplot'   title("Crude Data (`data')") note("Sample: `samplelabel'" "Model: `reg'") name(g`cat'_`cohort', replace)  
 gr export 	"$outpath/fig/main/g_reg_by`timevar'-`cat'_`sample'_`y'.jpg", replace	quality(100)
-
-** by covariate levels **
+]]
+*** by covariate levels ***
 loc 	 catlist 	"countatfirstobs"
-loc 	 catlist 	"male raeducl countatfirstobs"	
-	
-/*(a) single combined plot of each cohort group* 
+// loc 	 catlist 	"male raeducl countatfirstobs"	
+
+*(a) single combined plot of each cohort group* 
 foreach  cat of local catlist {	
 loc catlabel: var label `cat'
 loc reg  		reg `y' `timevar'##`cat'##agegrpmin5 `ctrls' if $sample == 1 & age<80 // set age limit
 qui `reg'
 qui margins `timevar'#`cat'#agegrpmin5
 marginsplot,  `opt_marginsplot'   by(agegrpmin5) byopts(title("Crude Data, (`data', by `catlabel')")) name(g`cat'_`cohort', replace) // ycommon?
-gr export 	"$outpath/fig/main/g_reg_by`timevar'-`cat'_`sample'_d_count_bycohort.jpg", replace	quality(100)
+// gr export 	"$outpath/fig/main/g_reg_by`timevar'-`cat'_`sample'_d_count_bycohort.jpg", replace	quality(100)
 }
-*/
+
 *(b) separate sub-plots per cohort*
 foreach  cat of local catlist {	
 foreach  cohort of   local levels {
@@ -177,16 +199,18 @@ loc cohortlabel "(`cohortlabel')"  /*add parentheses if subplots*/
 loc 	 opt_marginsplot "title("Crude Data `cohortlabel'") ytitle("Mean `ylabel'")" // noci   
 loc 	 ctrls  "`ctrl'"
 loc 	 reg  	reg `y' `timevar'##`cat' `ctrls' if `sample'==1 & agegrpmin5==`cohort'
- `reg'
-margins `timevar'#`cat'
-marginsplot, `opt_marginsplot'  title("Crude Data (`data') `cohortlabel'") note("Sample: `samplelabel' | Controls: `ctrls' (none)" "Model: `reg'") name(g`cat'_`cohort', replace)  // by(agegrpmin5)
-gr export 	"$outpath/fig/main/g_reg_by`timevar'-`cat'_`sample'_d_count_`cohort'.jpg", replace quality(100)
+qui `reg'
+qui margins `timevar'#`cat'
+marginsplot, `opt_marginsplot' `xla' title("Crude Data (`data') `cohortlabel'") note("Sample: `samplelabel' | Controls: `ctrls' (none)" "Model: `reg'") name(g`cat'_`cohort', replace)  // by(agegrpmin5)
+// gr export 	"$outpath/fig/main/g_reg_by`timevar'-`cat'_`sample'_d_count_`cohort'.jpg", replace quality(100)
 } 
 }
+*/
 
+
+*/
 	
-	
-		*by mortality*
+		/*by death age at death categories*
 		**# Bookmark #1 can do separately for all countatfirstobs levels (otherwise, include this to plot (b) above)
 	**# Bookmark #1 I think this does this by all groups, hence code stops for >65
 	**# Bookmark #1 in ELSA have no radage apparently, check this
@@ -199,10 +223,10 @@ gr export 	"$outpath/fig/main/g_reg_by`timevar'-`cat'_`sample'_d_count_`cohort'.
 		loc 	 reg  	xtreg `y' `timevar'##`cat' `ctrls' if `sample'==1 & countatfirstobs==0  & agegrpmin5==`cohort' 
 		qui `reg'
 		qui margins `timevar'#`cat' 					// , at(countatfirstobs=0)
-		marginsplot		,   `opt_marginsplot'  name(g`cat'_`cohort', replace) `xla' title("Crude Data `cohortlabel'") note("Sample: `samplelabel' | Controls: `ctrls' (none)" "Model: `reg'")  // by(agegrpmin5) 
+		marginsplot		,   `opt_marginsplot' `xla'  name(g`cat'_`cohort', replace) `xla' title("Crude Data `cohortlabel'") note("Sample: `samplelabel' | Controls: `ctrls' (none)" "Model: `reg'") noci // by(agegrpmin5) 
 		gr export 	"$outpath/fig/main/g_reg_by`timevar'-`cat'_`sample'_d_count_`cohort'.jpg", replace quality(100)
 		}
-	restore
+// 	restore
 	STOP
 	*/
 	
@@ -215,15 +239,15 @@ gr export 	"$outpath/fig/main/g_reg_by`timevar'-`cat'_`sample'_d_count_`cohort'.
 	*******************************************
 	// 	preserve
 	**# could choose to drop some sample cohorts
-		if dataset=="SHARE" {
-		keep 	if hacohort==1 | hacohort==2 
-		}
-		if dataset=="ELSA" {
-		keep 	if hacohort==1  
-		}
-		if dataset=="HRS" {
-		keep 	if hacohort<5 
-		}
+// 		if dataset=="SHARE" {
+// 		keep 	if hacohort==1 | hacohort==2 
+// 		}
+// 		if dataset=="ELSA" {
+// 		keep 	if hacohort==1  
+// 		}
+// 		if dataset=="HRS" {
+// 		keep 	if hacohort<5 
+// 		}
 	qui log using 	"$outpath/logs/log-agegrpmin5b.txt", text replace name(log) 
 	/*this log is to show that the generation of agegrpmin5b is correct*/
 	clonevar 	agegrpmin5b = agegrpmin5
@@ -245,9 +269,19 @@ gr export 	"$outpath/fig/main/g_reg_by`timevar'-`cat'_`sample'_d_count_`cohort'.
 	loc 	opt_marginsplot "ytitle("Mean `ylabel'")" // noci  
 	loc 	ctrls  		"`ctrl'"
 	loc 	reg  		reg `y' `timevar'##`cat' `ctrls' if `sample'==1  
+		levelsof hacohort, local(levels)
+		loc hacohortlist ""
+		loc hacohortvlist ""
+		foreach level of local levels {
+		loc levellabel: label (hacohort) `level' 
+		loc hacohortlist "`hacohortlist' `levellabel' "
+		loc hacohortvlist "`hacohortvlist' `level'"
+		}
+		di "`hacohortlist'"
+		di "`hacohortvlist'"
 	qui `reg'
 	qui margins `timevar'#`cat' 
-	marginsplot, `opt_marginsplot'  name(g`cat'_`cohort', replace)  title("`ylabel' over calendar time")  note("Sample: `samplelabel' | Controls: `ctrls' (none)" "Model: `reg'")  xla(, ang(20))
+	marginsplot, `opt_marginsplot'  name(g`cat'_`cohort', replace)  title("`ylabel' over calendar time")  note("Sample: `samplelabel' | Controls: `ctrls' (none)" "Model: `reg'" "cohorts: `hacohortvlist'")  xla(, ang(20))
 	gr export 	"$outpath/fig/main/g_reg_by`timevar'-`cat'_`sample'_`y'.jpg", replace 
 	restore	
 	STOP  
@@ -279,16 +313,11 @@ gr export 	"$outpath/fig/main/g_reg_by`timevar'-`cat'_`sample'_d_count.jpg", rep
 STOP
 */
 
-	*** +++++++++++++++++++ graph over age by first onset age +++ *** (and maybe also do by timesincefirstobs), timesincefirstobs does not make sense until i group categories by time, not by agegrps anymore
+**************************************************
+*** +++ count over age by first onset age  +++ *** 
+**************************************************
 	**# Bookmark #1 plot same plot also by categories of firstage_mm  +++++++++++++++++++ ***
 	* do also with d_count_lead 
-		*preserve // bc replace firstage
-// 		egen 	firstagegrp5 = cut(onsetage),    at (`agethreshold',55,60,65,70,75,120) // ,80, 	
-// 		recode  firstagegrp5 (`agethreshold' = 50)
-// 		replace firstagegrp5 = . if d_anyatfirstobs==1 
-// 		loc 	labelname "firstage:"
-// 		la de 	firstagegrp5l 	50  "`labelname' `agethreshold'-54" 55 "`labelname' 55-59" 60 "`labelname' 60-64" 65 "`labelname' 65-69" 70 "`labelname' 70-74" 75 "`labelname' 75+" 
-// 		la val 	firstagegrp5 firstagegrp5l
 // 		*tab firstagegrp5,m
 		*recode d_count_lead (99=10)
 		
@@ -303,37 +332,57 @@ STOP
 	// 	loc counter = `counter'+1	
 	// 	}
 	// 	mac list _labellist	 // should not display, but mac list 	
-	set graphics on
+// 	set graphics on
 		loc 	sample 		"$sample"
 		loc samplelabel:	var label `sample'
 		loc 	y 			"d_count"
 		loc 	ylabel: 	var label `y'
 		loc 	cat  	  	"onsetagegrp5" 
-		loc 	timevar 	"age" 
+		loc 	timevar 	"agegrp" 
 		loc 	opt_marginsplot "ytitle("Mean `ylabel'")" // noci  
 		loc 	ctrls  		"`ctrl'"
-		loc 	xla 		"xla(50(5)90)" /*needed for separate sub-plots*/
+		loc 	xla 		"xla(50(5) 90)" /*needed for separate sub-plots (to make entry age visible)*/
 	loc cohortvar 	"agegrpmin5"
 	loc cohort 		"50"
-		loc nolegend "legend(off)"
+// 		loc nolegend "legend(off)"
+
 	foreach cohort in 50 55 60 65 {
 	loc cohortlabel: label (`cohortvar') `cohort'
 		loc 	reg  		xtreg `y' `timevar'##`cat' `ctrls' if `sample'==1 & d_anyatfirstobs==0   & `cohortvar'==`cohort'
 		qui `reg'
 		qui margins `timevar'#`cat'
-		marginsplot, `opt_marginsplot' `x' `nolegend' title("Crude Data, by age of first onset (`cohortlabel')") note("Sample: `samplelabel' | Controls: `ctrls' (none)" "Model: `reg'")  name(g`cohort', replace) noci // by(agegrpmin5) //  legend(order(`labellist'))
-		gr export 	"$outpath/fig/main/g_by`timevar'-`cat'_`sample'_`y'_`cohort'.jpg", replace quality(100)
+		marginsplot, `opt_marginsplot' `xla' yla(0 (1) 4) `nolegend' title("Crude Data, by onset age" "(`cohortlabel')" "`data'") note("Sample: `samplelabel' | Controls: `ctrls' (none)" "Model: `reg'")  name(g`cohort', replace) noci // by(agegrpmin5) //  legend(order(`labellist'))
+		gr export 	"$outpath/fig/main/g_byonsetage_`cohort'.jpg", replace quality(100)
 // 		loc nolegend "legend(off)"
 	}
-	]]
-		gr combine g50 g55 g60 g65, ycommon 
-		grc1leg2 g50 g55 g60 g65, scheme(s1color) legendfrom(g55) ycommon  // allows for single legend in combined graph
+// 		gr combine g50 g55 g60 g65, ycommon 
+		// grc1leg2 g50 g55 g60 g65, scheme(s1color) legendfrom(g55) ycommon  // allows for single legend in combined graph
 **# Bookmark #1cannot use same legend, need to make sure colors are correct
-	
 		STOP
 		*/
 
-	
+
+** probability of survival by wave **
+// 	gen 		alive=(1-dead) if !mi(dead)
+// 	logit 		alive i.time if agegrpmin5==50
+// 	margins 	time
+// 	marginsplot, noci
+loc sample 		"$sample"
+preserve 
+stset wave, failure(dead)
+stdes	
+rename countatfirstobs c
+levelsof agegrpmin5, local(levels)
+foreach  v of local levels {
+loc cohortlabel :  label (agegrpmin5) `v'
+sts graph if agegrpmin5==`v', survival by(c) legend(pos(6) rows(3)) name(g`v') title("Crude Data `cohortlabel'")	
+gr export 	"$outpath/fig/main/g_surv_`sample'_bycountatfirstobs_`v'.jpg", replace quality(100)
+}
+restore 
+STOP 
+*/
+
+
 	
 
 	***********************************************************************
@@ -607,18 +656,7 @@ STOP
 
 	*/
 
-		/**bar chart with ever had condition **
-		loc templist ""
-		di "$diseasecodelist"
-		foreach d of global diseasecodelist {
-		loc barlist "`barlist' d_`d'ever" 
-		}
-		di "`barlist'"
-		graph bar `barlist', title("% of IDs ever reporting each disease (across time)")
-		gr export 	"$outpath/fig/`saveloc'/g_bar_alld.jpg", replace quality(100)
-		*could add here a stacked plot that shows: % of ppl with value 1, 0, and third category missing*
-		pause 
-		*/
+
 		
 		
 		
@@ -711,26 +749,6 @@ STOP
 
 
 
-
-		
-		/** probability of survival by wave **
-	// 	gen 		alive=(1-dead) if !mi(dead)
-	// 	logit 		alive i.time if agegrpmin5==50
-	// 	margins 	time
-	// 	marginsplot, noci
-		preserve 
-		stset wave, failure(dead)
-		stdes	
-		rename countatfirstobs c
-		levelsof agegrpmin5, local(levels)
-		foreach  cohortgrp of   local levels {
-		loc cohortlabel :  label (agegrpmin5) `cohortgrp'
-		sts graph if agegrpmin5==`cohortgrp', survival by(c) legend(pos(6) rows(3)) name(g`cohortgrp') title("Crude Data `cohortlabel'")	
-		gr export 	"$outpath/fig/main/g_surv_`sample'_`cohortgrp'.jpg", replace quality(100)
-		}
-		restore 
-		pause
-		*/
 
 
 

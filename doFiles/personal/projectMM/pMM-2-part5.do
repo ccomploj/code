@@ -3,8 +3,6 @@ pause off
 log close _all 	/*closes all open log files*/
 clear all		/*clears all data in memory*/
 
-**# Bookmark #1 note: in HRS, _uncens variables are not OK since I drop waves 1 and 2 only later!!
-
 **# Bookmark #1 should recode onsetage to only be nonmissing if full disease count is not missing (otherwise may not capture true onset)
 //  tab d_any d_miss,m // use this to check
 
@@ -12,7 +10,7 @@ clear all		/*clears all data in memory*/
 ***choose data***
 loc data 		"HRS"
 loc datalist 	"SHARE ELSA" // HRS
-foreach data of local datalist{ 
+// foreach data of local datalist{ 
 
 
 ***define folder locations***
@@ -35,7 +33,6 @@ pwd
 
 *** read data ***
 use 			"`h_data'/H_`data'_panel.dta", replace
-
 
 ***define dataset-specific locals***
 ** IMPORTANT: MUST DROP IRRELEVANT WAVES AT THE *BEGINNING* OF THIS DO FILE IF NOT USED, OTHERWISE ALL THE CODE USING inw_first etc. WILL BE INCORRECT (and subsequent code might also be incorrect if drop additional info from the sample later) **
@@ -284,6 +281,9 @@ la var 	retempr "retired"
 // Y: Other relevant variables (e.g. from other datasets)
 *gen	ageatdeath // construct ageatdeath from end-of-life version of harmonized dataset (see here https://g2aging.org/downloads) (if this is available and informative);  
 
+*** other labels *** 
+la var smokenr "curr.smoking"
+
 	*****************
 	*** Attrition *** 
 	*****************
@@ -336,10 +336,12 @@ include  "`github_p5subdiseases'" // include github file
 	
 ***select samples***
 **# ageinelig individuals ( already dropped at beginning of file)
-// drop if mi(age) // these observations are not used anyway, do not want to report any information about these individuals !! do NOT drop! sb might just be dead 
-drop if inw_tot == 0 // if e.g. only waves 3-13 are used, then inw_tot=0 if sb was present in 14-15 only (check that inw_was generated correctly first for each country's dataset)
+	// drop if mi(age) // these observations are not used anyway, do not want to report any information about these individuals !! do NOT drop! sb might just be dead // i drop these observations later
+	drop if inw_tot == 0 // if e.g. only waves 3-13 are used, then inw_tot=0 if sb was present in 14-15 only (check that inw_was generated correctly first for each country's dataset) ( i should dro these anyway (their age will be missing in all these time periods, so maybe I should not drop these))
 
 	
+	
+
 **# Bookmark #1 maybe already here i want to remove observations if dead or not repesent in survey? (just that then i cannot study attrition)
 // full sample
 count if !mi(age) // saves N into r(N)

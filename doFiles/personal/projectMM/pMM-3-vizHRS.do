@@ -1,4 +1,151 @@
 
+pause on
+pause off
+log close _all 	/*closes all open log files*/
+clear all		/*clears all data in memory*/
+
+***choose data***
+loc data 		"HRS"
+
+***define folder locations***
+if "`c(username)'" == "P307344" { // UWP server
+loc cv 		"X:/My Documents/XdrvData/`data'/"
+loc outloc 	"`cv'" // to save locally 
+*loc outloc "\\Client\C$\Users\User\Documents\GitHub\2-projectMM-`data'\" // from UWP save directly to PC (only works with full version of Citrix)
+}
+else {
+loc	cv 		"C:/Users/`c(username)'/Documents/RUG/`data'/"
+loc	outloc 	"C:/Users/`c(username)'/Documents/GitHub/2-projectMM-`data'" 	
+}
+gl 	outpath 	"`outloc'/files" /*output folder location*/
+loc saveloc 	"main" // main | supplement /*saving location*/
+loc altsaveloc  "allfigs" // saving location of all plots/subplots
+cd  			"`cv'"	
+use 			"./`data'data/harmon/H_`data'_panel2-MM.dta", clear	
+
+**define country-specific locals**
+
+***********
+cd  	"$outpath/tab"
+gl  diseasecodelist "hibp diab heart lung depr osteo cancr strok arthr demen" // psych
+gl  diseaselist 	"d_hibp d_diab d_heart d_lung d_depr d_osteo d_cancr d_strok d_arthr d_demen"
+**# Bookmark #1 I drop the cohortselection in all files except vizualization (when plotting against time)
+	*drop if cohortselection==0 
+// 	drop if mi(age) // these are missing observations/time periods (should not drop these for survival plot)
+	tab hacohort
+
+	
+	
+	
+***************************************************************************************************
+*Part 7a*: Vizualization (Do File Setup, variable and local definitions) 
+***************************************************************************************************
+*** define locals to apply to entire file ***
+// 	gl sample 		"sfullsample" // sfullsample, sbalanced, sfull5 (choose what is best)
+// 	gl samplelabel: variable label $sample
+gl sample 			"sfullsample" // copy these lines if a specific subsample shall apply to specific plot
+gl opt_global 		"" // settings to apply to all graphs 
+set scheme s1color
+
+*** define additional variables ***
+*** age groups ***
+gen 	agegrp 	= age
+replace agegrp 	= 85 if agegrp>90 & agegrp<. /*group few very old*/
+la var  agegrp 	"age"
+*tabstat age, by(agegrp) stats(min max)
+
+
+/** install packages **
+net install transcolorplot , from(http://www.vankerm.net/stata)
+net describe transcolorplot
+ssc install spgrid // needed for transcolorplot
+ssc install spmap // needed for transcolorplot
+*/
+
+
+*************************************************
+*** +++ 2-y transition probability +++ *** 
+*************************************************
+
+/*** transcolorplot ***
+preserve 
+sort ID time 
+sum d_count, meanonly
+loc v = `r(max)'+1
+recode d_count_lead (99 = `v')	 // otherwise plot is highly skewed
+transcolorplot d_count d_count_lead if !mi(d_count), discrete title("transcolorplot (d_count to d_count_lead)") note("the plot includes d_count_lead==dead")
+gr export 	"$outpath/fig/main/g_transcolorplot.jpg", replace quality(100)
+restore
+STOP
+*/
+
+/*** Scatterplot of means by age ***
+tab 	d_count d_count_lead, nofreq row matcell(test)
+mat li test 
+qui log using 		"$outpath/tab/tablogs/t-transitions.txt", text replace name(log) 
+xttrans d_count
+qui log close log
+
+sum d_count_lead if d_count_lead!=99, meanonly 
+loc v = r(max)+2 // 0 and plus one  	
+tab d_count_lead, gen(d_count_lead_) // for stacked bar chart
+collapse (mean) d_count_lead_* , by(d_count agegrp) 
+		unab list: d_count_lead_* 
+		di "`list'"
+		foreach var of local list {
+			loc vla: var la `var'
+			loc pos = strpos("`vla'", "_") + 12
+			loc number = substr("`vla'", `pos', .)		 
+			di "`number'"
+		la var `var' "c_{i,t+1}=`number'" 
+		}
+la var d_count_lead_`v' "c_{i,t+1}=dead" 
+twoway (scatter d_count_lead_1 agegrp) (scatter d_count_lead_2 agegrp) (scatter d_count_lead_3 agegrp) (scatter d_count_lead_4 agegrp) (scatter d_count_lead_5 agegrp) (scatter d_count_lead_6 agegrp) (scatter d_count_lead_`v' agegrp)     if inrange(d_count,1,4), by(d_count,  title("Transitions by age conditional on count before transition") legend( position(6)))  scheme(s1color) xla(50(5)90)  legend(cols(4))
+gr export 	"$outpath/fig/main/g_transitions_bycount.pdf", replace 
+STOP 
+*/
+
+		/*preserve  (does the same as above, just much more complicated)
+		**start plot**
+		forval gamma=0/4{ // only from 4 starting states
+			sum d_count if d_count!=99, meanonly 
+			loc d_countmax = r(max)
+			*loc    j=2
+			forval j=0/`d_countmax'{
+		// indicator of WHETHER transiting to specific condition
+		gen trans_`gamma'to`j' = (d_count == `gamma' & d_count_lead == `j') if !mi(d_count) & !mi(d_count_lead) & d_count==`gamma' 
+		tab trans_`gamma'to`j' d_count
+		}
+		gen trans_`gamma'todead = (d_count == `gamma' & d_count_lead == 99) if !mi(d_count) & !mi(d_count_lead) & d_count==`gamma' 
+		}
+		sum trans_*	
+		// STOP
+
+			set graphic on
+			**crude plotting: transition by age**
+			loc 	col "gs10"
+			loc 	x "age"
+			loc 	gamma=2
+			forval gamma=0/4{
+			preserve
+			collapse (mean) y1 = trans_`gamma'to1 (mean) y2 = trans_`gamma'to2 (mean) y3 = trans_`gamma'to3 (mean) y4 = trans_`gamma'to4 (mean) y5 = trans_`gamma'to5 (mean) y6 = trans_`gamma'to6 (mean) dead = trans_`gamma'todead   if age<85, by(`x')
+				local labellist  `labellist' `counter' `"d_count=`valuel'"'   
+				loc labellist 1  `"trans_`gamma'to1"' 2 `"trans_`gamma'to2"' 3 `"trans_`gamma'to3"' 4 `"trans_`gamma'to4"' 5 `"trans_`gamma'to5"' 6 `"trans_`gamma'to6"' 7 `"trans_`gamma'todead"'
+				mac list _labellist 
+			twoway 	(scatter y1 `x') (scatter y2 `x') (scatter y3 `x') (scatter y4 `x') (scatter y5 `x') (scatter y6 `x') (scatter dead `x')  (lowess y1 `x', lcolor(`col'))  (lowess y2 `x', lcolor(`col'))  (lowess y3 `x', lcolor(`col'))  (lowess y4 `x', lcolor(`col')) (lowess y5 `x', lcolor(`col')) (lowess y6 `x', lcolor(`col')) (lowess dead `x', lcolor(`col')) ///
+			  , title("2-year transition probability: `gamma' to j") xla(50(5)85)  name(g_`gamma', replace)  legend(cols(3) ///
+			 order(`labellist')) // ) //  
+			*gr export 	"$outpath/fig/main/g_by`x'_transp_`gamma'toj.jpg", replace `jpghighquality'
+			restore
+			}
+			STOP
+			*/	
+	
+	
+
+
+
+	
 
 *** generate duration with c conditions ***
 
@@ -47,60 +194,6 @@ di "`timediff'" // should equal to the maximum of duration above
 	// 	bro ID wave d_count* diff_d_count* duration if ID==10013010
 	// 	*/
 
-
-
-
-
-
-	*** +++ 2-y transition probability +++ ***
-	*preserve 
-	gen 	d_count2 = d_count
-	replace d_count2 = 99 if dead==1 
-	la de  	d_count2l 99 "dead" // add dead label to 99
-	la val 	d_count2 d_count2l
-	tab 	d_count2 
-**# Bookmark #2 need to set d_count2 to missing after first period dead
-	tab 	d_count d_count_lead, nofreq row matcell(test)
-	mat li test 
-	xttrans d_count2
-	**start plot**
-	forval gamma=0/4{ // only from 4 starting states
-		sum d_count if d_count!=99, meanonly 
-		loc d_countmax = r(max)
-		*loc    j=2
-		forval j=0/`d_countmax'{
-	gen trans_`gamma'to`j' = (d_count == `gamma' & d_count_lead == `j') if !mi(d_count) & !mi(d_count_lead) & d_count==`gamma' // indicator of WHETHER transiting to specific condition
-	tab trans_`gamma'to`j' d_count
-	}
-	gen trans_`gamma'todead = (d_count == `gamma' & d_count_lead == 99) if !mi(d_count) & !mi(d_count_lead) & d_count==`gamma' // indicator of WHETHER transiting to specific condition	
-	}
-	sum trans_*	
-	
-	**
-	/**using logistic fit (only single outcome allowed (I think, unless able to combine margins to a single marginsplot) - the solution is to predict the margins for the ordered logit)**
-	logit trans_1to2 c.age if sfull==1
-	margins , at(age=(51(10)90))
-	marginsplot 
-	*/
-	
-	**crude plotting: transition by age**
-	loc 	col "gs10"
-	loc 	x "age"
-	loc 	gamma=2
-	forval gamma=0/4{
-	preserve
-	collapse (mean) y1 = trans_`gamma'to1 (mean) y2 = trans_`gamma'to2 (mean) y3 = trans_`gamma'to3 (mean) y4 = trans_`gamma'to4 (mean) y5 = trans_`gamma'to5 (mean) y6 = trans_`gamma'to6 (mean) dead = trans_`gamma'todead   if age<85, by(`x')
-		local labellist  `labellist' `counter' `"d_count=`valuel'"'   
-		loc labellist 1  `"trans_`gamma'to1"' 2 `"trans_`gamma'to2"' 3 `"trans_`gamma'to3"' 4 `"trans_`gamma'to4"' 5 `"trans_`gamma'to5"' 6 `"trans_`gamma'to6"' 7 `"trans_`gamma'todead"'
-		mac list _labellist 
-	twoway 	(scatter y1 `x') (scatter y2 `x') (scatter y3 `x') (scatter y4 `x') (scatter y5 `x') (scatter y6 `x') (scatter dead `x')  (lowess y1 `x', lcolor(`col'))  (lowess y2 `x', lcolor(`col'))  (lowess y3 `x', lcolor(`col'))  (lowess y4 `x', lcolor(`col')) (lowess y5 `x', lcolor(`col')) (lowess y6 `x', lcolor(`col')) (lowess dead `x', lcolor(`col')) ///
-      , title("2-year transition probability: `gamma' to j") xla(50(5)85)  name(g_`gamma', replace)  legend(cols(3) ///
-	 order(`labellist')) // ) //  
-	*gr export 	"$outpath/fig/main/g_by`x'_transp_`gamma'toj.jpg", replace `jpghighquality'
-	restore
-	}
-	STOP
-	*/	
 	
 	/**crude plotting: transition by duration in state**
 	loc 	col "gr10"
@@ -121,9 +214,6 @@ forval gamma=0/4{
 }	
 }
 	++
-	
-	
-	
 	
 
 *** +++ show if there is any duration dependence +++ ***
@@ -262,21 +352,6 @@ restore
 // note: currently people might jump back to earlier count and duration drops again; can try to enforce strictly increasing data
 // 		// ?? not working with gaps when a period missing but present in dataset (e.g. in SHARE), but this is not a problem if the missing time period is dropped
 
-/**	ologit**
-*loc reg 	xtologit `y' i.`x' if `sample'==1, nolog vce(cl ID)  // c.age#c.age  male married i.raeducl*, 
-loc reg 	ologit `y' i.`x'  if `sample'==1 & d_count==`startcount', nolog vce(cl ID) // c.age#c.age  male married i.raeducl*
-`reg'
-margins i.`x' // , dydx(`x')	
-*margins , dydx(`x')	
-marginsplot, note("Notes: Sample: `samplelabel'" "Controls: `ctrls' (none)" "Command: `reg'") name(mh1, replace) 
-gr export 	"$outpath/fig/main/g_ologit_by`x'_`y'_`startcount'.jpg", replace `jpghighquality'
-	loc ctrls "male married i.raeducl*"
-	loc reg 	ologit `y' i.`x' `ctrls' if `sample'==1  & d_count==`startcount', nolog vce(cl ID) // c.age#c.age  male married i.raeducl*
-	`reg'
-	margins `x' // , dydx(`x')	
-	marginsplot, note("Notes: Sample: `samplelabel'" "Controls: `ctrls' (none)" "Command: `reg'") name(mh2, replace) 
-	gr export 	"$outpath/fig/main/g_ologit_by`x'_`y'_`startcount'_adj.jpg", replace `jpghighquality'	
-*/
 
 *mtable	
 
@@ -318,3 +393,35 @@ gr export 	"$outpath/fig/main/g_ologit_by`x'_`y'_`startcount'.jpg", replace `jpg
 	
 	++
 	*/	
+	
+	
+	
+	
+**** archive ****
+/* 
+**	ologit**
+*loc reg 	xtologit `y' i.`x' if `sample'==1, nolog vce(cl ID)  // c.age#c.age  male married i.raeducl*, 
+loc reg 	ologit `y' i.`x'  if `sample'==1 & d_count==`startcount', nolog vce(cl ID) // c.age#c.age  male married i.raeducl*
+`reg'
+margins i.`x' // , dydx(`x')	
+*margins , dydx(`x')	
+marginsplot, note("Notes: Sample: `samplelabel'" "Controls: `ctrls' (none)" "Command: `reg'") name(mh1, replace) 
+gr export 	"$outpath/fig/main/g_ologit_by`x'_`y'_`startcount'.jpg", replace `jpghighquality'
+	loc ctrls "male married i.raeducl*"
+	loc reg 	ologit `y' i.`x' `ctrls' if `sample'==1  & d_count==`startcount', nolog vce(cl ID) // c.age#c.age  male married i.raeducl*
+	`reg'
+	margins `x' // , dydx(`x')	
+	marginsplot, note("Notes: Sample: `samplelabel'" "Controls: `ctrls' (none)" "Command: `reg'") name(mh2, replace) 
+	gr export 	"$outpath/fig/main/g_ologit_by`x'_`y'_`startcount'_adj.jpg", replace quality(100) 
+ 	STOP
+*/	
+		
+		
+	**
+	**using logistic fit (only single outcome allowed (I think, unless able to combine margins to a single marginsplot) - the solution is to predict the margins for the ordered logit)**
+	logit trans_1to2 c.age
+	margins , at(age=(51(10)90))
+	marginsplot 
+	STOP
+	*/
+	

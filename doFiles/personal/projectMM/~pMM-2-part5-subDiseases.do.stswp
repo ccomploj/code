@@ -160,8 +160,8 @@ li 		ID wave age `alldiseasesd' d_miss     in 1/3
 **# Bookmark #1 could add a variable for which disease is actually missing, maybe some diseases are based on age-threshold, hence they are always missing. need to check this.
 
 su 		d_miss, meanonly 
-local 	d_missmin = r(min) // for some dataset, one disease might always be missing bc not available 
-egen 	d_count = rowtotal(`alldiseasesd') if d_miss==`d_missmin', missing /*(row) sum of the variables in varlist: only for obs w/ no missing D 
+local 	d_missmin = r(min) // for some dataset, one disease might always be missing bc not available, hence take the minimum
+egen 	d_count = rowtotal(`alldiseasesd') if d_miss==`d_missmin', missing /*(row) sum of the variables in varlist: only for obs w/ no missing D (of those considered)
 		(count should be missing only if all diseases *considered* are missing)*/
 la var 	d_count 	"# diseases"					
 tab 	d_count wave,m
@@ -320,7 +320,7 @@ li 		ID wave age d_any onsetage in 1/16 /*check correct generation*/
 	recode  onsetagegrp5 (`agethreshold' = 50)
 	replace onsetagegrp5 = . if d_anyatfirstobs==1 
 	loc 	labelname "onsetage:"
-	la de 	onsetagegrp5l 	50  "`labelname' `agethreshold'-54" 55 "`labelname' 55-59" 60 "`labelname' 60-64" 65 "`labelname' 65-69" 70 "`labelname' 70+" 75 "`labelname' 75+" 
+	la de 	onsetagegrp5l 	50  "`labelname' `agethreshold'-54" 55 "`labelname' 55-59" 60 "`labelname' 60-64" 65 "`labelname' 65-69" 70 "`labelname' 70+" // 75 "`labelname' 75+" 
 	la val 	onsetagegrp5 onsetagegrp5l
 	*tab onsetagegrp5,m
 	
@@ -430,62 +430,63 @@ sum timetonextdisease*, de
 
 
 
-/**duration from *first* onset to death (in years)**
-gen 	time_onsettodeath =  (radym - onsetdate_c1)/12
-*gen 	time_onsettodeathx = (raxym - firstdate_c1)/12 
-la var 	time_onsettodeath "years first onset to death (observed)" 
-*la var time_onsettodeathx "years first onset to death (observed) (eol module)" 
 
-*bro ID wave radyear raxyear time_ons* firstyear_c1 firstdate_c1 d_any if time_onsettodeathx<0 /*using rad seems more correct than rax, bc no negative values*/
-gen 	time_onsettodeath_age	 = radage-onsetage 
-gen 	time_onsettodeath_age_g2 = radage-onsetage_g2
-*sum 	radage radyear radmonth raxyear raxmonth time_onsetto*
-li 		ID wave iwym dead d_count onsetdate_c1 onsetdate_c2 ra?ym time_onsettodeath* in 1/16, compress nola
-*bro 	ID wave iwym dead d_count firstdate_c1 firstdate_c2 ra?ym time_onsettodeath*  if time_onsettodeath<0
-*++	
-*/
+	/**duration from *first* onset to death**
+	gen 	time_onsettodeath =  (radym - onsetdate_c1)/12
+	gen 	time_onsettodeath =  radym-firstdate_c1 
+	gen 	time_onsettodeathx = raxym-firstdate_c1 // using rax variable
+	replace time_onsettodeath =  time_onsettodeath/12 // convert to years
+	gen 	ageatdeath = (radym - rabym)/12
+	*/	
 
-/**duration from *first* onset to death**
-gen 	time_onsettodeath =  radym-firstdate_c1
-gen 	time_onsettodeathx = raxym-firstdate_c1 // using rax variable
-replace time_onsettodeath =  time_onsettodeath/12 // convert to years
-replace time_onsettodeathx = time_onsettodeathx/12
-la var 	time_onsettodeath "years first onset to death (observed)" 
-*bro ID wave radyear raxyear time_ons* d_firstyear_c1 firstdate_c1 d_any if time_onsettodeathx<0 /*using rad seems more correct than rax, bc no negative values*/
-gen 	time_onsettodeath_age		= radage-firstage 
-gen 	time_onsettodeath_age_g2 	= radage-firstage_g2
-sum 	radage radyear radmonth raxyear raxmonth time_*
-li 		ID wave iwym dead d_count firstdate_c1 firstdate_c2 ra?ym time_onsettodeath* in 1/16, compress nola
-*bro 	ID wave iwym dead d_count firstdate_c1 firstdate_c2 ra?ym time_onsettodeath*  if time_onsettodeath<0
-*++
-*/	
 
-/**comparison ageatdeath with g2aging variable radage: not identical. why?**
-gen 	ageatdeath = radym - rabym
-replace ageatdeath = ageatdeath/12
-gen 	ageatdeathx = raxym - rabym /*generally rax is correct*/
-replace ageatdeathx = ageatdeathx/12
-sum 	ageatdeath ageatdeathx radage
-drop 	ageatdeath ageatdeathx
-*++
-*/
+
+	*** +++ show if there is any duration dependence +++ ***
+** duration with c conditions **
+gen duration = 0  // only generate for cases when count is 1 and not missing 
+sum d_count, meanonly
+loc d_count_max = r(max)
+forval i=1/`d_count_max'{
+bys ID (time): replace duration = cond(d_count==`i',   cond(diff_d_count==0, duration[_n-1]+1,1),duration)
+**# Bookmark #2 could correct duration for when people jump down again to lower count
+*bys ID (time): replace duration = cond(d_count==`i'|d_count==`i'-1,   cond(diff_d_count==0|diff_d_count==-1, duration[_n-1]+1,1),duration) // if sb goes from 3 to 2 to 3, the first 3 is considered in calcuation of duration
+}
+replace duration = . if mi(d_count) // if count missing, duration should be missing
+
+*	bro ID wave d_count* diff_d_count* duration if ID==10013010
+*	bro ID wave d_count* diff_d_count* duration if ID==10063010
+
+	**remove durations if left-censored duration**
+	bys ID: egen d_count_min = min(d_count)
+	replace duration = . if d_count_min==d_count // do not know if entered survey already with condition
+
+	**#use only observations before a transition ** 
+	bys ID (duration): egen durationmax = max(duration)
+	replace duration = . if duration!= durationmax	// 
+	drop durationmax
+
+	sum duration*
+	tab duration time
+	*bro ID time d_count d_count_lead duration
+
 
 *******************
 *** Transitions ***
 *******************
-** disease count in next period: d_count_lead (add mortality as outcome) **
-gen 	d_count2 = d_count 
-replace d_count2 = 99 if dead==1 
-bys ID: gen d_count_lead = f.d_count2       if inwt==1 // only use the lead if present in wave
+** disease count in next period: d_count_lead **
+// gen 	d_count2 = d_count 
+// replace d_count2 = 99 if dead==1 
+bys ID: gen d_count_lead = f.d_count       	if !mi(d_count) // only use the lead if present in wave
+bys ID: replace d_count_lead = 99 			if f.dead==1 & !mi(d_count)
 *bys ID: replace d_count_lead = f2.d_count2 if d_count_lead ==. // it jumps basically here bc 1 gap is allowed
 la var d_count_lead "# diseases in next period" // (gaps are ignored)
 la de  d_count_leadl 99 "dead" // add dead label to 99
 la val d_count_lead d_count_leadl
-drop   d_count2 
+// drop   d_count2 
 *bro ID wave d_count d_count_lead dead
 **# Bookmark #1 temporarily recode dead to missing
-	recode d_count_lead (99=.)
-
+// 	recode d_count_lead (99=.)
+*bro ID wave age dead d_count d_count_lead
 
 **************
 *** Groups ***
