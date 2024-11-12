@@ -58,7 +58,7 @@ gl  diseaselist 	"d_hibp d_diab d_heart d_lung d_depr d_osteo d_cancr d_strok d_
 gl sample 			"sfull5" // copy these lines if a specific subsample shall apply to specific plot
 gl opt_global 		"" // settings to apply to all graphs 
 set scheme s1color
-
+]]
 
 
 ***************************************************************************************************

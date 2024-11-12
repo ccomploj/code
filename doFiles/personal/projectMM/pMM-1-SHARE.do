@@ -36,10 +36,12 @@ else {
 loc	cv 		"C:/Users/`c(username)'/Documents/RUG/`data'/"
 }
 loc h_data 		"`cv'`data'data/harmon/" 		  // harmonized data folder location
-loc out 		"`cv'`data'output/"				  // output folder location
+// loc out 		"`cv'`data'output/"				  // output location (if different)
 cd "`cv'"
 pwd
 
+***log entire file***
+log using 	"`h_data'/logdoSHARE-1-harmon.txt", text replace name(logDofile) // ends w/ -log close logDofile-
 
 
 ***Bringing in Core Data***
@@ -100,8 +102,6 @@ pause // to continue after a pause, type "q" and enter; browse the data using -b
 	drop inw7 // inw7c questionnaire is more general but misses some questions. Inw7c will be used in place of w7 in this project.
 	*restore
 
-***log entire file***
-log using 	"`out'/logdoSHARE-1-harmon.txt", text replace name(logDofile) // ends w/ -log close logDofile-
 
 
 *************************************************************************************************
