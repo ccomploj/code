@@ -388,12 +388,73 @@ la var 	tsinceonset "time (periods) since first disease"
 // gen 	timesinceonset = iwym - onsetdate_c1 if (iwym - onsetdate_c1>=0)
 // la var 	timesinceonset "time (months) since first disease"	
 
-**duration since onset (AGE)** 
+***duration since onset (AGE)***
 gen 	yearssinceonset = age - onsetage 
 la var 	yearssinceonset "years since onset"
 
 sum  tsinceonset yearssinceonset
 *bro ID wave time tsinceonset timesinceonset onsetyear
+	
+	
+	
+*** duration with c conditions ***
+gen duration = 0  // only generate for cases when count is 1 and not missing 
+sum d_count, meanonly
+loc d_count_max = r(max)
+forval i=1/`d_count_max'{
+**# Bookmark #2 was bys ID (time) instead of ID (wave)
+bys ID (wave): replace duration = cond(d_count==`i',   cond(diff_d_count==0, duration[_n-1]+1,1),duration) // 
+**# Bookmark #2 could correct duration for when people jump down again to lower count
+*bys ID (time): replace duration = cond(d_count==`i'|d_count==`i'-1,   cond(diff_d_count==0|diff_d_count==-1, duration[_n-1]+1,1),duration) // if sb goes from 3 to 2 to 3, the first 3 is considered in calcuation of duration
+}
+	
+	** should have duration first only for those who have uninterrupted sequence ** 
+	*set to missing all those individuals who have their sequence interrupted*
+	gen myvar = (d_count==. & inw_first_yr < time & inw_last_yr > time) //  // & followup==. 
+	//* 	gen myvar2 = (d_count==. & followup==. & inw_first_yr < time & inw_last_yr > time) //  // & followup==. 	
+	// gen myvar2 = (followup==. & inrange(time, inw_first_yr, inw_last_yr))/*
+	bys ID: egen missingatleastonce 	= max(myvar)
+	bys ID: egen missingcountbtwwaves 	= total(myvar == 1)
+	drop 	myvar
+replace duration =.m 	if missingatleastonce==1
+// replace duration =.c 	if 
+
+replace duration = . if mi(d_count) // if count missing, duration should be missing
+					// if count *always* missing, should also set to missing
+
+	** replace duration for zero count ** 
+	replace duration = . if d_count==0 // first, condition on having nonzero count
+	*replace duration = age if d_count==0
+	
+
+	**remove durations if left-censored duration**
+	bys ID: egen d_count_min = min(d_count) // min within ID
+// 		gen myvar = (d_count_min==d_count & time==inw_first_yr)
+// 		bys ID: 
+	replace duration = . if d_count_min==d_count // do not know if entered survey already with condition
+**# Bookmark #1 currently assuming count only increases in time, should allow for cases where this is not the case (hence now it replaces e.g. observations at t=3 if c_i3==c_i1, but does not do so for c_i2 - and even worse if the opposite is the case with c_i2 being the minimum)
+bro ID time age d_count duration diff_d_count missingatleastonce
+
+
+	/**#use only observations before a transition ** 
+	** discussed before that I should not do this **
+	bys ID (duration): egen durationmax = max(duration)
+	replace duration = . if duration!= durationmax	// 
+	drop durationmax
+
+	sum duration*
+	tab duration time
+	*bro ID time d_count d_count_lead duration
+	*/
+
+	/**duration from *first* onset to death**
+	gen 	time_onsettodeath =  (radym - onsetdate_c1)/12
+	gen 	time_onsettodeath =  radym-firstdate_c1 
+	gen 	time_onsettodeathx = raxym-firstdate_c1 // using rax variable
+	replace time_onsettodeath =  time_onsettodeath/12 // convert to years
+	gen 	ageatdeath = (radym - rabym)/12
+	*/	
+	
 
 /**duration from c to c+1[+ / or more]** 
 *note: [there may be gaps of nonresponse, i.e. diseases could jump from 1 to 4 or 2 to 7, because either nonresponse or jump from c to c+2]: if panel not balanced in disease count or there is a real jump, this could cause additional imprecision*
@@ -427,43 +488,7 @@ sum timetonextdisease*, de
 	// timetonextdisease can be negative if count decreases from t to t+1
 	// currently, timetonextdisease2 still ignores the dose: it treats time from 1 to 2 the same as 1 to 4 (2nd accumulates faster) || if sb jumps from 2 to 4, firstdate_c3 is equal to firstdate_c4 anyway || hence, this measure is simple "to next '1 or more' diseases"
 */
-
-	/**duration from *first* onset to death**
-	gen 	time_onsettodeath =  (radym - onsetdate_c1)/12
-	gen 	time_onsettodeath =  radym-firstdate_c1 
-	gen 	time_onsettodeathx = raxym-firstdate_c1 // using rax variable
-	replace time_onsettodeath =  time_onsettodeath/12 // convert to years
-	gen 	ageatdeath = (radym - rabym)/12
-	*/	
-
-	*** +++ show if there is any duration dependence +++ ***
-** duration with c conditions **
-gen duration = 0  // only generate for cases when count is 1 and not missing 
-sum d_count, meanonly
-loc d_count_max = r(max)
-forval i=1/`d_count_max'{
-bys ID (time): replace duration = cond(d_count==`i',   cond(diff_d_count==0, duration[_n-1]+1,1),duration)
-**# Bookmark #2 could correct duration for when people jump down again to lower count
-*bys ID (time): replace duration = cond(d_count==`i'|d_count==`i'-1,   cond(diff_d_count==0|diff_d_count==-1, duration[_n-1]+1,1),duration) // if sb goes from 3 to 2 to 3, the first 3 is considered in calcuation of duration
-}
-replace duration = . if mi(d_count) // if count missing, duration should be missing
-
-*	bro ID wave d_count* diff_d_count* duration if ID==10013010
-*	bro ID wave d_count* diff_d_count* duration if ID==10063010
-
-	**remove durations if left-censored duration**
-	bys ID: egen d_count_min = min(d_count)
-	replace duration = . if d_count_min==d_count // do not know if entered survey already with condition
-
-	**#use only observations before a transition ** 
-	bys ID (duration): egen durationmax = max(duration)
-	replace duration = . if duration!= durationmax	// 
-	drop durationmax
-
-	sum duration*
-	tab duration time
-	*bro ID time d_count d_count_lead duration
-
+	
 
 *******************
 *** Transitions ***
@@ -471,6 +496,7 @@ replace duration = . if mi(d_count) // if count missing, duration should be miss
 ** disease count in next period: d_count_lead **
 // gen 	d_count2 = d_count 
 // replace d_count2 = 99 if dead==1 
+sort ID wave
 bys ID: gen d_count_lead = f.d_count       	if !mi(d_count) // only use the lead if present in wave
 bys ID: replace d_count_lead = 99 			if f.dead==1 & !mi(d_count)
 *bys ID: replace d_count_lead = f2.d_count2 if d_count_lead ==. // it jumps basically here bc 1 gap is allowed

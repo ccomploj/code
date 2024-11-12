@@ -6,7 +6,7 @@ clear all		/*clears all data in memory*/
 
 
 ***choose data***
-loc data 		"SHAREELSA" // HRS, SHARE, SHAREELSA
+loc data 		"HRS" // HRS, SHARE, SHAREELSA
 loc datalist 	"SHARE HRS ELSA"
 *foreach data of local datalist{
 
@@ -168,7 +168,7 @@ qui log close log
 
 
 
-**************************
+/**************************
 *** Summary Statistics ***
 **************************	
 
@@ -217,23 +217,27 @@ STOP
 **************************
 *** Other tables ***
 **************************	
+
+
+*** number of missing counts within sequence ***
 **# Bookmark #1 doing it with age here, but actually should do with d_count as d_count may be missing even though he participated
 *** how many are missing at least once in a sequence from earliest interview until latest interview (without being dead of course) *** 
 use 			"`cv'/`data2'data/harmon/H_`data'_panel2-MM.dta", clear	// need to use full dataset with missing ages
 tab 	sfullsample
-tab 	sfullsample
 tab 	followupmax 
-gen myvar = (d_count==. & inw_first_yr < time & inw_last_yr > time) //  // & followup==. 
-// 	gen myvar2 = (d_count==. & followup==. & inw_first_yr < time & inw_last_yr > time) //  // & followup==. 	
-// gen myvar2 = (followup==. & inrange(time, inw_first_yr, inw_last_yr))
-bys ID: egen missingatleastonce = max(myvar)
-bys ID: egen missingcountbtwwaves = total(myvar == 1)
+**moved generation to part5-subdiseases.do**
+// gen myvar = (d_count==. & inw_first_yr < time & inw_last_yr > time) //  // & followup==. 
+// //* 	gen myvar2 = (d_count==. & followup==. & inw_first_yr < time & inw_last_yr > time) //  // & followup==. 	
+// // gen myvar2 = (followup==. & inrange(time, inw_first_yr, inw_last_yr))/*
+// bys ID: egen missingatleastonce = max(myvar)
+// bys ID: egen missingcountbtwwaves = total(myvar == 1)
 bro ID wave time followup age myvar* inw_first_yr inw_last_yr missingatleastonce missingcountbtwwaves
 
 drop if mi(age)
 // drop if time<inw_first_yr | time>inw_last_yr // keeps only the missings in between
 qui log using "tablogs/t-sequencemissings.txt", text replace name(log)
 // within a health sequence, how many times between first and last interview is the count missing
+di "dataset: `data'"
 tab missingatleastonce,m 
 tab inw_tot missingcountbtwwaves, row nofreq 
 qui log close log

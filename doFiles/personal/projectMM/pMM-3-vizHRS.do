@@ -145,30 +145,30 @@ STOP
 
 
 
-	
-
-*** generate duration with c conditions ***
-
-	* this generates duration of CONSECUTIVE periods
-	* problems:
-	* some people switch 2-1-2-1-2-1, duration here jumps back to 1 
-gen duration = 0 if d_count>0 & !mi(d_count) // only when count is 1 and not missing 
-sum d_count, meanonly
-loc d_count_max = r(max) // maximum disease count across all i
-forval i=1/`d_count_max'{
-bys ID (time): replace duration = cond(d_count==`i',   cond(diff_d_count==0, duration[_n-1]+1,1),duration)
-	}
-*replace duration = . if mi(d_count) // if count missing, duration should be missing (this line should make 0 changes)
-la var duration 			"(consecutive) t with c conditions"
-
-	**set duration to missing if left-censored (do not know the 'true' duration)**
-	bys ID: egen d_count_min = min(d_count)
-	**# Bookmark #3 problem if count is 2-0-1-1-1-1-, then 1 is taken as min and the first time period is not missing duration
-		*replace duration = . if d_count_min==d_count // do not know if entered survey already with condition
-	gen		 duration_uncens = duration if d_count_min!=d_count
-	la var 	 duration_uncens	"(consecutive) t with c conditions (uncensored)"
-
-	
+//	
+//
+// *** generate duration with c conditions ***
+//
+// 	* this generates duration of CONSECUTIVE periods
+// 	* problems:
+// 	* some people switch 2-1-2-1-2-1, duration here jumps back to 1 
+// gen duration = 0 if d_count>0 & !mi(d_count) // only when count is 1 and not missing 
+// sum d_count, meanonly
+// loc d_count_max = r(max) // maximum disease count across all i
+// forval i=1/`d_count_max'{
+// bys ID (time): replace duration = cond(d_count==`i',   cond(diff_d_count==0, duration[_n-1]+1,1),duration)
+// 	}
+// *replace duration = . if mi(d_count) // if count missing, duration should be missing (this line should make 0 changes)
+// la var duration 			"(consecutive) t with c conditions"
+//
+// 	**set duration to missing if left-censored (do not know the 'true' duration)**
+// 	bys ID: egen d_count_min = min(d_count)
+// 	**# Bookmark #3 problem if count is 2-0-1-1-1-1-, then 1 is taken as min and the first time period is not missing duration
+// 		*replace duration = . if d_count_min==d_count // do not know if entered survey already with condition
+// 	gen		 duration_uncens = duration if d_count_min!=d_count
+// 	la var 	 duration_uncens	"(consecutive) t with c conditions (uncensored)"
+//
+//	
 ** check duration correctly generated **
 sum duration* 		// max duration should not be larger than time interval 
 tab duration time	// should 

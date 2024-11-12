@@ -238,6 +238,7 @@ loc namelabellist "`namelabellist' ``name'label'"
 
 
 
+**# Bookmark #3 add to github
 **add to a local the list of time-constant variables (xlist) that do *not* exist in particular survey (such as SHARE/HRS) (e.g.radiagxxxx) (to generate an empty placeholder in reshape (the operation below) - this creates an empty placeholder variable below)**
 di "`xlist'"
 foreach v of local xlist { 

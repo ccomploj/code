@@ -56,7 +56,7 @@ merge 	1:1 mergeid using "`h_data'H_SHARE_EOL_c.dta", keepusing(`x_eol')
 **generate survey-specific identifiers (explore your dataset first)**
 gen 	countryID 	= substr(mergeid, 1,2) 
 gen 	id  		= hhid + pn 				// note id is not unique
-// egen	panelid 	= group(countryID id)	/*relevant for SHARE*/
+egen	panelid 	= group(countryID id)	/*generate for SHARE )not unique*/
 
 ***define identifiers*** 	// find these using -browse- 
 loc cntry  		"countryID" // insert country ID if multi-country dataset
@@ -65,7 +65,7 @@ loc communityID "" 		 	// insert community ID if available
 loc householdID "hhid" 	 	// insert household ID
 loc pn 			"pn"		// insert person identifier
 loc ID 			"mergeid"	// insert personal ID (household ID + personal ID)
-loc ID 			"panelid"	// use panelid if ID does not uniquely identify indiv. (same ID in two count(r)ies)
+loc ID 			"panelid"	// use panelid if ID does not uniquely identify indiv. (e.g. same ID in two count(r)ies in SHARE)
 loc idlist 		"`cntry' `cnty' `communityID' `householdID' `pn' `ID'" 
 ***define other survey-specific values*** 
 loc wavelast 	"8"			// change this to the # of the last available wave (e.g. 8 if 8 waves, 4 if 4 waves)
@@ -129,7 +129,7 @@ pause
 ***(a) time-variant variables***
 loc 	xtra	"hhresphh cplh iwyr iwmr iwstatr iwstats"		// general response info in vra
 loc 	vra 	"mstatr nhmlivr ruralh ageyr     `xtra'"		// demographics, identifiers, weights
-	loc 	disease 	""
+	loc 	disease 	"notexistdiseaser"
 	loc 	d_agediag	"radiaghibp"
 loc 	vrb 	"shltr iadlar `disease'"						// health
 loc 	vrc 	"higovr"										// healthcare utilization and insurance
@@ -152,7 +152,7 @@ unab inwlist: inw* // creates local macro with variables starting with inw* that
 *di "`inwlist'"
 loc 	xa 		"hacohort `inwlist' rabyear rabmonth radyear radmonth ragender raeducl `x_eol'"		
 loc 	xb 		"`d_agediag'"
-loc 	xc 		""
+loc 	xc 		"notexistvar"
 loc 	xlist	`xa' `xb' `xc' 
 
 ***only keep chosen variables above in dataset to speed up reshape operation***
