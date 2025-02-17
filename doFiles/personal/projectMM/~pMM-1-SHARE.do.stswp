@@ -21,6 +21,7 @@ timer on 1 				// counts the duration of file computation
 **note: After running the file, most variable names end with r, s, h or hh. r refers to respondent and s refers to spouse. h (hh) refers to household.** 
 **note: there are two types of variables in the g2aging data: time-varying and time-invariant.** 
 
+**# Bookmark #1 need to remove observations when the observation did not actually respond. I could do that in the part 1 file on github actually, but in
 
 ***************************************************************************************************
 *PART 1*: Adapt this section to the specific HRS-type harmonized dataset from the g2aging

@@ -12,7 +12,7 @@ timer on 1 				// counts the duration of file computation
 *************************************************************************************************
 *Title: Harmonization file of HRS-type datasets harmonized by Gateway2Aging (www.g2aging.org)
 *Summary: constructs main data from the HRS data g2aging version by selecting relevant variables and reshaping to a panel (ID-wave)
-*Date: 16-07-2023
+*Date: 16-01-2025
 *Author: Castor Comploj
 *Date Created: 13-07-2023
 *Note: If you suggest a change, or the file is not suitable for your HRS-type survey, create a pull request for changes on Github directly or email me at castorcomploj@protonmail.com
@@ -22,10 +22,10 @@ timer on 1 				// counts the duration of file computation
 **note: there are two types of variables in the g2aging data: time-varying and time-invariant.** 
 
 
-*************************************************************************************************
+******************************************************************************************************
 *PART 1*: Adapt this section to the specific HRS-type harmonized dataset from the g2aging
-*note: you do not have to change any other section except "Part 1", and the variables in "Part 3"
-*************************************************************************************************
+*note: you do not have to change any other section except "Part 1", and the variable names in "Part 3"
+******************************************************************************************************
 ***Choose data***
 loc data 		"HRS"
 ***define folder locations***
@@ -44,9 +44,8 @@ pwd
 
 ***Bringing in Core Data***
 **Harmonized data**
-use 	   "`h_data'randhrs1992_2020v1"  	// main dataset
-	loc g2varsg "h*grchild h*kcnt" // module g
-loc g2vars "r*rxpsych r*orient raeducl radiag* r*rec* rafrhrtatt    `g2varsg'" // choose substrings of variables needed
+use 	   "`h_data'randhrs1992_2020v2"  	// main dataset
+loc g2vars "r*rxpsych r*orient raeducl radiag* r*rec* rafrhrtatt    h*grchild h*kcnt" // choose substrings of variables needed
 merge 1:1 hhidpn using "`h_data'H_HRS_d.dta", keepusing(`g2vars') // add additional vars from g2aging dataset
 
 **End of Life Survey** /*(not required to use for file to run)*/ 
@@ -58,60 +57,34 @@ merge 1:1 hhidpn using "`h_data'H_HRS_d.dta", keepusing(`g2vars') // add additio
 **other data**
 *[append other datasets (e.g. from individual waves of HRS-type study) using the available identifiers]
 
-/**generate specific identifiers**
-*gen 	countryID 	= substr(mergeid, 1,2) 
-*gen 	id  		= hhid + pn 				// note id is not unique
-*egen	panelid 	= group(countryID id)*/
 
-***define identifiers*** 	// find these using -browse- 
-*loc cntry  	"countryID" // insert country ID if multi-country dataset
+
+*** define country-specific identifiers and values *** 	// find these using -browse- 
 loc cnty 	 	""			// insert county 	ID if available
 loc communityID "" 		 	// insert community ID if available 
 loc householdID "hhid" 	 	// insert household ID
 loc pn 			"pn"		// insert person identifier
-*loc ID 		"mergeid"	// insert personal ID (household ID + personal ID)
 loc ID 			"hhidpn"	// use panelid if ID does not uniquely identify individual (same ID in two count(r)ies)
 loc idlist 		"`cntry' `cnty' `communityID' `householdID' `pn' `ID'" 
-***define other survey-specific values*** 
-loc wavelast 	"15"			// change this to the # of the last available wave (e.g. 8 if 8 waves, 4 if 4 waves)
+loc wavelast 	"15"		// change this to the # of the last available wave (e.g. 8 if 8 waves, 4 if 4 waves)
 
 pause // to continue after a pause, type "q" and enter; browse the data using -browse-
 
 
-
-					
 ***log entire file***
 log using 	"`out'logdo`data'-1-harmon.txt", text replace name(logDofile) // ends w/ -log close logDofile-	
 	
-	
-	
-	
-	
-	
-	
-	
 
-	
-	
-	
-	
-	
-	
-	
 *************************************************************************************************
 *Part 2*: Overview of dataset
-*************************************************************************************************
+/*************************************************************************************************
 order `idlist', alphabetic
 
-/***count the number of unique IDs***
-count
-preserve
-contract `ID' 
-count
-restore
-*/
 
-/***destring ID variables when numeric (if needed) (note: does not work with non-numeric identifiers)***
+** count the number of unique IDs **
+codebook `ID', compact
+
+** destring ID variables when numeric (if needed) (note: does not work with non-numeric identifiers) **
 foreach id of local idlist {
 destring `id', replace		// create number format of identifiers, from string 
 loc idlist2 "`idlist' `id'"
@@ -145,22 +118,19 @@ rename 	(s(#)*) (*[2]s#[1])	 	// spouse
 
 	
 ***(a) time-variant variables***
-loc 	xtra	"hhresphh cplh iwendyr iwendmr iwstatr iwstats"	// general response info in demographics section
-loc 	vra 	"mstatr nhmlivr agey_br     `xtra'"		// demographics, identifiers, weights
+loc 	vra 	"mstatr nhmlivr agey_br     hhresh cplh iwendyr iwendmr iwstatr iwstats "		// demographics, identifiers, weights
 	loc 	d_everhad "hibper diaber cancrer lunger hearter stroker arthrer  hiper kidneyer   psycher osteoer" //  
-	*loc 	d_sincelw "hrtattr strokr cancrr hipr" /*these are already incorporated in d_everhad*/
-	loc 	d_agediag "radiaghibp radiagdiab radiagcancr radiaglung radiagheart radiagstrok radiagarthr  radiaghip radiagpsych radiagdepr radiagosteo  radiagkidney radiagsomethingtest" // radiagpsych /*these are time-invariant*/
-	loc 	d_medictn "rxhibpr rxdiabr rxheartr rxlungr rxpsychr rxosteor rxcancrr rxstrokr rxarthrr"	
-	loc 	d_agediagXtra "rafrhrtatt radiagchf radiaghrtr radiagangin" // this is 'similar' to radiag
-	loc 	d_recentdiagXtra "reccancrr rechrtattr recstrokr" 
-	loc 	deptest   "cesdr"
-loc 	vrb 	"shltr hlthlmar hlthlmr iadlar drinklr smokenr `d_everhad' `d_sincelw' `d_medictn'  `deptest' `d_recentdiagXtra'"	// health
-loc 	vrc 	"higovr 	hiltcr lifeinr"										// healthcare utilization and insurance
-	loc xtra2 	"bwc20r mstotr cogtotr"
-loc 	vrd  	"tr20r orientr `xtra2'"							// cognition (mostly only asked to 65+ and not proxy)
+// 	loc 	d_medictn "rxhibpr rxdiabr rxheartr rxlungr rxpsychr rxosteor rxcancrr rxstrokr rxarthrr"
+// 	loc 	d_agediagrecent "reccancrr rechrtattr recstrokr" 
+//  loc 	d_sincelw "hrtattr strokr cancrr hipr" /*these are already incorporated in d_everhad*/	
+	loc 	deptest   "cesdr" // test for depression
+loc 	vrb 	"shltr hlthlmar hlthlmr iadlar drinklr smokenr `d_everhad' `d_medictn' `d_agediagrecent'  `d_sincelw' `deptest'"	// health
+// loc 	vrc 	"higovr 	hiltcr lifeinr"										// healthcare utilization and insurance
+	loc vrdHRS 	"bwc20r mstotr cogtotr"
+loc 	vrd  	"tr20r orientr `vrdHRS'"						// cognition (!! mostly only asked to 65+ and not proxy)
 loc 	vre		""												// financial and housing wealth
 loc		vrf 	"itoth"											// income and consumption
-	loc fertility  "grchildh kcnth childh livbror livsisr"
+// 	loc fertility  "grchildh kcnth childh livbror livsisr"
 loc 	vrg 	"hhreshh `fertility'"							// family structure
 loc	 	vrh 	"workr lbrf_sr"									// employment history
 loc	 	vri 	"retempr"										// retirement (and expectations)
@@ -175,10 +145,12 @@ loc 	vrlist	`vra' `vrb' `vrc' `vrd' `vre' `vrf' `vrg' `vrh' `vri' `vrj' `vrl' `v
 
 
 ***(b) time-invariant variables***
+// 	loc 	d_agediag "radiaghibp radiagdiab radiagcancr radiaglung radiagheart radiagstrok radiagarthr  radiaghip radiagpsych radiagdepr radiagosteo  radiagkidney " // radiagpsych /*these are time-invariant*/
+// 	loc 	d_agediagHRS "rafrhrtatt radiagchf radiaghrtr radiagangin" // this is 'similar' to radiag, but only available in HRS
 unab inwlist: inw* // creates local macro with variables starting with inw* that actually exist 
 *di "`inwlist'"
-loc 	xa 		"hacohort `inwlist' rabyear rabmonth radyear radmonth ragender raeducl `x_eol' radage_y  raevbrn"		
-loc 	xb 		"`d_agediag' `d_agediagXtra'"
+loc 	xa 		"hacohort `inwlist' rabyear rabmonth radyear radmonth ragender raeducl `x_eol' radage_y" // raevbrn		
+loc 	xb 		"`d_agediag' `d_agediagHRS' "
 loc 	xc 		""
 loc 	xlist	`xa' `xb' `xc' `xd' `xe' `xf' `xg' `xh' `xi' `xj' `xk' `xl' `xm' `xo' `xp' `xq'
 
@@ -265,11 +237,9 @@ la var 		wave "Survey Wave"
 tab wave
 
 
-**# Bookmark #1 could add this to github:
-	***rename key variables (moved from part 5) ***
-	***generate alternative for "wave", as survey year***
-	**generate time**
-	tab wave
+	*** rename key variables (country/dataset-specific) ***
+	** generate alternative for "wave", as survey year **
+	** generate time **
  	recode wave (1 = 1992 "1992 wave") (2 = 1994 "1994 wave") (3 = 1996 "1996 wave") (4 = 1998 "1998 wave") (5 = 2000 "2000 wave") (6 = 2002 "2002 wave") (7 = 2004 "2004 wave") (8 = 2006 "2006 wave") (9 = 2008 "2008 wave") (10 = 2010 "2010 wave") (11 = 2012 "2012 wave") (12 = 2014 "2014 wave") (13 = 2016 "2016 wave") (14 = 2018 "2018 wave") (15 = 2020 "2020 wave") , gen(time)
 	la var 	time "Survey Year (Wave)"
 	**relabel wave to survey-specific value-labels**
@@ -277,15 +247,14 @@ tab wave
 	*la val 	wave wavel
 	*/
 
-**# Bookmark #4
-	**harmonize variables** (do this here bc now it is a single variable) 
-	rename agey_br ageyr
+	** harmonize variables (choose specific variable if multiple (e.g. time points) are available) ** 
+	rename agey_br ageyr // use age at interview (beginning month)
 	rename radage_y radage
 	rename iwendy  iwyr // used iw-end date in HRS
 	rename iwendmr iwmr  
 	
-
-
+rename  ageyr 	age 
+la var  age 	"age"
 	
 **format interview time as single variable**
 sum 	iwyr iwmr
@@ -320,18 +289,38 @@ la var	iwym "r interview date (ym)"
 // la var	rabym "r death date (ym)"	
 	
 
+
+	** remove variables that are always missing across all rows **
+	*sum 
+	describe, short
+	scalar num_vars = r(k)
+	display num_vars // shows how many variables
+	
+	count // check nobs
+	ssc install missings
+	missings dropvars, force
+	count // nobs (rows) should not have changed, only the number of variables (columns)
+	
+	// check again after dropping these variables
+	describe, short
+	scalar num_vars = r(k)
+	display num_vars // shows how many variables
+	*sum	
+	
+	
+	
 ***end timer, xtset and save data***
 timer 		off  1
 timer 		list 1
 rename 		`ID' ID
 xtset 		ID wave			
 save		"`h_data'H_`data'_panel.dta", replace // check if appeared in correct folder!
-sum // if a (numeric) variable appears but is missing, in the current dataset it does not exist or it is named differently. Check in detail in the main data files if it is available nevertheless
 pause
 											
 ***************************************************************************************************
 *Part 4*: Codebook: (run this to generate an overview of the harmonized variables)
 ***************************************************************************************************
+sum // if a (numeric) variable appears but is missing, in the current dataset it does not exist or it is named differently. Check in detail in the main data files if it is available nevertheless
 
 /*
 qui log using "`h_data'codebook", text replace name(log)
@@ -353,7 +342,7 @@ pause
 */
 
 
-	
+		
 ***************************************************************************************************
 *Part 5*: Generate study-specific variables while in 'long' format 
 **note: recode/relabel/rename variables from dataset and generate new variables**

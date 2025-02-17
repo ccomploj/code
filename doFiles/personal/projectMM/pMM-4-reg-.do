@@ -61,6 +61,16 @@ set scheme s1color
 ]]
 
 
+*** check if any condition is perfectly predicted by age (based on age-eligiblity to the question) ***
+log using 	"`h_data'/log-diseasebycohort.txt", text replace name(log)
+foreach d of local alldiseasesd  {
+tab agegrp5 `d'	,m /*if nothing is odd, would seem okay. If we have more people entering later 
+(e.g. inw1==0 & inw2==1, or based on hacohort), this could lead to a jump in the graphs */
+} 
+log close log
+*/
+
+
 ***************************************************************************************************
 *Part 7b*: Regression (general)
 ***************************************************************************************************	

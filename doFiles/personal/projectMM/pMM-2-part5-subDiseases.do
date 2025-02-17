@@ -3,6 +3,8 @@
 
 **# Bookmark #1: important! Check that in your main do file the following operations occur in a previous step:
 **#(note for ELSA: part5-subDiseases may be incorrect because other diseases are included in measure)
+**# Bookmark #1 should recode onsetage to only be nonmissing if full disease count is not missing (otherwise may not capture true onset)
+//  tab d_any d_miss,m // use this to check
 
 *rename 	hiper osteoer // hipe is used in replacement of osteoer
 
@@ -53,35 +55,35 @@ di 	"`agethreshold' `h_data'"
 	*la var cognitionstd 	"std(total cognition)"
 	la var  demener  		"has dementia"	
 
-	gen 	rxdemenr = . 	// dementia medication missing
-		gen 	radiagdemen = . // dementia self-report of onset missing
-
+// 	gen 	rxdemenr = . 	// dementia medication missing
+// 		gen 	radiagdemen = . // dementia self-report of onset missing
 		
 		
-		
-**# Bookmark #3 check once more, also think why even recode medication use as absorbing. this no longer makes sense, absorbing is done for osteoporosis because in SHARE we only have medication on it...
-**# Bookmark #1 20241505: I have removed osteo from list due to SHARE missing osteoer
 **# Bookmark #3 might have to double check that carry forward is working correctly when there are gaps
+**# Bookmark #1 Dementia is not used as "doctor diagnosed" because definition difficult to make comparable across countries. Option B: could use different tests (but even then those are not consistent across time always)
+
 
 ***to correct disease list (set as absorbing after onset, carry forward earlier report)**
-local carryforwardlist "hibp diab heart lung  cancr strok arthr demen" // hiper psych (if disease is missing, block works nevertheless), osteo
-foreach var of local carryforwardlist{
-rename 		rx`var'r 	rx`var'r2 	
-rename 		  `var'er  	  `var'er2  
-clonevar	rx`var'r =  rx`var'r2
-clonevar  	  `var'er  =  `var'er2
-bys ID: 	replace rx`var'r = max(rx`var'r[_n-1], rx`var'r)  if inwt==1 // medication use !mi(rx`var'r): does not work well bc variable will be 0 if "ever had" is 0 and "medication" is missing
-bys ID: 	replace `var'er  = max(  `var'er[_n-1],  `var'er) if inwt==1  // ever had: "onlyeverhad"	(should not replace in most surveys)
-	**if someone does not have the disease, they should not report taking medications for it**
-	recode rx`var'r (1=0) if !mi(rx`var'r) &  `var'er==0 /*only is recoded in ELSA and SHARE. This is due to
-	correction of ever had reports that are not fed into medication use corrections in ELSA. In HRS, this 
-	seems to be done already. In SHARE, question on medication is asked independently of ever had reports.*/ 
-	replace rx`var'r = . if !mi(rx`var'r) &  `var'er==.  // should not change anything in HRS and ELSA
-drop `var'er2 rx`var'r2
+**# (check here that there are no changes to these variables (e.g. in CHARLS, there are changes)))
+local list "hibp diab cancr lung heart strok arthr" // (if disease is missing, this works nevertheless), osteo hiper psych demen 
+foreach var of local list {
+// rename 		rx`var'r 	rx`var'r2 	
+// clonevar	rx`var'r =  rx`var'r2
+// rename 		  `var'er  	  `var'er2  
+clonevar  	  `var'er2  =  `var'er // recode a new variable rather than the old one (to make sure user checks no changes made here)
+// bys ID: 	replace rx`var'r = max(rx`var'r[_n-1], rx`var'r)  if in_wt==1 // medication use !mi(rx`var'r): does not work well bc variable will be 0 if "ever had" is 0 and "medication" is missing
+bys ID: 	replace `var'er = max(  `var'er[_n-1],  `var'er) if in_wt==1  // ever had: "onlyeverhad"	(should not replace in most surveys)
+	**if someone does not have the disease, they should not report taking medications for it (this is not the same in all regions of g2aging) **
+// 	recode rx`var'r (1=0) if !mi(rx`var'r) &  `var'er==0 /*only is recoded in ELSA and SHARE. This is due to correction of ever had reports that are not fed into medication use corrections in ELSA. In HRS, this seems to be done already. In SHARE, question on medication is asked independently of ever had reports.*/ 
+// 	replace rx`var'r = . if !mi(rx`var'r) &  `var'er==.  // should not change anything in HRS and ELSA
+drop `var'er
+// rx`var'r2
 }
 
-	
-***either-or condition (ever had or medication use) ***
+
+/***either-or condition (ever had or taking medication for it) ***
+**# Bookmark #3 why even recode medication use as absorbing. this no longer makes sense, absorbing is done for osteoporosis because in SHARE we only have medication on it... 20241505: I have removed osteo from list due to SHARE missing osteoer
+// medication use !mi(rx`var'r): does not work well bc variable will be 0 if "ever had" is 0 and "medication" is missing
 ** r has disease: either "ever told by doctor" or "currently taking med for"**
 local eitherorcodes "osteo" 
 	loc eitherordlist ""
@@ -96,8 +98,9 @@ la var 	d_`var'	 	"'ever had'|using meds: `var'" //
 loc eitherordlist	"`eitherordlist' d_`var'" /*creates a local macro that appends new var at each iteration*/
 }
 *l ID wave d_osteo* osteo* rxosteo* if ID==958
-
-	/**check to have used correct if-condition above: "if `var'er<. | rx`var'r<.": **
+]]
+*/
+	/**(when variable is generated as either-or) check to have used correct if-condition above: "if `var'er<. | rx`var'r<.": **
 	**here we want to the variable to take value 1 if any of the two (ever had or taking meds) is 1 ///
 	* , that is, ignoring the fact that there is a missing value in one of them (one could optionally ///
 	* see if there is a nonrandom non-response of either category, or only take complete-cases (=hibp3)).
@@ -113,15 +116,13 @@ loc eitherordlist	"`eitherordlist' d_`var'" /*creates a local macro that appends
 																   *other missings are "larger" than (.) */
 	drop d_hibp2-d_hibp4 /*from this part, it is clear that d_hibp4 (=loop) is the correct of the variable*/
 	*/
-	
-**# Bookmark #1 Dementia is not used as "doctor diagnosed" because definition difficult to make comparable across countries. Option B: could use different tests (but even then those are not consistent across time always)
 
 **only ever had (these diseases have no medication)**
-loc onlyeverhad 	"hibp diab heart lung 	depr   cancr strok arthr demen"	 // demen kidney psych
-	loc onlyeverhadlist ""
+loc onlyeverhad 	"hibp diab cancr lung heart strok arthr" // demen kidney psych depr demen
+loc onlyeverhadlist ""
 foreach var of local onlyeverhad {
-gen 	d_`var' = 	`var'er==1 	if `var'er<.	/*only one condition*/
-la var 	d_`var' 	"'ever had' `var'"
+rename 	`var'er d_`var' 
+// la var 	d_`var' 	"'ever had' `var'"
 loc onlyeverhadlist "`onlyeverhadlist' d_`var'" 
 }
 
@@ -135,10 +136,8 @@ sum `onlymedlist'
 foreach var of local onlymed {
 gen d_`var' = rx`var'r==1       if rx`var'r<.  // `var'er==1 		// | 
 }
-*/
-
-	**# Bookmark #1 ** reorder variables inside dataset 		
-	order rx* d_*, after(age)	
+*/	
+	
 
 **"any disease", # of diseases missing, # of diseases present, multimorbidity***
 	*loc 	alldiseasesd 	""
@@ -175,13 +174,13 @@ li 		ID wave age `alldiseasesd' d_any d_count     in 1/3
 
 
 
-
-**multimorbidity**
+/**multimorbidity**
 gen 	d_count_geq2 = d_count>=2 if !mi(d_count)
 la var 	d_count_geq2 ">=2 diseases"	
 tab 	d_count d_count_geq2	
 li 		ID d_any d_miss d_count d_count_geq2 in 1/5
 table 	(var) wave, statistic(mean d_any d_miss d_count d_count_geq2) stat(max d_any d_miss d_count d_count_geq2)
+*/
 
 **index of disease**
 loc 	d_countmax = wordcount("`alldiseasesd'") // total number of chosen/considered diseases
@@ -190,23 +189,8 @@ sum 	d_count_index, de
 replace d_count_index = 1 if dead==1 // this is similar to Borella Bullano, De Nardi (2024) Clustering.
 la var 	d_count_index 		"disease index (=count/total diseases)"
 
-**First difference in d_count: if one has c diseases, does he keep the disease or does it disappear again? **	
-	**# Bookmark #1
-	*bys ID: gen diff_d_count_forward = d_count[_n+1] - d_count 
-	*la var 	diff_d_count_forward 	"1st diff (forward) of # of diseases"
-bys ID: gen 	diff_d_count 	  = d_count - L.d_count
-	*bys ID: gen 	diff_miss_d_count = d_count - L.d_count // accounts for gaps, e.g. if not responded in some wave
-	*bys ID: replace	diff_miss_d_count = d_count - L2.d_count if L.d_count>=. & mi(diff_miss_d_count) /*L2 necessary if missing t (e.g. w3 in SHARE)*/  
-	*bys ID: replace	diff_miss_d_count = d_count - L3.d_count if L2.d_count>=. & mi(diff_miss_d_count)
-	*note: could go further, but if gaps are longer than 4-6y I no longer consider them "first" differences 
-	*bro ID wave d_count diff_d_count diff_d_count_miss
-la var 	diff_d_count 		"1st diff of # of diseases"
-	*la var 	diff_miss_d_count	"1st diff of # of diseases: (L(t-2) used if L(t-1) missing) (=adj. for gaps)"
-	*tab 	diff_d_count diff_miss_d_count,m
-	*tab 	d_count 	 diff_miss_d_count,m
-sum 	diff_d_count*
 
-	**First difference in d_DISEASECODE: same as above**
+	/**First difference in d_DISEASECODE: same as above**
 	foreach code of local alldiseasecodes {	
 	bys ID: gen diff_d_`code' 	= d_`code' - L.d_`code'
 	la var 		diff_d_`code' 	"1st diff ('ever had' | medication) of d_`code'"	
@@ -232,20 +216,10 @@ sum 	diff_d_count*
 	la var 			diff_miss_`code'er	"1st diff (ever had - raw data) (adj. for gaps) of `code'"
 	}	
 	*/
-	
-	
-*** check if any condition is perfectly predicted by age (based on age-eligiblity to the question) ***
-log using 	"`h_data'/log-diseasebycohort.txt", text replace name(log)
-foreach d of local alldiseasesd  {
-tab agegrp5 `d'	,m /*if nothing is odd, would seem okay. If we have more people entering later 
-(e.g. inw1==0 & inw2==1, or based on hacohort), this could lead to a jump in the graphs */
-} 
-log close log
-*/
-
+	*/
 
 **any disease at baseline (= when first observed)**
-gen 	myvar = (d_any==1 & wave==inw_first) if d_any<. /*if any D and time is equal to first observed time*/
+gen 	myvar = (d_any==1 & wave==in_wfirst) if d_any<. /*if any D and time is equal to first observed time*/
 bys ID: egen d_anyatfirstobs = max(myvar)
 drop 	myvar
 la var 	d_anyatfirstobs "has disease at baseline"
@@ -253,13 +227,13 @@ tab 	d_anyatfirstobs  d_any if wave==1 	/*checked correct generation*/
 sum 	d_anyatfirstobs 
 
 **>=2 diseases at baseline (= when first observed)**
-gen 	myvar = (d_count>=2 & wave==inw_first) if d_count<. /*if has MM and time is equal to first observed time*/
+gen 	myvar = (d_count>=2 & wave==in_wfirst) if d_count<. /*if has MM and time is equal to first observed time*/
 bys ID: egen d_count_geq2atfirstobs = max(myvar)
 la var 	d_count_geq2atfirstobs ">=2 diseases at baseline"
 drop 	myvar
 
 
-**age of first onset (g2aging version - self-reported age at first diagnosis) (if available)**
+/**age of first onset (g2aging version - self-reported age at first diagnosis) (if available)**
 di 	"`alldiseasecodes'"
 	loc 	radiaglist "" 
 foreach v of local alldiseasecodes {		
@@ -270,6 +244,7 @@ sum 	`radiaglist'
 egen 	onsetage_g2 = rowmin(`radiaglist') 	/*earliest reported age for any of the diseases*/
 la var 	onsetage_g2 "age of first onset (g2aging)"
 li 		ID wave d_any age onsetage onsetage_g2 in 10/20
+*/
 
 **# Bookmark #2 age of second onset (g2aging version)
 // I have this code. This finds the earliest age of the variables radiaglist. 
@@ -277,17 +252,15 @@ li 		ID wave d_any age onsetage onsetage_g2 in 10/20
 // For example, if at age 30 there are 2 possible diseases, then 
 
 
-
-
 **any disease ever (observed)**
 bys ID: egen d_anyever = max(d_any) // ever reported having a disease
 la var 	d_anyever 		"ever experiences any disease"
 
-**any disease ever (g2aging)**
+/**any disease ever (g2aging)**
 gen 	d_anyever_g2 = (onsetage_g2<.) /*note: firstage_g2 is time-constant*/
 la var 	d_anyever_g2	"ever experiences any disease (g2aging)"
 sum 	d_anyever d_anyever_g2
-
+*/
 
 
 **first onset year** 
@@ -304,10 +277,9 @@ la var 	 onsetyear "year of first onset (observed) (uncensored)"
 
 
 **first onset age (any chronic disease observed)**
-**# Bookmark #1 replace firstage varname with onset_age
 gen 	myvar 		= age if d_any==1 /*age, if any disease is present*/
 bys ID: egen onsetage = min(myvar)
-la var 	onsetage 		"age of first onset (obs.) (censored)"
+la var 	onsetage 	"age first obs. with any disease"
 drop 	myvar
 sort 	ID wave
 li 		ID wave age d_any onsetage in 1/16 /*check correct generation*/
@@ -324,7 +296,7 @@ li 		ID wave age d_any onsetage in 1/16 /*check correct generation*/
 	la val 	onsetagegrp5 onsetagegrp5l
 	*tab onsetagegrp5,m
 	
-**# Bookmark #1 first onset age (of higher order count) (should do with radiag)
+	**# Bookmark #1 first onset age (of higher order count) (should do with radiag)
 	** first onset age (of higher order count) **
 	gen 	myvar 			= age if d_count==2 
 	bys ID: egen onsetage2d = min(myvar)
@@ -335,8 +307,8 @@ li 		ID wave age d_any onsetage in 1/16 /*check correct generation*/
 	la var 	onsetage3d 		"age of first onset (of 2D) (observed)" // (observed) (censored)	
 	drop 	myvar
 
-
-**age at first onset, for each disease separately:**
+	
+/**age at first onset, for each disease separately:**
 di 		"`alldiseasesd'"
 loc 	onsetlist "" 	
 foreach d of local alldiseasesd {
@@ -364,25 +336,12 @@ codebook onset*, compact /*this is the first onset for each disease separately, 
 */								
 
 
-/**first onset DATE for each disease "count"**
-di 		   "`d_countmax'" /*max. count of diseases defined above*/
-forval 	j=1/`d_countmax' { /*use maximum count of disease list*/
-gen 		 myvar	= iwym if d_count>=`j' & !mi(d_count) /*iw date if C disease(s) present: only uses obs with no missing count*/
-bys ID: egen onsetdate_c`j' 	= min(myvar)
-format 		 onsetdate_c`j' %tm
-drop 		 myvar
-la var 		 onsetdate_c`j' "first date of iw with (>=`j') diseases"
-}
-li 			ID wave dead d_count iwym onsetdate_c* in 100/116, compress nola /*check*/
-*/
-
-
 *****************
 *** Durations ***
 *****************
 **# Bookmark #2 tsinceonset and timesinceonset have different nobs, check why
 **duration since onset (TIME)** 
-gen 	tsinceonset = time - onsetyear if inwt==1
+gen 	tsinceonset = time - onsetyear if in_wt==1
 la var 	tsinceonset "time (periods) since first disease"	
 
 // gen 	timesinceonset = iwym - onsetdate_c1 if (iwym - onsetdate_c1>=0)
@@ -394,8 +353,24 @@ la var 	yearssinceonset "years since onset"
 
 sum  tsinceonset yearssinceonset
 *bro ID wave time tsinceonset timesinceonset onsetyear
-	
-	
+
+
+**First difference in d_count: if one has c diseases, does he keep the disease or does it disappear again? **	
+	**# Bookmark #1
+	*bys ID: gen diff_d_count_forward = d_count[_n+1] - d_count 
+	*la var 	diff_d_count_forward 	"1st diff (forward) of # of diseases"
+bys ID: gen 	diff_d_count 	  = d_count - L.d_count
+	*bys ID: gen 	diff_miss_d_count = d_count - L.d_count // accounts for gaps, e.g. if not responded in some wave
+	*bys ID: replace	diff_miss_d_count = d_count - L2.d_count if L.d_count>=. & mi(diff_miss_d_count) /*L2 necessary if missing t (e.g. w3 in SHARE)*/  
+	*bys ID: replace	diff_miss_d_count = d_count - L3.d_count if L2.d_count>=. & mi(diff_miss_d_count)
+	*note: could go further, but if gaps are longer than 4-6y I no longer consider them "first" differences 
+	*bro ID wave d_count diff_d_count diff_d_count_miss
+la var 	diff_d_count 		"1st diff of # of diseases"
+	*la var 	diff_miss_d_count	"1st diff of # of diseases: (L(t-2) used if L(t-1) missing) (=adj. for gaps)"
+	*tab 	diff_d_count diff_miss_d_count,m
+	*tab 	d_count 	 diff_miss_d_count,m
+sum 	diff_d_count*
+
 	
 *** duration with c conditions ***
 gen duration = 0  // only generate for cases when count is 1 and not missing 
@@ -410,7 +385,7 @@ bys ID (wave): replace duration = cond(d_count==`i',   cond(diff_d_count==0, dur
 	
 	** should have duration first only for those who have uninterrupted sequence ** 
 	*set to missing all those individuals who have their sequence interrupted*
-	gen myvar = (d_count==. & inw_first_yr < time & inw_last_yr > time) //  // & followup==. 
+	gen myvar = (d_count==. & in_wfirst_yr < time & in_wlast_yr > time) //  // & followup==. 
 	//* 	gen myvar2 = (d_count==. & followup==. & inw_first_yr < time & inw_last_yr > time) //  // & followup==. 	
 	// gen myvar2 = (followup==. & inrange(time, inw_first_yr, inw_last_yr))/*
 	bys ID: egen missingatleastonce 	= max(myvar)
@@ -447,49 +422,6 @@ bro ID time age d_count duration diff_d_count missingatleastonce
 	*bro ID time d_count d_count_lead duration
 	*/
 
-	/**duration from *first* onset to death**
-	gen 	time_onsettodeath =  (radym - onsetdate_c1)/12
-	gen 	time_onsettodeath =  radym-firstdate_c1 
-	gen 	time_onsettodeathx = raxym-firstdate_c1 // using rax variable
-	replace time_onsettodeath =  time_onsettodeath/12 // convert to years
-	gen 	ageatdeath = (radym - rabym)/12
-	*/	
-	
-
-/**duration from c to c+1[+ / or more]** 
-*note: [there may be gaps of nonresponse, i.e. diseases could jump from 1 to 4 or 2 to 7, because either nonresponse or jump from c to c+2]: if panel not balanced in disease count or there is a real jump, this could cause additional imprecision*
-*note: some people have x count at t, then x-1 count at t+1*
-forval 	j=2/`d_countmax'{
-loc 		i=`j'-1
-gen 		time_c`i'toc`j' = onsetdate_c`j'-onsetdate_c`i'
-la var 		time_c`i'toc`j' "months (observed) `i' to `j'+ diseases"
-}
-li 			ID wave iwym d_count onsetdate_c? time_c?toc? in 85/100 , compress
-li 			ID wave iwym d_count onsetdate_c? time_c?toc? in 50/100 if (inw_miss==0 | everdead==1), compress
-*/
-
-/**duration from c to c+1 [+ / or more] (time-varying single variable)**	
-**note: with and without adjusting for firstdate>=iwym**
-gen timetonextdisease  = .
-gen timetonextdisease2 = .
-forval 	j=1/`d_countmax'{
-loc 	i=`j'-1
-replace timetonextdisease  = -iwym + onsetdate_c`j' if d_count==`i'	
-replace timetonextdisease2 = -iwym + onsetdate_c`j' if d_count==`i' & onsetdate_c`j'>= iwym /*set timetonextdisease2 to missing if firstdate with some count is smaller than the current date / e.g. if had 2 diseases, then after that went back to 1*/
-}	
-la var timetonextdisease2 "time (months) from C to C+1 (or more) diseases"
-sum timetonextdisease*, de
-	li ID wave d_count iwym onsetdate_c? timetonextdisease* time_c1toc2 time_c2toc3 if ID==785 // when the disease count decreases, timetonextdisease2 is missing
-	sum timetonextdisease* time_c1toc2 if d_count==1
-	*bro ID wave d_count iwym timetonextdisease* time_c1toc2
-	*bro ID wave d_count iwym firstdate_c? timetonextdisease*  	
-	*bro ID wave d_count iwym firstdate_c? timetonextdisease* if sbalanced 	
-	*bro ID wave d_count iwym firstdate_c? timetonextdisease* if sbalanced & timetonextdisease<0	
-	// timetonextdisease can be negative if count decreases from t to t+1
-	// currently, timetonextdisease2 still ignores the dose: it treats time from 1 to 2 the same as 1 to 4 (2nd accumulates faster) || if sb jumps from 2 to 4, firstdate_c3 is equal to firstdate_c4 anyway || hence, this measure is simple "to next '1 or more' diseases"
-*/
-	
-
 *******************
 *** Transitions ***
 *******************
@@ -513,7 +445,7 @@ la val d_count_lead d_count_leadl
 *** Groups ***
 **************
 ** countatfirstobs and countatonset ** 
-gen 	tempvar = d_count if inw_first==wave 		// count at baseline
+gen 	tempvar = d_count if in_wfirst==wave 		// count at baseline
 bys ID: egen countatfirstobs = max(tempvar) 
 recode 	countatfirstobs (0 = 0 "0 diseases at baseline") (1 = 1 "1 disease at baseline") (2/3 = 2 "2/3 diseases at baseline") (4/10 = 4 "4+ diseases at baseline"), gen(countatfirstobs2)
 drop 	tempvar countatfirstobs
@@ -528,4 +460,64 @@ la var countatfirstobs "# diseases when first observed"
 // rename 	countatonset2 countatonset 
 
 
+*******************************
+*** Archive code (not used) ***
+*******************************
 
+	/**first onset DATE for each disease "count"**
+	di 		   "`d_countmax'" /*max. count of diseases defined above*/
+	forval 	j=1/`d_countmax' { /*use maximum count of disease list*/
+	gen 		 myvar	= iwym if d_count>=`j' & !mi(d_count) /*iw date if C disease(s) present: only uses obs with no missing count*/
+	bys ID: egen onsetdate_c`j' 	= min(myvar)
+	format 		 onsetdate_c`j' %tm
+	drop 		 myvar
+	la var 		 onsetdate_c`j' "first date of iw with (>=`j') diseases"
+	}
+	li 			ID wave dead d_count iwym onsetdate_c* in 100/116, compress nola /*check*/
+	*/
+
+	/**duration from c to c+1[+ / or more]** 
+*note: [there may be gaps of nonresponse, i.e. diseases could jump from 1 to 4 or 2 to 7, because either nonresponse or jump from c to c+2]: if panel not balanced in disease count or there is a real jump, this could cause additional imprecision*
+*note: some people have x count at t, then x-1 count at t+1*
+forval 	j=2/`d_countmax'{
+loc 		i=`j'-1
+gen 		time_c`i'toc`j' = onsetdate_c`j'-onsetdate_c`i'
+la var 		time_c`i'toc`j' "months (observed) `i' to `j'+ diseases"
+}
+li 			ID wave iwym d_count onsetdate_c? time_c?toc? in 85/100 , compress
+li 			ID wave iwym d_count onsetdate_c? time_c?toc? in 50/100 if (inw_miss==0 | everdead==1), compress
+*/
+
+	/**duration from *first* onset to death**
+	gen 	time_onsettodeath =  (radym - onsetdate_c1)/12
+	gen 	time_onsettodeath =  radym-firstdate_c1 
+	gen 	time_onsettodeathx = raxym-firstdate_c1 // using rax variable
+	replace time_onsettodeath =  time_onsettodeath/12 // convert to years
+	gen 	ageatdeath = (radym - rabym)/12
+	*/	
+	
+
+	/**duration from c to c+1 [+ / or more] (time-varying single variable)**	
+**note: with and without adjusting for firstdate>=iwym**
+gen timetonextdisease  = .
+gen timetonextdisease2 = .
+forval 	j=1/`d_countmax'{
+loc 	i=`j'-1
+replace timetonextdisease  = -iwym + onsetdate_c`j' if d_count==`i'	
+replace timetonextdisease2 = -iwym + onsetdate_c`j' if d_count==`i' & onsetdate_c`j'>= iwym /*set timetonextdisease2 to missing if firstdate with some count is smaller than the current date / e.g. if had 2 diseases, then after that went back to 1*/
+}	
+la var timetonextdisease2 "time (months) from C to C+1 (or more) diseases"
+sum timetonextdisease*, de
+	li ID wave d_count iwym onsetdate_c? timetonextdisease* time_c1toc2 time_c2toc3 if ID==785 // when the disease count decreases, timetonextdisease2 is missing
+	sum timetonextdisease* time_c1toc2 if d_count==1
+	*bro ID wave d_count iwym timetonextdisease* time_c1toc2
+	*bro ID wave d_count iwym firstdate_c? timetonextdisease*  	
+	*bro ID wave d_count iwym firstdate_c? timetonextdisease* if sbalanced 	
+	*bro ID wave d_count iwym firstdate_c? timetonextdisease* if sbalanced & timetonextdisease<0	
+	// timetonextdisease can be negative if count decreases from t to t+1
+	// currently, timetonextdisease2 still ignores the dose: it treats time from 1 to 2 the same as 1 to 4 (2nd accumulates faster) || if sb jumps from 2 to 4, firstdate_c3 is equal to firstdate_c4 anyway || hence, this measure is simple "to next '1 or more' diseases"
+*/
+
+
+	
+	
