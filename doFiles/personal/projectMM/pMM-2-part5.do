@@ -180,7 +180,7 @@ bys ID: egen in_wfirst_yr	= min(myvar) 	// inw_first in years, not waves
 bys ID: egen in_wlast_yr	= max(myvar)  	// inw_first in years, not waves (for health sequences)
 drop myvar
 la var 	 	 in_wfirst_yr "time first observed"
-la var 	 	 in_wlast_yr "time last observed"
+la var 	 	 in_wlast_yr  "time last observed"
 tab in_wfirst_yr
 li ID wave in_wfirst* time in_wt age in 1/5
 */
@@ -297,12 +297,11 @@ include  "`github_p5subdiseases'" // include github file
 
 **# Bookmark #1 maybe already here i want to remove observations if dead or not repesent in survey? (just that then i cannot study attrition), othrwise can study attrition using intermediate dataset
 *** drop irrelevant observations *** 
-count if mi(age) 
-count if !mi(age) // saves N into r(N)
 drop if mi(age) // after generating all variables, drop all missing observations
 
 ***select samples***
 // full sample
+count if !mi(age) // saves N into r(N)
 gen		sfullsample = (!mi(age))	
 la var 	sfullsample "sample: full (N=`r(N)')"
 
@@ -330,8 +329,6 @@ la var 	sfull5healthy  "sample: selected + healthy-at-baseline"
 la de 	sfull5healthyl 0 "has disease at baseline" 1 "has no disease at baseline"
 la val 	sfull5healthy sfull5healthyl
 */
-
-
 	
 	*** Sample Selection (MM paper) ***
 	log using 	"`h_data'/log-sampleSelection.txt", text replace name(logSampleselection)

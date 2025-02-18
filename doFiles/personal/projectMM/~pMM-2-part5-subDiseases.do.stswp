@@ -446,7 +446,7 @@ la val d_count_lead d_count_leadl
 **************
 ** countatfirstobs and countatonset ** 
 // gen 	tempvar = d_count if in_wfirst == wave 		 
-gen 	tempvar = d_count if in_wfirst_yr == time 	// in_wfirst_yr should be correctly defined 
+gen 	tempvar = d_count if in_wfirst_yr == time 	// inshould be correctly defined 
 bys ID: egen countatfirstobs = max(tempvar) 
 recode 	countatfirstobs (0 = 0 "0 diseases at baseline") (1 = 1 "1 disease at baseline") (2/3 = 2 "2/3 diseases at baseline") (4/10 = 4 "4+ diseases at baseline"), gen(countatfirstobs2)
 drop 	tempvar countatfirstobs
