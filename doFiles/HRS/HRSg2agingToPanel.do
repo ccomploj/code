@@ -23,14 +23,14 @@ timer on 1 				// counts the duration of file computation
 
 
 ****************************************************************************************************
-*PART 1*: Adapt this section to the specific HRS-type harmonized dataset from the g2aging
+*PART 1*: Adapt this section to the specific HRS-type harmonized dataset from g2aging (or RAND HRS in case of HRS)
 *note: you do not have to change any other section except "Part 1", and the variables in "Part 3"
 ****************************************************************************************************
 ***define folder locations***
 loc data 	"SHARE"
-if "`c(username)'" == "P307344" { // UWP server
-loc cv 		"X:/My Documents/XdrvData/`data'/"
-}
+// if "`c(username)'" == "P307344" { // UWP server
+// loc cv 		"X:/My Documents/XdrvData/`data'/"
+// }
 else {
 loc	cv 		"C:/Users/`c(username)'/Documents/RUG/`data'/"
 }	
@@ -53,7 +53,7 @@ merge 	1:1 mergeid using "`h_data'H_SHARE_EOL_c.dta", keepusing(`x_eol')
 
 *pause // browse the data using -browse- ; to continue after a pause, type "q" and enter
 
-**generate survey-specific identifiers (explore your dataset first)**
+**generate survey-specific identifiers (only for SHARE data)**
 gen 	countryID 	= substr(mergeid, 1,2) 
 gen 	id  		= hhid + pn 				// note id is not unique
 egen	panelid 	= group(countryID id)	/*generate for SHARE )not unique*/
@@ -65,7 +65,7 @@ loc communityID "" 		 	// insert community ID if available
 loc householdID "hhid" 	 	// insert household ID
 loc pn 			"pn"		// insert person identifier
 loc ID 			"mergeid"	// insert personal ID (household ID + personal ID)
-loc ID 			"panelid"	// use panelid if ID does not uniquely identify indiv. (e.g. same ID in two count(r)ies in SHARE)
+loc ID 			"panelid"	// (for SHARE) use panelid if ID does not uniquely identify indiv. (e.g. same ID in two count(r)ies in SHARE)
 loc idlist 		"`cntry' `cnty' `communityID' `householdID' `pn' `ID'" 
 ***define other survey-specific values*** 
 loc wavelast 	"8"			// change this to the # of the last available wave (e.g. 8 if 8 waves, 4 if 4 waves)
@@ -274,7 +274,7 @@ la var	rabym "r death date (ym)"
 
 ***end timer, xtset and save data***
 timer 		off  1
-timer 		list 1
+timer 		list 1 // visualize duration of computation
 xtset 		`ID' wave
 save		"`h_data'H_`data'_panel.dta", replace // check if appeared in correct folder!
 

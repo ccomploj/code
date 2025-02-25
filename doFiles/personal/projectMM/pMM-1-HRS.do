@@ -119,12 +119,12 @@ rename 	(s(#)*) (*[2]s#[1])	 	// spouse
 	
 ***(a) time-variant variables***
 loc 	vra 	"mstatr nhmlivr agey_br     hhresh cplh iwendyr iwendmr iwstatr iwstats "		// demographics, identifiers, weights
-	loc 	d_everhad "hibper diaber cancrer lunger hearter stroker arthrer  hiper kidneyer   psycher osteoer" //  
+	loc 	d_everhad "hibper diaber cancrer lunger hearter stroker arthrer    kidneyer  psycher hiper osteoer" //  
 // 	loc 	d_medictn "rxhibpr rxdiabr rxheartr rxlungr rxpsychr rxosteor rxcancrr rxstrokr rxarthrr"
 // 	loc 	d_agediagrecent "reccancrr rechrtattr recstrokr" 
 //  loc 	d_sincelw "hrtattr strokr cancrr hipr" /*these are already incorporated in d_everhad*/	
 	loc 	deptest   "cesdr" // test for depression
-loc 	vrb 	"shltr hlthlmar hlthlmr iadlar drinklr smokenr `d_everhad' `d_medictn' `d_agediagrecent'  `d_sincelw' `deptest'"	// health
+loc 	vrb 	"shltr hlthlmar hlthlmr iadlar drinklr smokenr `d_everhad' `d_medictn' `d_agediagrecent'  `d_sincelw' "	// health
 // loc 	vrc 	"higovr 	hiltcr lifeinr"										// healthcare utilization and insurance
 	loc vrdHRS 	"bwc20r mstotr cogtotr"
 loc 	vrd  	"tr20r orientr `vrdHRS'"						// cognition (!! mostly only asked to 65+ and not proxy)
@@ -140,7 +140,7 @@ loc 	vrl 	""												// assistance and caregiving
 loc 	vrm 	""												// stress 
 loc 	vro 	""												// (end of life planning)
 loc 	vrp 	""												// (childhood) 
-loc 	vrq		""												// psychosocial 
+loc 	vrq		"`deptest'"										// psychosocial 
 loc 	vrlist	`vra' `vrb' `vrc' `vrd' `vre' `vrf' `vrg' `vrh' `vri' `vrj' `vrl' `vrm' `vro' `vrp' `vrq'
 
 

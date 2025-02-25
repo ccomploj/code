@@ -293,6 +293,7 @@ use 	"`h_data'H_`data'_panel2.dta", clear // load earlier dataset
 
 
 *** disease list and durations (include external file to keep good overview here) ***
+display  "`github_p5subdiseases'"
 include  "`github_p5subdiseases'" // include github file
 
 **# Bookmark #1 maybe already here i want to remove observations if dead or not repesent in survey? (just that then i cannot study attrition), othrwise can study attrition using intermediate dataset
